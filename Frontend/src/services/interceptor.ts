@@ -1,0 +1,58 @@
+import axios from "axios";
+import { toast } from "sonner";
+
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    skipRefresh?: boolean;
+    _retry?: boolean;
+  }
+}
+
+const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true,
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    if (originalRequest.skipRefresh) {
+      return Promise.reject(error);
+    }
+
+    const status = error.response?.status;
+
+    if (
+      (status === 401 || status === 403) &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        await api.post(
+          "/auth/refresh",
+          {},
+          {
+            skipRefresh: true,
+          }
+        );
+
+        return api.request(originalRequest);
+      } catch (refreshError) {
+        toast.error("Please LogIn");
+
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export { api };

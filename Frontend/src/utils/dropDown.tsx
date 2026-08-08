@@ -1,14 +1,28 @@
-"use client"
+"use client";
+
 import { useState } from "react";
 import { FaAngleDown } from "react-icons/fa";
 import Link from "next/link";
 
-interface Dropdown {
+interface SubCategory {
+    _id: string;
     title: string;
-    items?: any[]
-    description: string,
-    id: string,
-    icon: any
+}
+
+interface Item {
+    _id: string;
+    title: string;
+    subCategories?: SubCategory[];
+}
+
+interface DropdownProps {
+    title: string;
+    items?: Item[];
+    description?: string;
+    id: string;
+    icon?: {
+        svgCode?: string;
+    };
 }
 
 export default function Dropdown({
@@ -17,15 +31,15 @@ export default function Dropdown({
     description,
     id,
     icon
-}: Dropdown) {
+}: DropdownProps) {
     const [open, setOpen] = useState(false);
 
     return (
-        <li className="flex flex-col gap-1 mb-3 p-2 rounded-xl transition-all duration-200 hover:bg-[var(--background-soft)]/50">
+        <div className="flex flex-col gap-1 mb-3 p-2 rounded-xl transition-all duration-200 hover:bg-[var(--background-soft)]/50">
             <div className="flex items-center justify-between">
                 <div className="flex gap-3 items-center flex-1">
                     <span
-                        dangerouslySetInnerHTML={{ __html: icon?.svgCode && icon?.svgCode }}
+                        dangerouslySetInnerHTML={{ __html: icon?.svgCode || "" }}
                         className="w-8 h-8 flex items-center justify-center text-[var(--primary-500)] dark:text-[var(--accent-400)] transition-colors"
                     />
                     <Link
@@ -33,21 +47,26 @@ export default function Dropdown({
                         className="block flex-1 text-[var(--foreground)] font-semibold text-[17px] hover:text-[var(--primary-600)] dark:hover:text-[var(--accent-400)] transition-colors"
                     >
                         {title}
-                        <span className="block text-[12px] font-normal text-[var(--foreground-muted)] mt-0.5">
-                            {description}
-                        </span>
+                        {description && (
+                            <span className="block text-[12px] font-normal text-[var(--foreground-muted)] mt-0.5">
+                                {description}
+                            </span>
+                        )}
                     </Link>
                 </div>
-                <FaAngleDown
-                    className={`cursor-pointer text-[18px] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-transform duration-200 ${open ? "rotate-180 text-[var(--primary-500)]" : ""
+                {items && items.length > 0 && (
+                    <FaAngleDown
+                        className={`cursor-pointer text-[18px] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-transform duration-200 ${
+                            open ? "rotate-180 text-[var(--primary-500)]" : ""
                         }`}
-                    onClick={() => setOpen(!open)}
-                />
+                        onClick={() => setOpen(!open)}
+                    />
+                )}
             </div>
 
-            {open && (
+            {open && items && items.length > 0 && (
                 <ul className="mt-2 pl-4 border-l border-[var(--border)] ml-5 flex flex-col gap-2">
-                    {items?.map((item: any) => (
+                    {items.map((item) => (
                         <li key={item._id} className="group/sub">
                             <Link
                                 href={`/posts?categoryId=${item._id}`}
@@ -56,9 +75,9 @@ export default function Dropdown({
                                 {item.title}
                             </Link>
 
-                            {item.subCategories?.length > 0 && (
+                            {item.subCategories && item.subCategories.length > 0 && (
                                 <ul className="mt-1 pl-3 border-l border-[var(--border)] flex flex-col gap-1">
-                                    {item.subCategories.map((s: any) => (
+                                    {item.subCategories.map((s) => (
                                         <li key={s._id}>
                                             <Link
                                                 href={`/posts?categoryId=${s._id}`}
@@ -74,8 +93,6 @@ export default function Dropdown({
                     ))}
                 </ul>
             )}
-        </li>
+        </div>
     );
 }
-
-

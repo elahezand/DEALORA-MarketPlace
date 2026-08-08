@@ -70,13 +70,12 @@ export interface ListingTypeResponse {
 }
 
 export interface ListingsTypeResponse {
-  data: {
     data: ListingProps[];
     pagination?: {
       hasMore: boolean;
       limit: number;
       nextCursor: string | null;
-    };
+    
   }
 }
 export interface InfiniteListingsSectionProps {

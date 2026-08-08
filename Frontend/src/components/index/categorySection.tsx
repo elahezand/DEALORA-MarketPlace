@@ -65,7 +65,7 @@ export default function CategoriesSection() {
           <span className="text-xs font-bold text-[var(--foreground-muted)]
                            group-hover:text-[var(--foreground)]
                            transition-colors leading-tight text-center line-clamp-2">
-            {cat.name}
+            {cat.title}
           </span>
         </button>
       ))}

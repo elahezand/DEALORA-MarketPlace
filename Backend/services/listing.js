@@ -12,8 +12,12 @@ function escapeRegex(text) {
 
 function buildListingFilters(query) {
   const filters = {};
+  const andConditions = [];
 
-  if (query.listingType) filters.listingType = query.listingType;
+  // 1. Status & ListingType Filters
+  if (query.listingType) {
+    filters.listingType = query.listingType;
+  }
 
   if (query.status) {
     filters.status = query.status;
@@ -22,23 +26,30 @@ function buildListingFilters(query) {
   } else if (query.listingType === "store_product") {
     filters.status = "active";
   } else {
-    filters.$and = (filters.$and || []).concat([
-      {
-        $or: [
-          { listingType: "user_ad", status: "accepted" },
-          { listingType: "store_product", status: "active" },
-        ],
-      },
-    ]);
+    andConditions.push({
+      $or: [
+        { listingType: "user_ad", status: "accepted" },
+        { listingType: "store_product", status: "active" },
+      ],
+    });
   }
 
-  if (query.sku) filters["variants.sku"] = query.sku;
+  // 2. Photos Filter
+  if (query.hasPhoto === "true") {
+    filters["images.0"] = { $exists: true };
+  }
 
+  // 3. SKU Filter
+  if (query.sku) {
+    filters["variants.sku"] = query.sku;
+  }
+
+  // 4. Category Filter
   if (query.categoryId && isValidId(query.categoryId)) {
     filters.categoryPath = new mongoose.Types.ObjectId(query.categoryId);
   }
 
-
+  // 5. Price Range Filter
   if (query.price) {
     if (query.price.includes("-")) {
       const [min, max] = query.price.split("-").map(Number);
@@ -51,6 +62,7 @@ function buildListingFilters(query) {
     }
   }
 
+  // 6. Location Filters
   if (query.city) {
     filters["location.city"] = { $regex: new RegExp(escapeRegex(query.city), "i") };
   }
@@ -58,15 +70,17 @@ function buildListingFilters(query) {
     filters["location.neighborhood"] = { $regex: new RegExp(escapeRegex(query.neighborhood), "i") };
   }
 
+  // 7. Variants attributes (color, size)
   for (const [key, value] of Object.entries(query)) {
     if (["color", "size"].includes(key)) {
       filters[`variants.attributes.${key}`] = value;
     }
   }
 
+  // 8. Reserved Keys & Specs Dynamic Filters
   const reservedKeys = [
     "categoryId", "price", "status", "q", "color", "size",
-    "sku", "city", "neighborhood", "listingType", "limit", "page", "cursor"
+    "sku", "city", "neighborhood", "listingType", "limit", "page", "cursor", "hasPhoto", "exchange"
   ];
 
   for (const [key, value] of Object.entries(query)) {
@@ -75,32 +89,63 @@ function buildListingFilters(query) {
     }
   }
 
+  // 9. Advanced Smart Search Query (q)
   if (query.q) {
-    const safeValue = escapeRegex(query.q);
-    filters.$or = [
-      { $text: { $search: query.q } },
-      { title: { $regex: new RegExp(safeValue, "i") } },
-    ];
+    const normalizeText = (str) => {
+      return str
+        .toLowerCase()
+        .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+        .replace(/[\u064B-\u065F]/g, "")
+        .trim();
+    };
+
+    const cleanQuery = normalizeText(query.q);
+    const compactQuery = cleanQuery.replace(/\s+/g, "");
+    const tokens = cleanQuery.split(/\s+/).filter(Boolean);
+
+    const searchConditions = [];
+
+    searchConditions.push({ title: { $regex: new RegExp(escapeRegex(cleanQuery), "i") } });
+
+    if (compactQuery !== cleanQuery) {
+      searchConditions.push({ title: { $regex: new RegExp(escapeRegex(compactQuery), "i") } });
+    }
+
+    if (tokens.length > 1) {
+      const allTokensCondition = tokens.map((token) => ({
+        title: { $regex: new RegExp(escapeRegex(token), "i") },
+      }));
+      searchConditions.push({ $and: allTokensCondition });
+    }
+
+    andConditions.push({ $or: searchConditions });
+  }
+
+  // Combine and conditions safely to prevent overwriting $or
+  if (andConditions.length > 0) {
+    filters.$and = andConditions;
   }
 
   return filters;
 }
+
 /* === GET ALL === */
 async function getAllListings(query = {}) {
   const filters = buildListingFilters(query);
-
   const maxLimit = query.listingType === "store_product" ? 100 : 50;
   const limit = Math.min(query.limit ? Number(query.limit) : 20, maxLimit);
 
-return await paginate(Listing, {
-  limit,
-  cursor: query.cursor,
-  filters,
-  populate: ["categoryPath", "user"],
-});
+  return await paginate(Listing, {
+    limit,
+    cursor: query.cursor,
+    filters,
+    populate: ["categoryPath", "user"],
+  });
 }
+
 /* === GET BY ID === */
 async function getListingById(id, query = {}) {
+  if (!isValidId(id)) throw { status: 400, message: "Invalid listing id" };
 
   let listingData = await Listing.findByIdAndUpdate(
     id,
@@ -142,21 +187,26 @@ async function getListingById(id, query = {}) {
     if (aggregatedData) {
       listingData = {
         ...aggregatedData,
-        "metrics.views": listingData.metrics?.views || 0, 
+        "metrics.views": listingData.metrics?.views || 0,
         categoryPath: listingData.categoryPath,
         user: listingData.user,
       };
     }
 
-    const commentQuery =
-      typeof query === "string" ? new URLSearchParams(query) : query;
-    const comments = await paginate(Comment, commentQuery, { product: id }, "user");
+    const commentQuery = typeof query === "string" ? new URLSearchParams(query) : query;
+    const comments = await paginate(Comment, {
+      limit: commentQuery.limit || 10,
+      cursor: commentQuery.cursor,
+      filters: { product: id },
+      populate: ["user"],
+    });
 
     return { data: listingData, comments };
   }
 
   return { data: listingData };
 }
+
 /* === CREATE === */
 async function createListing(userId, data, files = []) {
   const payload = { ...data };
@@ -176,6 +226,7 @@ async function createListing(userId, data, files = []) {
   await invalidateCache("/api/listings*");
   return listing;
 }
+
 /* === UPDATE === */
 async function updateListing(id, userId, data, files = []) {
   if (!isValidId(id)) throw { status: 400, message: "Invalid listing id" };
@@ -183,7 +234,6 @@ async function updateListing(id, userId, data, files = []) {
   const listing = await Listing.findById(id);
   if (!listing) throw { status: 404, message: "Listing not found" };
 
-  // Authorization Check
   if (listing.listingType === "user_ad" && String(listing.user) !== String(userId)) {
     throw { status: 403, message: "Unauthorized action" };
   }
@@ -199,8 +249,11 @@ async function updateListing(id, userId, data, files = []) {
   await invalidateCache("/api/listings*");
   return listing;
 }
+
 /* === SOFT DELETE === */
 async function deleteListing(id, userId) {
+  if (!isValidId(id)) throw { status: 400, message: "Invalid listing id" };
+
   const listing = await Listing.findById(id);
   if (!listing) throw { status: 404, message: "Listing not found" };
 
@@ -233,6 +286,8 @@ async function getMyListings(userId, query = {}) {
 
 /* === ADMIN CHANGE STATUS === */
 async function changeStatus(id, status) {
+  if (!isValidId(id)) throw { status: 400, message: "Invalid listing id" };
+
   const allowed = ["pending", "accepted", "rejected", "active", "inactive", "draft"];
   if (!allowed.includes(status)) throw { status: 400, message: "Invalid status" };
 
@@ -242,13 +297,15 @@ async function changeStatus(id, status) {
   await invalidateCache("/api/listings*");
   return listing;
 }
-/* === GET SEARCH INDEX (LIGHTWEIGHT FOR AI SEARCH) === */
-async function smartSearch  ({ prompt, budget }) {
-  const apiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
+
+/* === SMART SEARCH (AI SEARCH) === */
+async function smartSearch({ prompt, budget }) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
     throw new Error("OpenRouter API key is missing on the server!");
   }
+
   const query = { status: "active" };
   if (budget) {
     query.price = { $lte: Number(budget) };
@@ -257,12 +314,13 @@ async function smartSearch  ({ prompt, budget }) {
   const listings = await Listing.find(query)
     .select("title price condition categoryPath")
     .populate("categoryPath", "title")
-    .limit(50) 
+    .limit(50)
     .lean();
 
   if (!listings || listings.length === 0) {
     return { data: null, reason: "No active listings found matching the budget." };
   }
+
   const simplifiedPosts = listings.map((item) => ({
     _id: item._id,
     title: item.title,
@@ -270,7 +328,7 @@ async function smartSearch  ({ prompt, budget }) {
     condition: item.condition,
     category: Array.isArray(item.categoryPath)
       ? item.categoryPath.map((c) => c.title).join(" > ")
-      : "",
+      : item.categoryPath?.title || "",
   }));
 
   const systemPrompt = `You are an AI search assistant.
@@ -284,7 +342,7 @@ JSON Structure:
 
 Available listings: ${JSON.stringify(simplifiedPosts)}`;
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const response = await fetch("https://openrouter.ai/ai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -317,18 +375,24 @@ Available listings: ${JSON.stringify(simplifiedPosts)}`;
     return { data: null, reason: "No matching listing found for your request." };
   }
 
-  const cleanContent = content.replace(/```json/g, "").replace(/```/g, "").trim();
-  const parsed = JSON.parse(cleanContent);
+  try {
+    const cleanContent = content.replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleanContent);
 
-  if (!parsed._id) {
-    return { data: null, reason: parsed.reason || "No matching listing found." };
+    if (!parsed._id) {
+      return { data: null, reason: parsed.reason || "No matching listing found." };
+    }
+
+    return {
+      data: { _id: parsed._id },
+      reason: parsed.reason,
+    };
+  } catch (error) {
+    console.error("Failed to parse AI response:", content);
+    return { data: null, reason: "Failed to parse search results from AI." };
   }
+}
 
-  return {
-    data: { _id: parsed._id },
-    reason: parsed.reason,
-  };
-};
 module.exports = {
   getAllListings,
   getListingById,
@@ -337,5 +401,5 @@ module.exports = {
   deleteListing,
   getMyListings,
   changeStatus,
-  smartSearch
+  smartSearch,
 };

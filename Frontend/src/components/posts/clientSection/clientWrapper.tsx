@@ -1,38 +1,40 @@
 "use client";
-import { useSearchParams } from "next/navigation";
-import { FaPhotoVideo } from "react-icons/fa";
-import { FaExchangeAlt } from "react-icons/fa";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { usePathname } from "next/navigation";
-import SectionHeader from "./sectionHeader";
-import qs from "qs"
+
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { FaPhotoVideo, FaExchangeAlt } from "react-icons/fa";
 import { IoSearch } from "react-icons/io5";
+import { useState, useMemo, useEffect } from "react";
+import qs from "qs";
+import SectionHeader from "./sectionHeader";
 import CategorySection from "./categorySection";
 import Options from "./options/options";
-import { useMemo } from "react";
-
-
 
 export default function ClientWrapper() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const pathname = usePathname();
-    const [value, setValue] = useState("");
+
+    const initialQ = searchParams.get("q") || "";
+    const [value, setValue] = useState(initialQ);
+
+    useEffect(() => {
+        setValue(searchParams.get("q") || "");
+    }, [searchParams]);
 
     const currentPage = Number(searchParams.get("page")) || 1;
+    
     const currentFilters = useMemo(() => ({
         categoryId: searchParams.get("categoryId") || "",
         price: searchParams.get("price") || "",
         exchange: searchParams.get("exchange") || "",
+        hasPhoto: searchParams.get("hasPhoto") || "",
         filter: searchParams.get("filter") || "",
         page: currentPage,
         limit: searchParams.get("limit") || 15,
-        value: searchParams.get("value") || ""
+        q: searchParams.get("q") || ""
     }), [searchParams, currentPage]);
 
-
-    const handleFilterChange = (newFilterParams: any = {}) => {
+    const handleFilterChange = (newFilterParams: Record<string, any> = {}) => {
         const updatedFilters = { ...currentFilters, ...newFilterParams, page: 1 };
 
         const cleanParams = Object.fromEntries(
@@ -45,54 +47,63 @@ export default function ClientWrapper() {
         router.push(`${pathname}?${queryString}`, { scroll: true });
     };
 
-
-    const appendToFilter = (field: string, value: any) => {
-        let current: Record<string, any> = {}
+    const appendToFilter = (field: string, val: any) => {
+        let current: Record<string, any> = {};
         if (currentFilters?.filter) {
-            try { current = JSON.parse(String(currentFilters.filter)) || {} } catch { current = {} }
+            try { 
+                current = JSON.parse(String(currentFilters.filter)) || {};
+            } catch { 
+                current = {};
+            }
         }
 
-        if (value === "" || value == null) {
-            delete current[field]
+        if (val === "" || val == null) {
+            delete current[field];
         } else {
-            current[field] = value
-            handleFilterChange({ filter: JSON.stringify(current) })
+            current[field] = val;
         }
+
+        handleFilterChange({ filter: Object.keys(current).length ? JSON.stringify(current) : "" });
     };
 
     const activeFilters = useMemo(() => {
         try {
-            return currentFilters.filter
-                ? JSON.parse(currentFilters.filter)
-                : {};
+            return currentFilters.filter ? JSON.parse(currentFilters.filter) : {};
         } catch {
             return {};
         }
     }, [currentFilters.filter]);
 
-
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleFilterChange({ q: value });
+    };
 
     return (
-        <div className="w-full flex flex-col border-r border-[var(--border)] min-h-screen  px-4 bg-[var(--background-soft)] transition-all duration-300">
+        <div className="w-full flex flex-col border-r border-[var(--border)] min-h-screen px-4 bg-[var(--background-soft)] transition-all duration-300">
             <CategorySection />
+            
             <div className="border-b border-[var(--border)] py-6 space-y-6">
                 <div className="space-y-6">
                     {/* SEARCH INPUT */}
                     <div className="space-y-3">
                         <SectionHeader title="Search" />
                         <form
-                            onSubmit={(e) => e.preventDefault()}
+                            onSubmit={handleSearchSubmit}
                             className="w-full h-11 px-3 flex items-center gap-2"
                         >
                             <input
                                 type="text"
+                                value={value}
                                 onChange={(e) => setValue(e.target.value)}
                                 placeholder="Search items..."
+                                className="w-full h-full bg-transparent outline-none text-sm text-[var(--foreground)]"
                             />
-                            <button type="submit"
-                                onClick={() => handleFilterChange({ search: value })}
-                                className="btn-primary !w-[35px] !h-[35px] !rounded-xl !px-0 shrink-0"
-                                aria-label="Search">
+                            <button 
+                                type="submit"
+                                className="btn-primary !w-[35px] !h-[35px] !rounded-xl !px-0 shrink-0 flex items-center justify-center"
+                                aria-label="Search"
+                            >
                                 <IoSearch className="text-base" />
                             </button>
                         </form>
@@ -102,8 +113,10 @@ export default function ClientWrapper() {
 
             {/* CHECKBOX FILTERS */}
             <div className="flex flex-col gap-3.5 border-b border-[var(--border)] py-6">
-                <label htmlFor="exchange_control"
-                    className="flex items-center justify-between group cursor-pointer select-none">
+                <label 
+                    htmlFor="exchange_control"
+                    className="flex items-center justify-between group cursor-pointer select-none"
+                >
                     <div className="flex items-center gap-2">
                         <div className="p-1.5 rounded-lg bg-[var(--background-soft)] text-[var(--foreground-muted)] group-hover:text-[var(--destructive)] dark:group-hover:text-[var(--label-color)] transition-colors duration-200">
                             <FaExchangeAlt className="text-sm" />
@@ -115,14 +128,17 @@ export default function ClientWrapper() {
                     <input
                         id="exchange_control"
                         onChange={(e) => handleFilterChange({ exchange: e.target.checked ? "true" : "" })}
-                        checked={!!currentFilters?.exchange}
+                        checked={currentFilters.exchange === "true"}
                         name="exchange"
                         type="checkbox"
                         className="!w-4 !h-4 rounded border-[var(--input-border)] bg-transparent text-[var(--ring)] accent-[var(--ring)] focus:ring-0 cursor-pointer"
                     />
                 </label>
 
-                <label htmlFor="photo_control" className="flex items-center justify-between group cursor-pointer select-none">
+                <label 
+                    htmlFor="photo_control" 
+                    className="flex items-center justify-between group cursor-pointer select-none"
+                >
                     <div className="flex items-center gap-2.5">
                         <div className="p-1.5 rounded-lg bg-[var(--background-soft)] text-[var(--foreground-muted)] group-hover:text-[var(--destructive)] dark:group-hover:text-[var(--label-color)] transition-colors duration-200">
                             <FaPhotoVideo className="text-sm" />
@@ -134,6 +150,8 @@ export default function ClientWrapper() {
                     <input
                         id="photo_control"
                         type="checkbox"
+                        onChange={(e) => handleFilterChange({ hasPhoto: e.target.checked ? "true" : "" })}
+                        checked={currentFilters.hasPhoto === "true"}
                         className="!w-4 !h-4 rounded border-[var(--input-border)] bg-transparent text-[var(--ring)] accent-[var(--ring)] focus:ring-0 cursor-pointer"
                     />
                 </label>

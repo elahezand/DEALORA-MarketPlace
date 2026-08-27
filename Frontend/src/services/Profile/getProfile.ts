@@ -3,7 +3,11 @@ import { UserType, IStore, IUser } from "@/types/User";
 import { AxiosError } from "axios";
 
 export const useGetProfile = () => {
-  const { data, error, isError, isLoading } = useGet<UserType>("/auth/me");
+  const { data, error, isError, isLoading } = useGet<UserType>(
+    "/auth/me",
+    undefined,
+    { axiosConfig: { silentAuth: true } }
+  );
 
   return {
     user: data?.user ?? null,       

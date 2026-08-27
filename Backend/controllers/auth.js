@@ -66,7 +66,7 @@ exports.send = async (req, res, next) => {
     const code = crypto.randomInt(10000, 99999);
     if (process.env.NODE_ENV !== "production") {
       console.log("[DEV OTP]", code);
-    }
+    }    
     
 
     try {

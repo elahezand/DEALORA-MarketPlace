@@ -47,26 +47,44 @@ export default function CategoriesSection() {
           key={cat._id}
           onClick={() => handleClick(cat._id)}
           disabled={isPending}
-          className="group flex flex-col items-center gap-3 p-4 rounded-[var(--radius)]
-                     border border-[var(--border)] bg-[var(--card-solid)]
-                     hover:border-[var(--primary-300)] dark:hover:border-[var(--primary-800)]
-                     hover:bg-[var(--background-soft)] hover:shadow-sm
-                     transition-all duration-300 ease-out cursor-pointer disabled:opacity-60 active:scale-95"
+          className="group relative overflow-hidden rounded-xl p-5
+                     border border-primary-200 hover:border-primary-400 
+                     dark:border-primary-800 dark:hover:border-primary-600
+                     bg-card-solid 
+                     hover:bg-gradient-to-br hover:from-primary-50 
+                     hover:to-secondary-50
+                     dark:hover:from-primary-900/30 dark:hover:to-secondary-900/30
+                     transition-all duration-300 ease-out
+                     hover:shadow-xl hover:-translate-y-1
+                     disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
         >
-          <div
-            className={`
-              w-12 h-12 rounded-xl flex items-center justify-center
-              transition-all duration-300 group-hover:scale-105 group-hover:rotate-2 overflow-hidden shrink-0 shadow-sm
-              ${ICON_COLOR_CLASSES[i % ICON_COLOR_CLASSES.length]}
-            `}
-            dangerouslySetInnerHTML={{ __html: cat.icon?.svgCode ?? "" }}
-          />
+          {/* Background gradient effect */}
+          <div className="absolute inset-0 
+                          bg-gradient-to-br from-primary-500/5 to-secondary-500/5 
+                          opacity-0 group-hover:opacity-100 
+                          transition-opacity duration-300" />
 
-          <span className="text-xs font-bold text-[var(--foreground-muted)]
-                           group-hover:text-[var(--foreground)]
-                           transition-colors leading-tight text-center line-clamp-2">
-            {cat.title}
-          </span>
+          <div className="relative z-10 flex flex-col items-center gap-3">
+            <div
+              className={`
+                w-16 h-16 rounded-lg 
+                flex items-center justify-center
+                bg-gradient-to-br from-primary-100 to-secondary-100
+                group-hover:scale-110 group-hover:rotate-3
+                transition-transform duration-300
+                shadow-sm group-hover:shadow-md
+                overflow-hidden shrink-0
+                ${ICON_COLOR_CLASSES[i % ICON_COLOR_CLASSES.length]}
+              `}
+              dangerouslySetInnerHTML={{ __html: cat.icon?.svgCode ?? "" }}
+            />
+
+            <span className="text-xs font-bold text-foreground-muted
+                             group-hover:text-foreground
+                             transition-colors leading-tight text-center line-clamp-2">
+              {cat.title}
+            </span>
+          </div>
         </button>
       ))}
     </div>

@@ -99,7 +99,7 @@ export default function LocationSearch() {
                                   ${selectedCity === state ? "text-[var(--primary-600)] dark:text-[var(--accent-400)] font-bold bg-[var(--primary-50)]/30 dark:bg-[var(--primary-950)]/40" : "text-[var(--foreground-muted)]"}`}
                     >
                       <span>{state}</span>
-                      {selectedCity === state && <span className="text-xs text-[var(--primary-600)] dark:text-[var(--accent-400)]">✓</span>}
+                      {selectedCity === state && selectedCity !== null && <span className="text-xs text-[var(--primary-600)] dark:text-[var(--accent-400)]">✓</span>}
                     </button>
                   ))
                 )}

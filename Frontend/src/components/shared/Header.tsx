@@ -48,7 +48,7 @@ export default function Header() {
     () => [
       { label: "Home", href: "/" },
       { label: "Listings", href: "/posts?page=1&limit=15" },
-      { label: "Products", href: "/posts?listingType=store_product&page=1&limit=15" },
+      { label: "Stores", href: "/stores" },
       { label: "Post an Ad", href: "/posts/new" },
       { label: "Support", href: "/supports" },
       { label: "About", href: "/about" },

@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useGet } from '@/utils/hooks/useReactQueryHooks';
 import { Link } from '@heroui/react';
 export default function CartIcon() {
-    const { data: cart } = useGet<any>('/cart/me');
+    const { data: cart } = useGet<any>('/cart/me', undefined, {
+        axiosConfig: { silentAuth: true },
+    });
     const items = cart?.data?.items || []; const [isOpen, setIsOpen] = useState(false)
 
     return (

@@ -82,7 +82,7 @@ export default function ImageGallery({
 
             {/* THUMBNAILS */}
             {displayImages.length > 1 && (
-                <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1">
+                <div className="flex items-center gap-4 mt-4 overflow-x-auto pb-1">
                     {displayImages.map((img, idx) => (
                         <button
                             key={idx}

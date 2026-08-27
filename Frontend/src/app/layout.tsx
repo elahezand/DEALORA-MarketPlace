@@ -27,21 +27,16 @@ export default async function RootLayout({
         className={`${inter.variable} ${roboto.variable} ${playfairDisplay.variable}`}
       >
         <Toaster
-          position="top-center"
-          offset="5rem"
+          position="bottom-right"
           richColors
-          style={{ zIndex: 999999, pointerEvents: "auto" }}
+          style={{ zIndex: 10000, pointerEvents: "auto" }}
           toastOptions={{
             style: {
-              background: "var(--card-solid, #ffffff)",
-              color: "var(--foreground, #000000)",
-              border: "1px solid var(--border, #e5e7eb)",
               borderRadius: "var(--radius, 14px)",
               fontFamily: "var(--font-sans)",
               backdropFilter: "blur(20px)",
               boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-              minWidth: "360px",
-              maxWidth: "500px",
+              width: "clamp(280px, 90vw, 420px)",
               padding: "16px",
               fontSize: "15px",
               pointerEvents: "auto",

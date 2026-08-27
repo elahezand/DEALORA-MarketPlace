@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MotionDiv } from "./MotionWrapper";
 import Logo from "@/components/shared/Logo";
+
 const LoadingContext = createContext<{
   setIsLoading: (loading: boolean) => void;
 }>({
@@ -32,8 +33,15 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
           animate={{ x: 0 }}
           exit={{ x: "-100%" }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9999] flex items-center justify-center">
-          <Logo showText={true} className="w-100 h-100"/>
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9999] flex items-center justify-center"
+        >
+          <MotionDiv
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="flex items-center justify-center"
+          >
+            <Logo showText={false} className="w-100 h-100" />
+          </MotionDiv>
         </MotionDiv>
       )}
     </LoadingContext.Provider>

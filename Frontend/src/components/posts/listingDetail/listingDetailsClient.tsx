@@ -239,7 +239,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-stretch">
                 {/* LEFT COLUMN: Gallery & Trust Badges */}
                 <div className="flex flex-col gap-4 min-w-0 justify-between">
-                    <div className="card flex-1 overflow-hidden relative">
+                    <div className="card flex-1 overflow-hidden relative p-4">
                         <ImageGallery
                             images={data.images || []}
                             title={data.title || ""}

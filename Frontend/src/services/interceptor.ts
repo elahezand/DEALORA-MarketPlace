@@ -4,6 +4,7 @@ import { toast } from "sonner";
 declare module "axios" {
   export interface AxiosRequestConfig {
     skipRefresh?: boolean;
+    silentAuth?: boolean;
     _retry?: boolean;
   }
 }
@@ -45,7 +46,9 @@ api.interceptors.response.use(
 
         return api.request(originalRequest);
       } catch (refreshError) {
-        toast.error("Please LogIn");
+        if (!originalRequest.silentAuth) {
+          toast.error("Please LogIn");
+        }
 
         return Promise.reject(refreshError);
       }

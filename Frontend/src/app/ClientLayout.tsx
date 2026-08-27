@@ -24,16 +24,31 @@ export default function ClientLayout({
       <Header />
       <div className="page min-h-screen flex flex-col relative [overflow:clip] antialiased">
         <MotionDiv
-          className="absolute inset-0 pointer-events-none dark:opacity-25 [--bg-glow-1:var(--primary-100)] dark:[--bg-glow-1:var(--primary-600)] [--bg-glow-2:var(--accent-200)] dark:[--bg-glow-2:var(--accent-600)]"
+          className="
+      absolute inset-0
+      pointer-events-none
+      opacity-70
+      dark:opacity-30
+      [--bg-glow-1:var(--primary-800)]
+      [--bg-glow-2:var(--primary-50)]
+      dark:[--bg-glow-1:var(--primary-950)]
+      dark:[--bg-glow-2:var(--primary-900)]
+    "
           animate={{
             background: [
-              "radial-gradient(circle at 20% 20%, var(--bg-glow-1) 0%, transparent 60%)",
-              "radial-gradient(circle at 80% 80%, var(--bg-glow-2) 0%, transparent 60%)",
+              "radial-gradient(circle at 15% 15%, var(--bg-glow-1) 0%, transparent 55%)",
+              "radial-gradient(circle at 85% 85%, var(--bg-glow-2) 0%, transparent 55%)",
             ],
           }}
-          transition={{ duration: 15, repeat: Infinity, repeatType: "reverse" }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            repeatType: "reverse",
+            ease: "easeInOut",
+          }}
           aria-hidden
         />
+
         {children}
       </div>
 

@@ -12,7 +12,7 @@ const verifyPassword = (password, hashedPassword) => {
 const generateToken = async (data) => {
   const token = await sign({ ...data }, process.env.ACCESS_TOKEN, {
     algorithm: "HS256",
-    expiresIn: "60s"
+    expiresIn: "15m"
   })
 
   return token
@@ -39,21 +39,6 @@ const verifyRefreshToken = async (refreshToken) => {
   return verifiredfreshtoken
 }
 
-const getMe = async (req, res) => {
-  try {
-    const token = req.cookies?.refreshToken;
-    if (!token) return res.json(null);
-
-    const payloadToken = await verifyRefreshToken(token);
-    if (!payloadToken) return res.json(null);
-
-    const user = await UserModel.findOne({ email: payloadToken.email });
-    res.json(user);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
-  }
-};
 module.exports = {
   hashPassword,
   verifyPassword,
@@ -61,6 +46,5 @@ module.exports = {
   verifyToken,
   generateRefreshToken,
   verifyRefreshToken,
-  getMe
 };
 

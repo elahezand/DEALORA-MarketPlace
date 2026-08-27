@@ -293,10 +293,7 @@ const addToCart = async (userId, items) => {
   return cart;
 };
 
-/**
- * Removes a single item from the cart.
-
- */
+/*Removes a single item from the cart.*/
 const removeFromCart = async (userId, itemId) => {
   const cart = await Cart.findOne({ user: userId, status: "active" });
   if (!cart) throw { status: 404, message: "Cart not found" };

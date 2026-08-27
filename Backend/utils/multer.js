@@ -4,7 +4,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 
 const paths = {
-  coverImage: path.join(__dirname, "..", "public", "posts", "images"),
+  pics: path.join(__dirname, "..", "public", "posts", "images"),
   avatar: path.join(__dirname, "..", "public", "users", "avatars"),
 };
 

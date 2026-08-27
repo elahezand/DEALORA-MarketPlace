@@ -27,6 +27,14 @@ const verifyLimit = rateLimit({
     },
 });
 
+const refreshLimit = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 30,
+    message: {
+        message: "Too many refresh attempts.",
+    },
+});
+
 
 
 authRouter.post(
@@ -57,6 +65,7 @@ authRouter.post(
 
 authRouter.post(
     "/refresh",
+    refreshLimit,
     controller.refreshToken
 );
 

@@ -13,6 +13,7 @@ export const useStartRegistration = (onSuccess: () => void
         console.log(data);
                 
         toast.success("Code Sent Succcessfully:)");
+        
         onSuccess();        
       },
       onError: (error: ApiError) => {

@@ -64,6 +64,10 @@ exports.send = async (req, res, next) => {
     }
 
     const code = crypto.randomInt(10000, 99999);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[DEV OTP]", code);
+    }
+    
 
     try {
       await axios.post(
@@ -173,7 +177,7 @@ exports.verify = async (req, res, next) => {
 
     res.cookie("accessToken", accessToken, {
       ...cookieOptions,
-      maxAge: 1000 * 60 * 60,
+      maxAge: 1000 * 60 * 15,
     });
 
     res.cookie("refreshToken", refreshToken, {
@@ -286,7 +290,7 @@ exports.refreshToken = async (req, res, next) => {
 
     res.cookie("accessToken", newAccessToken, {
       ...cookieOptions,
-      maxAge: 1000 * 60 * 60
+      maxAge: 1000 * 60 * 15
     });
 
     res.cookie("refreshToken", newRefreshToken, {

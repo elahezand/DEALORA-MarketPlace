@@ -45,18 +45,18 @@ const PaymentFailedPage = () => {
           </div>
 
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            پرداخت ناموفق
+            Payment Failed
           </h1>
           <p className="text-muted-foreground mb-2">
-            متاسفانه پرداخت شما تایید نشد
+            Unfortunately, your payment could not be processed
           </p>
           <p className="text-sm text-muted-foreground mb-8">
-            لطفا دوباره تلاش کنید یا از روش پرداخت دیگری استفاده نمایید
+            Please try again or use a different payment method
           </p>
 
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-8">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              <strong>نکته:</strong> سفارش شما محفوظ است و می‌توانید دوباره پرداخت کنید
+              <strong>Note:</strong> Your items are saved and you can try paying again.
             </p>
           </div>
 
@@ -65,18 +65,18 @@ const PaymentFailedPage = () => {
               href="/cart"
               className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
-              بازگشت به سبد خرید
+              Return to Cart
             </Link>
             <Link
               href="/"
               className="flex-1 px-4 py-2 bg-muted text-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
             >
-              صفحه اصلی
+              Back to Home
             </Link>
           </div>
 
           <p className="text-xs text-muted-foreground mt-6">
-            در 5 ثانیه به سبد خرید منتقل می‌شوید
+            You will be redirected to the cart in 5 seconds
           </p>
         </div>
       </MotionDiv>

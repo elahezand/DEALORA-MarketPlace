@@ -1,21 +1,27 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { usePatch } from "@/utils/hooks/useReactQueryHooks";
-import { toast } from "sonner";
+import { useGet } from "@/utils/hooks/useReactQueryHooks";
 
-const ENDPOINT = "/stores";
+interface VerifiedStore {
+  _id: string;
+  name: string;
+  slug: string;
+  logo: string | null;
+  address?: { city?: string | null };
+  meta?: { ratings?: number; reviewsCount?: number };
+}
 
-export const useVerifyStore = () => {
-  const queryClient = useQueryClient();
+interface GetVerifiedStoresResponse {
+  success: boolean;
+  data: VerifiedStore[];
+}
 
-  return usePatch<
-    { success: boolean; message: string },
-    { id: string; isVerified: boolean }
-  >((d) => `${ENDPOINT}/${d.id}/verify`, {
-    onSuccess: (res) => {
-      toast.success(res.message);
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
-    },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Action failed"),
-  });
+export const useGetVerifiedStores = () => {
+  const { data, isLoading, isError } = useGet<GetVerifiedStoresResponse>(
+    "/stores/verified"
+  );
+
+  return {
+    stores: data?.data ?? [],
+    isLoading,
+    isError,
+  };
 };

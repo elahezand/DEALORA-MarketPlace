@@ -46,8 +46,17 @@ export default function Footer() {
       toast.success("Subscribed successfully! Welcome aboard.");
       setEmail("");
     },
-    onError: () => {
-      toast.error("Something went wrong, please try again.");
+    onError: (error: any) => {
+      const status = error?.response?.status;
+      const message = error?.response?.data?.message;
+
+      if (status === 409) {
+        toast.info(message || "This email is already subscribed.");
+        setEmail("");
+        return;
+      }
+
+      toast.error(message || "Something went wrong, please try again.");
     },
   });
 
@@ -93,7 +102,6 @@ export default function Footer() {
 
   return (
     <footer className="relative overflow-hidden pt-32 pb-12 bg-[var(--background-soft)]/40">
-        <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
       <div className="relative mx-auto max-w-7xl px-6">
         <NewsletterBanner email={email} setEmail={setEmail} handleSubscribe={handleSubscribe} isPending={isPending} />
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 pt-30 pb-12 md:gap-16">

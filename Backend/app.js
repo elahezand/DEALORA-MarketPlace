@@ -25,6 +25,7 @@ const orderRouter = require("./routes/order");
 const couponRouter = require("./routes/coupon");
 const favoriteRouter = require("./routes/wishList");
 const adminStatsRouter = require("./routes/AdminStats");
+const statsRouter = require("./routes/stats");
 const reportRouter = require("./routes/report");
 const chatRouter = require("./routes/chat");
 const withdrawalRouter = require("./routes/withdrawal");
@@ -109,6 +110,7 @@ const routes = [
   ["/coupon", couponRouter],
   ["/wishList", favoriteRouter],
   ["/admin/stats", adminStatsRouter],
+  ["/stats", statsRouter],
   ["/reports", reportRouter],
   ["/chat", chatRouter],
   ["/withdrawals", withdrawalRouter],

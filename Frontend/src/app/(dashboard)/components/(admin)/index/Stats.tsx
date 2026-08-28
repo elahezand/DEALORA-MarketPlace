@@ -6,7 +6,7 @@ import {
   HiOutlineShoppingBag,
   HiOutlineExclamationTriangle,
 } from "react-icons/hi2";
-import { useGetAdminStats } from "@/services/Stats/getAdminStats";
+import { useGetAdminStats } from "@/services/Stats/getPublicStats";
 
 const STAT_CARDS: {
   key: keyof NonNullable<ReturnType<typeof useGetAdminStats>["stats"]>;

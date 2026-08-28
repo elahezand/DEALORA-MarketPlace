@@ -339,7 +339,29 @@ const updateCart = async (userId, data) => {
   let couponDoc = null;
   if (data.couponCode) {
     couponDoc = await Coupon.findOne({ code: data.couponCode.toUpperCase() });
-    if (!couponDoc) throw { status: 400, message: "NOT FOUND" };
+    if (!couponDoc) {
+      throw { status: 404, message: "Coupon not found" };
+    }
+
+    // BUGFIX: previously any coupon found by code was accepted and attached
+    // to the cart even if inactive/expired/not-started/usage-limit-reached.
+    // calculateCartTotals() would then quietly compute a $0 discount for it,
+    // so the user got no error and no discount, looking exactly like
+    // "applying a coupon does nothing". We now validate it up-front and
+    // return a clear error, matching services/coupon.js's validateCoupon().
+    const now = new Date();
+    if (!couponDoc.isActive) {
+      throw { status: 400, message: "Coupon is inactive" };
+    }
+    if (couponDoc.startsAt && couponDoc.startsAt > now) {
+      throw { status: 400, message: "Coupon has not started yet" };
+    }
+    if (couponDoc.expiresAt && couponDoc.expiresAt < now) {
+      throw { status: 400, message: "Coupon has expired" };
+    }
+    if (couponDoc.usageLimit !== null && couponDoc.usedCount >= couponDoc.usageLimit) {
+      throw { status: 400, message: "Coupon usage limit reached" };
+    }
   } else if (cart.coupon?.couponRef) {
     couponDoc = await Coupon.findById(cart.coupon.couponRef);
   }
@@ -349,6 +371,19 @@ const updateCart = async (userId, data) => {
     couponDoc,
     data.shippingCost ?? cart.pricing?.shippingCost ?? 0
   );
+
+  // BUGFIX: unlike addToCart(), this never checked whether
+  // calculateCartTotals() silently dropped any items (e.g. an offer that's
+  // no longer accepted, or gone out of stock in the meantime). That made
+  // cart items disappear with zero feedback whenever this endpoint was hit
+  // (quantity changes AND coupon apply both call updateCart()).
+  if (totals.skippedItems.length > 0) {
+    throw {
+      status: 400,
+      message: "Some items in your cart are no longer available and could not be kept.",
+      details: totals.skippedItems,
+    };
+  }
 
   cart.items = totals.items;
   cart.pricing = totals.pricing;

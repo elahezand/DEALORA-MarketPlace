@@ -1,6 +1,22 @@
 const { z } = require("zod");
 const citiesByState = require("../data/cities.json");
 
+// BUGFIX: cities.json stores city names in UPPERCASE (e.g. "BIRMINGHAM"),
+// some with stray leading/trailing whitespace (e.g. " BRANCHVILLE ").
+// The old code lower-cased the incoming city and did a plain array
+// `.includes()` against that UPPERCASE list, so the check *always*
+// failed - the city/state combo was rejected even when it was correct.
+// We now build normalized (trimmed + uppercased) lookup sets once,
+// and also allow the state name to be matched case-insensitively.
+const normalize = (s) => String(s).trim().toUpperCase();
+
+const citySetByStateKey = Object.fromEntries(
+  Object.entries(citiesByState).map(([state, cities]) => [
+    normalize(state),
+    new Set(cities.map(normalize)),
+  ])
+);
+
 const addressSchema = z.object({
   name: z.string().min(1),
   postalCode: z.string().min(4).max(20),
@@ -10,9 +26,12 @@ const addressSchema = z.object({
   }),
   address: z.string().min(5),
   state: z.string().min(1),
-  city: z.string().min(1).transform(s => String(s).toLowerCase()),
+  city: z.string().min(1),
 }).refine(
-  data => (citiesByState[data.state] || []).includes(data.city),
+  (data) => {
+    const cities = citySetByStateKey[normalize(data.state)];
+    return !!cities && cities.has(normalize(data.city));
+  },
   { path: ["city"], message: "city is not valid for the given state" }
 );
 

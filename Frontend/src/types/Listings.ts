@@ -69,14 +69,16 @@ export interface ListingTypeResponse {
   data: ListingProps;
 }
 
-export interface ListingsTypeResponse {
+export default interface ListingsTypeResponse{
+  success: boolean;
+  data: {
     data: ListingProps[];
     pagination?: {
       hasMore: boolean;
       limit: number;
       nextCursor: string | null;
-    
-  }
+    };
+  };
 }
 export interface InfiniteListingsSectionProps {
     initialData: ListingProps[];

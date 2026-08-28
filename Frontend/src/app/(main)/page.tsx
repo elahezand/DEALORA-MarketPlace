@@ -6,7 +6,7 @@ import CategoriesSection from "@/components/index/categorySection";
 import ListingsCarousel from "@/components/index/ListingCarousel";
 import PopularCities from "@/components/index/popularCities";
 import { useServerData } from "@/utils/hooks/useServerData";
-import { ListingsTypeResponse } from "@/types/Listings";
+import ListingsTypeResponse  from "@/types/Listings";
 
 export default async function Page() {
   const data = await useServerData<ListingsTypeResponse>(
@@ -15,10 +15,9 @@ export default async function Page() {
     60
   );
 
-  const allListings = data?.data || [];
+  const allListings = data?.data.data || [];
 
   const storeProducts = allListings.filter((item: any) => item.listingType === "store_product");
-
   const userAds = allListings.filter((item: any) => item.listingType === "user_ad");
 
   return (

@@ -11,7 +11,7 @@ export default async function AdminReportsPage() {
     <ReportsClient
    initialData={
         initialReports
-          ? { pages: [initialReports], pageParams: [1] }
+          ? { pages: [initialReports], pageParams: [null] }
           : undefined
       }    />
   );

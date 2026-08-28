@@ -1,5 +1,5 @@
 import { useAuthServerData } from "@/utils/hooks/useServerData";
-import { ListingsTypeResponse } from "@/types/Listings";
+import ListingsTypeResponse from "@/types/Listings";
 import ListingsPage from "../../../components/(user)/listings/listingsPage";
 
 export default async function ListingsPageWrapper() {

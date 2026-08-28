@@ -8,6 +8,6 @@ export default async function AdminCommentsPage() {
   );
 
   return <CommentsClient initialData={initialComments ?
-    { pages: [initialComments], pageParams: [1] }
+    { pages: [initialComments], pageParams: [null] }
     : undefined} />;
 }

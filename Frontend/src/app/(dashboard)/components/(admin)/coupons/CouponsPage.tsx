@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { HiOutlineTicket, HiOutlinePlus, HiOutlinePencil } from "react-icons/hi2";
+import { toast } from "sonner";
+import { HiOutlineTicket, HiOutlinePlus } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
@@ -114,12 +115,20 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
   }
 
   function handleDelete(c: Coupon) {
-    if (!confirm(`Delete coupon "${c.code}"?`)) return;
-    setActioningId(c._id);
-    removeCoupon(
-      { id: c._id },
-      { onSettled: () => setActioningId(null) }
-    );
+    toast.warning(`Delete coupon "${c.code}"?`, {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: () => {
+          setActioningId(c._id);
+          removeCoupon({ id: c._id }, { onSettled: () => setActioningId(null) });
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
   }
 
   const isSaving = isCreating || isUpdating;
@@ -188,8 +197,12 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
                     >
                       {c.isActive ? "Deactivate" : "Activate"}
                     </button>
-                    <button type="button" onClick={() => openEdit(c)} className="p-2 hover:bg-[var(--background-soft)] rounded-lg transition-colors" title="Edit">
-                      <HiOutlinePencil className="w-4 h-4 text-[var(--foreground-muted)]" />
+                    <button
+                      type="button"
+                      onClick={() => openEdit(c)}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--primary-500)]/10 hover:text-[var(--primary-500)] hover:border-[var(--primary-500)]/30 transition-colors"
+                    >
+                      Edit
                     </button>
                     <button
                       type="button"

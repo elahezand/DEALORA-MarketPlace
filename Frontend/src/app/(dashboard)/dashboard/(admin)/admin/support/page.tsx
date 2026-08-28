@@ -11,7 +11,7 @@ export default async function AdminSupportPage() {
     <SupportClient
       initialData={
         initialContacts
-          ? { pages: [initialContacts], pageParams: [1] }
+          ? { pages: [initialContacts], pageParams: [null] }
           : undefined
       }
     />

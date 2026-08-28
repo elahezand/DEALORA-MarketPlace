@@ -11,7 +11,7 @@ export default async function AdminTransactionsPage() {
     <TransactionsClient
    initialData={
         initialOrders
-          ? { pages: [initialOrders], pageParams: [1] }
+          ? { pages: [initialOrders], pageParams: [null] }
           : undefined
       }    />
   );

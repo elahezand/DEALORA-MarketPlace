@@ -11,7 +11,7 @@ export default async function AdminUsersPage() {
     <UsersClient
       initialData={
         initialUsers
-          ? { pages: [initialUsers], pageParams: [1] }
+          ? { pages: [initialUsers], pageParams: [null] }
           : undefined
       } />
   );

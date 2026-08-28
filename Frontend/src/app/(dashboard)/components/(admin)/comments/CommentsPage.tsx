@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
@@ -85,9 +86,20 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
   }
 
   function handleDelete(c: AdminComment) {
-    if (!confirm("Delete this comment permanently from view?")) return;
-    setActioningId(c._id);
-    removeComment({ id: c._id }, { onSettled: () => setActioningId(null) });
+    toast.warning("Delete this comment permanently from view?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: () => {
+          setActioningId(c._id);
+          removeComment({ id: c._id }, { onSettled: () => setActioningId(null) });
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
   }
 
   return (
@@ -167,7 +179,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
                         type="button"
                         disabled={busy}
                         onClick={() => handleApprove(c)}
-                        className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[var(--success-500)]/30 text-[var(--success-500)] hover:bg-[var(--success-bg)] transition-colors disabled:opacity-40"
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--success-500)]/30 text-[var(--success-500)] hover:bg-[var(--success-bg)] transition-colors disabled:opacity-40"
                       >
                         Approve
                       </button>
@@ -177,7 +189,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
                         type="button"
                         disabled={busy}
                         onClick={() => openReject(c)}
-                        className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[var(--warning-500)]/30 text-[var(--warning-500)] hover:bg-[var(--warning-bg)] transition-colors disabled:opacity-40"
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--warning-500)]/30 text-[var(--warning-500)] hover:bg-[var(--warning-bg)] transition-colors disabled:opacity-40"
                       >
                         Reject
                       </button>
@@ -187,7 +199,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
                         type="button"
                         disabled={busy}
                         onClick={() => handleMarkSpam(c)}
-                        className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors disabled:opacity-40"
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors disabled:opacity-40"
                       >
                         Spam
                       </button>
@@ -196,7 +208,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
                       type="button"
                       disabled={busy}
                       onClick={() => handleDelete(c)}
-                      className="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-40"
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-40"
                     >
                       Delete
                     </button>

@@ -11,7 +11,7 @@ export default async function AdminWithdrawalsPage() {
     <WithdrawalsClient
        initialData={
         initialWithdrawals
-          ? { pages: [initialWithdrawals], pageParams: [1] }
+          ? { pages: [initialWithdrawals], pageParams: [null] }
           : undefined
       }
     />

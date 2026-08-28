@@ -67,7 +67,7 @@ export interface CommentAuthor {
   profilePicture?: string;
 }
 
-export interface CommentItem {
+export interface CommentItemType {
   _id: string;
   user: CommentAuthor;
   productId: string;
@@ -79,11 +79,11 @@ export interface CommentItem {
   cons?: string[];
   recommendation?: "recommended" | "not_recommended" | "no_idea";
   createdAt: string;
-  replies: CommentItem[];
+  replies: CommentItemType[];
 }
 
 export interface CommentsResponse {
-  data: CommentItem[];
+  data: CommentItemType[];
   pagination?: {
     hasMore: boolean;
     limit: number;

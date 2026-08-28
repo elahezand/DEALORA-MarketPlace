@@ -11,7 +11,7 @@ export default async function AdminStoresPage() {
     <StoresClient
    initialData={
         initialStores
-          ? { pages: [initialStores], pageParams: [1] }
+          ? { pages: [initialStores], pageParams: [null] }
           : undefined
       }    />
   );

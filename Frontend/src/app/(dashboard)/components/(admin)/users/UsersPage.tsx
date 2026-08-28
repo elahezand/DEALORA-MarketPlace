@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { HiOutlineUsers } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
@@ -50,13 +51,17 @@ export default function UsersClient({ initialData }: UsersClientProps) {
   };
 
   const handleDelete = (user: IUser) => {
-    if (
-      !confirm(
-        `Delete user "${user.username ?? user.phone}"? This cannot be undone.`
-      )
-    )
-      return;
-    handleAction(user._id, removeUser);
+    toast.warning(`Delete user "${user.username ?? user.phone}"?`, {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: () => handleAction(user._id, removeUser),
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
   };
 
   return (

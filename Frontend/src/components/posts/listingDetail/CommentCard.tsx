@@ -1,9 +1,8 @@
 "use client";
 
 import { Star } from "lucide-react";
-import { CommentItem } from "@/services/Comments/useGetComments";
 import { timeAgo } from "@/utils/timeAgo";
-
+import { CommentItemType } from "@/types/CommetTypes";
 function StarRow({ value, size = 14 }: { value: number; size?: number }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -18,7 +17,7 @@ function StarRow({ value, size = 14 }: { value: number; size?: number }) {
   );
 }
 
-export default function CommentCard({ comment }: { comment: CommentItem }) {    
+export default function CommentCard({ comment }: { comment: CommentItemType }) {    
   const getUserName = (user: any) => {
     if (!user) return "User";
     if (typeof user === "string") return "User";

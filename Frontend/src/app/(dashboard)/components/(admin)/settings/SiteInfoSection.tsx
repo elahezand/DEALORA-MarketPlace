@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { HiOutlineGlobeAlt } from "react-icons/hi2";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import { inputClass } from "../shared/AdminFormModal";

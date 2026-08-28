@@ -10,7 +10,7 @@ export default async function AdminNewsletterPage() {
   return (
     <NewsletterClient
      initialData={initialSubscribers ?
-    { pages: [initialSubscribers], pageParams: [1] }
+    { pages: [initialSubscribers], pageParams: [null] }
     : undefined} />
     
   );

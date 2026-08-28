@@ -9,7 +9,7 @@ export default async function AdminCouponsPage() {
 
   return (
     <CouponsClient
-      initialData={initialCoupons ? { pages: [initialCoupons], pageParams: [1] }
+      initialData={initialCoupons ? { pages: [initialCoupons], pageParams: [null] }
         : undefined}
     />
   );

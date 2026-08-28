@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { HiOutlineRectangleGroup, HiOutlinePlus, HiOutlinePencil } from "react-icons/hi2";
+import { toast } from "sonner";
+import { HiOutlineRectangleGroup, HiOutlinePlus } from "react-icons/hi2";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
@@ -94,9 +95,20 @@ export default function CategoriesClient({ initialData }: CategoriesClientProps)
   }
 
   function handleDelete(cat: AdminCategory) {
-    if (!confirm(`Delete category "${cat.title}"? This cannot be undone.`)) return;
-    setActioningId(cat._id);
-    removeCategory({ id: cat._id });
+    toast.warning(`Delete category "${cat.title}"?`, {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: () => {
+          setActioningId(cat._id);
+          removeCategory({ id: cat._id });
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
   }
 
   const isSaving = isCreating || isUpdating;
@@ -156,10 +168,9 @@ export default function CategoriesClient({ initialData }: CategoriesClientProps)
                     <button
                       type="button"
                       onClick={() => openEdit(cat)}
-                      className="p-2 hover:bg-[var(--background-soft)] rounded-lg transition-colors"
-                      title="Edit"
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--primary-500)]/10 hover:text-[var(--primary-500)] hover:border-[var(--primary-500)]/30 transition-colors"
                     >
-                      <HiOutlinePencil className="w-4 h-4 text-[var(--foreground-muted)]" />
+                      Edit
                     </button>
                     <button
                       type="button"

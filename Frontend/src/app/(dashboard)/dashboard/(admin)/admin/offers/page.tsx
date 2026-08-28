@@ -11,7 +11,7 @@ export default async function AdminOffersPage() {
     <OffersClient
    initialData={
         initialOffers
-          ? { pages: [initialOffers], pageParams: [1] }
+          ? { pages: [initialOffers], pageParams: [null] }
           : undefined
       }    />
   );

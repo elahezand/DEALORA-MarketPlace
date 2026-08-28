@@ -1,11 +1,11 @@
 import { toast } from "sonner";
 
-export const showToast = (message, type = "default") => {
+export const showToast = (message:any, type = "default") => {
     if (type === "success") toast.success(message);
     else if (type === "destructive") toast.error(message);
     else toast(message);
 };
-export const manageError = (error) => {
+export const manageError = (error:any) => {
     let message = null
     if (error === 400) message = "Please fill out required fields correctly.";
     else if (error === 401 || error === 403) message = "Unauthorized request.";
@@ -18,7 +18,7 @@ export const manageError = (error) => {
 
     toast.error(message);
 };
-export async function paginate(Model, searchParams, filter = {}, populate = null, useCursor = false, route = false, sortOption = { _id: -1 }) {
+export async function paginate(Model:any, searchParams:any, filter = {}, populate = null, useCursor = false, route = false, sortOption = { _id: -1 }) {
     let limit, page, cursor;
 
     if (route) {

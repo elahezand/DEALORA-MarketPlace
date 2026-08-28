@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { HiOutlineLifebuoy } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
@@ -71,12 +71,20 @@ export default function SupportClient({ initialData }: SupportClientProps) {
   }
 
   function handleDelete(msg: ContactMessage) {
-    if (!confirm(`Delete message from "${msg.name}"?`)) return;
-    setActioningId(msg._id);
-    removeMsg(
-      { id: msg._id },
-      { onSettled: () => setActioningId(null) }
-    );
+    toast.warning(`Delete message from "${msg.name}"?`, {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: () => {
+          setActioningId(msg._id);
+          removeMsg({ id: msg._id }, { onSettled: () => setActioningId(null) });
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
   }
 
   return (

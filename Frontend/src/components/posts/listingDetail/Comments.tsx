@@ -10,8 +10,7 @@ import SkeletonComments from "@/components/skeleton/SkeletonComments";
 import { usePostComment } from "@/services/Comments/usePostComment";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useGetProfile } from "@/services/Profile/getProfile";
-import { CommentItem } from "@/services/Comments/useGetComments";
-
+import { CommentItemType } from "@/types/CommetTypes";
 const AuthModal = dynamic(() => import("../../modals/AuthModal"), { ssr: false });
 
 interface CommentsProps {
@@ -32,7 +31,7 @@ export default function Comments({ productId, initialComments, initialPagination
   } = useInfiniteGet<any>(endpoint, { page: 1 }, {
     initialData: initialComments ? {
       pages: [{ data: initialComments, pagination: initialPagination }],
-      pageParams: [1],
+      pageParams: [null],
     } : undefined
   });
 
@@ -48,7 +47,7 @@ export default function Comments({ productId, initialComments, initialPagination
     ? data.pages.flatMap((page: any) => page?.data?.data ?? page?.data ?? page)
     : [];
 
-  const comments: CommentItem[] = Array.isArray(rawList) ? rawList : [];
+  const comments: CommentItemType[] = Array.isArray(rawList) ? rawList : [];
 
 const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();

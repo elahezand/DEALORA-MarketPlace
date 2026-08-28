@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { HiOutlineBell, HiOutlinePlus, HiOutlineTrash, HiOutlineCheckCircle } from "react-icons/hi2";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import { useGetProfile } from "@/services/Profile/getProfile";
@@ -56,12 +57,20 @@ export default function NotificationsClient({ initialData }: NotificationsClient
   }
 
   function handleDelete(n: AdminNotification) {
-    if (!confirm("Delete this note?")) return;
-    setActioningId(n._id);
-    remove(
-      { id: n._id },
-      { onSettled: () => setActioningId(null) }
-    );
+    toast.warning("Delete this note?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: () => {
+          setActioningId(n._id);
+          remove({ id: n._id }, { onSettled: () => setActioningId(null) });
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
   }
 
   return (

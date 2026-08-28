@@ -11,7 +11,7 @@ export default async function Page() {
     <ListingsModerationClient
       initialData={
         initialListings
-          ? { pages: [initialListings], pageParams: [1] }
+          ? { pages: [initialListings], pageParams: [null] }
           : undefined
       }
     />

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { HiChevronRight } from "react-icons/hi";
 import { HiOutlineHeart, HiOutlineEye, HiOutlineTrash } from "react-icons/hi2";
 import qs from "qs";
@@ -29,8 +30,6 @@ export default function InfiniteFavoritesSection({
   initialPagination,
   queryString = "",
 }: InfiniteFavoritesSectionProps) {
-  console.log(initialData);
-  
   const parsedParams = qs.parse(queryString);
   const {
     data,
@@ -53,6 +52,10 @@ export default function InfiniteFavoritesSection({
     {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/wishList/my"] });
+        toast.success("Removed from favorites.");
+      },
+      onError: () => {
+        toast.error("Failed to remove from favorites.");
       },
     }
   );
@@ -63,9 +66,17 @@ export default function InfiniteFavoritesSection({
 
   const handleRemove = (productId: string) => {
     if (!productId) return;
-    if (!confirm("Are you sure you want to remove this from your favorites?"))
-      return;
-    deleteFavorite({ productId });
+    toast.warning("Remove this from your favorites?", {
+      description: "You can always add it back later.",
+      action: {
+        label: "Remove",
+        onClick: () => deleteFavorite({ productId }),
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
   };
 
   return (

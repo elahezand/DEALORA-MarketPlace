@@ -3,7 +3,7 @@ import qs from "qs";
 import { Suspense } from "react";
 import ClientWrapper from "@/components/posts/clientSection/clientWrapper";
 import SmartSearchWrapper from "@/components/posts/smartSearch/smartSearchWrapper";
-import { ListingsTypeResponse } from "@/types/Listings";
+import ListingsTypeResponse  from "@/types/Listings";
 import InfiniteItemsSection from "@/components/posts/infiniteItemsSection";
 import ListingTypeTabs from "@/components/posts/listingTabs";
 

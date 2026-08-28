@@ -4,7 +4,7 @@ import Orders from "@/app/(dashboard)/components/(user)/index/RecentOrders";
 import Listings from "@/app/(dashboard)/components/(user)/index/RecentListings";
 import ProfileBanner from "@/app/(dashboard)/components/(user)/index/ProfileBanner";
 import { OrdersResponse } from "@/types/Order";
-import { ListingsTypeResponse } from "@/types/Listings";
+import ListingsTypeResponse from "@/types/Listings";
 import { useAuthServerData } from "@/utils/hooks/useServerData";
 
 interface FavoritesCountResponse {

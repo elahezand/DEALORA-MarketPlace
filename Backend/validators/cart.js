@@ -43,7 +43,16 @@ const cartBaseZodSchema = z.object({
 });
 
 const createCartSchema = cartBaseZodSchema;
-const updateCartSchema = cartBaseZodSchema.partial();
+
+// BUGFIX: `couponCode` (used by the "apply coupon" flow, PATCH /cart/me)
+// was never part of cartBaseZodSchema, so zod silently stripped it from
+// the request body and the coupon was never applied. It is added here
+// explicitly, and `shippingCost` is added too since updateCart() also
+// reads it directly from the parsed body.
+const updateCartSchema = cartBaseZodSchema.partial().extend({
+  couponCode: z.string().trim().min(1).optional(),
+  shippingCost: z.number().nonnegative().optional(),
+});
 
 
 const addToCartSchema = z.object({

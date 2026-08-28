@@ -5,7 +5,12 @@ const { authUser, authSeller, authAdmin } = require("../middlewares/authMiddlewa
 const validate = require("../middlewares/validate")
 const validateObjectIdParam = require("../middlewares/objectId")
 const { storeSchema, storeUpdateSchema } = require("../validators/seller")
+const cacheMiddleware = require("../middlewares/cache");
 
+/*  PUBLIC  */
+storeRouter.get("/verified",
+    cacheMiddleware(300),
+    controller.getVerified);
 
 storeRouter.get("/",
     authUser,

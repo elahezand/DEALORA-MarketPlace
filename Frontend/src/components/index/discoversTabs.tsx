@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ListingsCarousel from "./ListingCarousel";
 import SectionHeader from "./sectionHeader";
+
 type TabKey = "bestSellers" | "trending" | "freeShipping" | "brandNew";
 
 const TABS: { key: TabKey; label: string; icon: string }[] = [
@@ -18,7 +19,6 @@ const TAB_HREFS: Record<TabKey, string> = {
   freeShipping: "/posts?shipping=free",
   brandNew: "/posts?condition=new",
 };
-
 
 export default function DiscoverTabs({ listings }: { listings: any[] }) {
   const [active, setActive] = useState<TabKey>("bestSellers");
@@ -47,6 +47,9 @@ export default function DiscoverTabs({ listings }: { listings: any[] }) {
         eyebrow="Explore More"
         title="Discover"
         subtitle="Different ways to browse what's available right now."
+        linkHref={TAB_HREFS[active]}
+        linkLabel="View More"
+        itemCount={activeList.length}
       />
 
       {/* TAB SWITCHER */}
@@ -64,10 +67,9 @@ export default function DiscoverTabs({ listings }: { listings: any[] }) {
                 px-4 py-2 rounded-full text-xs font-bold
                 border transition-all
                 flex items-center gap-1.5
-                ${
-                  isActive
-                    ? "bg-primary-600 dark:bg-primary-500 text-white border-primary-600 dark:border-primary-500"
-                    : "bg-[var(--card-solid)] border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
+                ${isActive
+                  ? "bg-primary-600 dark:bg-primary-500 text-white border-primary-600 dark:border-primary-500"
+                  : "bg-[var(--card-solid)] border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
                 }
               `}
             >

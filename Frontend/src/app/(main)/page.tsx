@@ -15,6 +15,7 @@ import Section from "@/components/index/section";
 import SectionHeader from "@/components/index/sectionHeader";
 import HeroLiveBadge from "@/components/index/heroLiveBadge";
 import VerifiedStores from "@/components/index/verifiedStores";
+
 export default async function Page() {
   const data = await useServerData<any>(
     "/listings?limit=20",
@@ -38,9 +39,9 @@ export default async function Page() {
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-primary-500/[0.07] dark:bg-primary-500/[0.10] blur-[100px]" />
         </div>
- 
+
         <div className="w-full max-w-4xl mx-auto">
- 
+
           <MotionDiv
             initial={{ y: -15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -52,7 +53,7 @@ export default async function Page() {
           >
             {/* HERO BADGE — live from /stats */}
             <HeroLiveBadge />
- 
+
             {/* HERO TITLE */}
             <h1
               className="
@@ -76,7 +77,7 @@ export default async function Page() {
                 Used
               </UnderlineWord>
             </h1>
- 
+
             {/* SUBTITLE */}
             <p
               className="
@@ -91,10 +92,10 @@ export default async function Page() {
               The smartest way to clear space and find incredible deals
               in your neighborhood.
             </p>
- 
+
           </MotionDiv>
- 
- 
+
+
           {/* SEARCH */}
           <MotionDiv
             initial={{ y: 20, opacity: 0 }}
@@ -121,17 +122,15 @@ export default async function Page() {
           >
             <LocationSearch />
           </MotionDiv>
- 
           <PopularCities />
- 
         </div>
       </section>
-      {/* ── DISCOVERY BAND (soft tone): Stats + Categories ── */}
+      {/* ── DISCOVERY BAND: Stats + Categories ── */}
       <div className="bg-[var(--background-soft)] border-y border-[var(--border)]">
         <Section tone="soft" maxWidth="5xl">
           <StatsBar />
         </Section>
- 
+
         <Section tone="soft" maxWidth="5xl">
           <SectionHeader
             eyebrow="Browse"
@@ -145,7 +144,7 @@ export default async function Page() {
           </Suspense>
         </Section>
       </div>
- 
+
       {/* ── OFFICIAL STORES (base tone) ── */}
       <Section tone="base">
         <SectionHeader
@@ -155,23 +154,24 @@ export default async function Page() {
           subtitle="Verified businesses with official warranty and secure shipping."
           linkHref="/posts?listingType=store_product"
           linkLabel="View All Stores"
+          itemCount={storeProducts.length}
         />
         <Suspense fallback={<CarouselSkeleton />}>
           <ListingsCarousel listings={storeProducts} />
         </Suspense>
- 
+
         {/* VERIFIED STORES — compact clickable entry point to /stores */}
         <div className="mt-6">
           <VerifiedStores />
         </div>
       </Section>
- 
+
       {/* ── DISCOVER TABS (soft tone): Best Sellers / Trending / Free Shipping / Brand New ── */}
       <Section tone="soft">
         <DiscoverTabs listings={allListings} />
       </Section>
- 
-      {/* ── CLASSIFIED ADS (base tone) ── */}
+
+      {/* ── CLASSIFIED ADS*/}
       <Section tone="base">
         <SectionHeader
           eyebrow="Peer to Peer"
@@ -180,18 +180,19 @@ export default async function Page() {
           subtitle="Direct peer-to-peer deals from community members near you."
           linkHref="/posts?listingType=user_ad"
           linkLabel="View Feed"
+          itemCount={userAds.length}
         />
         <Suspense fallback={<CarouselSkeleton />}>
           <ListingsCarousel listings={userAds} />
         </Suspense>
       </Section>
- 
-      {/* ── HOW IT WORKS (soft tone) ── */}
+
+      {/* ── HOW IT WORKS */}
       <Section tone="soft">
         <HowItWorks />
       </Section>
- 
-      {/* ── PREMIUM SELL CTA (brand-tinted card, tone-independent) ── */}
+
+      {/* ── PREMIUM SELL CTA── */}
       <Section tone="base">
         <div className="rounded-2xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/40 p-8 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
           <div className="flex flex-col gap-3 text-center md:text-left z-10 max-w-xl">
@@ -215,17 +216,17 @@ export default async function Page() {
           </Link>
         </div>
       </Section>
- 
-      {/* ── APP DOWNLOAD (soft tone, quiet close) ── */}
+
+      {/* ── APP DOWNLOAD ── */}
       <Section tone="soft">
         <AppDownloadBanner />
       </Section>
     </div>
   );
 }
- 
+
 // ── SKELETONS ──
- 
+
 function CategoriesSkeleton() {
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
@@ -238,7 +239,7 @@ function CategoriesSkeleton() {
     </div>
   );
 }
- 
+
 function CarouselSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 w-full">
@@ -252,4 +253,3 @@ function CarouselSkeleton() {
     </div>
   );
 }
- 

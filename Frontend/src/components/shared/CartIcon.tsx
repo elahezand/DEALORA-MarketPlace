@@ -7,7 +7,8 @@ export default function CartIcon() {
     const { data: cart } = useGet<any>('/cart/me', undefined, {
         axiosConfig: { silentAuth: true },
     });
-    const items = cart?.data?.items || []; const [isOpen, setIsOpen] = useState(false)
+    const items = cart?.data?.items || [];
+    const [isOpen, setIsOpen] = useState(false)
 
     return (
         <>

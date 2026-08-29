@@ -1,5 +1,4 @@
 "use client";
-
 import React from "react";
 import { useFormikContext } from "formik";
 import { Skeleton } from "@heroui/react";
@@ -12,10 +11,18 @@ export default function StepProductSpecAndVariants({
   categoryId: string;
 }) {
   const { values, setFieldValue } = useFormikContext<any>();
-  const { data: res, isLoading } = useGet<ISingleCategoryResponse>(`/categories/${categoryId}`);
+  const { data: res, isLoading } = useGet<ISingleCategoryResponse>(
+    `/categories/${categoryId}`,
+    undefined,
+    { enabled: !!categoryId } 
+  );
 
   const category = res?.data;
-  const filters = category?.filters ?? [];
+  const filters = (category?.filters ?? []).filter(
+    (f: any) =>
+      !f.slug?.toLowerCase().includes("price") &&
+      !f.name?.toLowerCase().includes("price")
+  );
   const specs = values?.snapshot?.specs ?? {};
 
   const updateSpec = (key: string, value: any) => {

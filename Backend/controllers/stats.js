@@ -8,3 +8,12 @@ exports.get = async (req, res, next) => {
     next(e);
   }
 };
+
+exports.get = async (req, res, next) => {
+  try {
+    const data = await service.getAdminStats();
+    res.status(200).json({ success: true, data });
+  } catch (e) {
+    next(e);
+  }
+};

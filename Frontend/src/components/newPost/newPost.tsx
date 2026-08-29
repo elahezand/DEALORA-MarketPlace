@@ -134,7 +134,7 @@ export default function NewPost({ data, isLoading }: any) {
                     mutate(payload);
                 }}
             >
-                {({ values, setFieldValue, validateForm, errors }) => (
+                {({ values, setFieldValue, validateForm, submitForm, errors }) => (
                     <Form className="flex flex-col gap-8 relative z-10 text-left">
 
                         {/* STEP 0: CATEGORIES */}
@@ -292,7 +292,6 @@ export default function NewPost({ data, isLoading }: any) {
                                 <div className="rounded-xl border border-[var(--border)] bg-[var(--background-soft)] p-6 flex items-center gap-4">
                                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-[var(--card)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
                                         {values.snapshot.images?.[0] ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
                                             <img
                                                 src={values.snapshot.images[0]}
                                                 alt="Main product"
@@ -363,7 +362,6 @@ export default function NewPost({ data, isLoading }: any) {
                                         </p>
                                         <div className="grid grid-cols-4 gap-3">
                                             {values.snapshot.images.map((img, idx) => (
-                                                // eslint-disable-next-line @next/next/no-img-element
                                                 <img
                                                     key={idx}
                                                     src={img}
@@ -399,7 +397,8 @@ export default function NewPost({ data, isLoading }: any) {
                                 </button>
                             ) : (
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={() => submitForm()}
                                     disabled={isPending}
                                     className="px-8 h-12 text-sm font-bold text-white flex items-center gap-2 rounded-xl shadow-md transition duration-200 hover:opacity-95 hover:shadow-lg active:scale-[0.97] disabled:opacity-50"
                                     style={{ background: "var(--gradient)" }}

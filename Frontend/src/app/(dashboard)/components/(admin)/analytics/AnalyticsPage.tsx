@@ -7,7 +7,7 @@ import {
   HiOutlineExclamationTriangle,
   HiOutlineChartBar,
 } from "react-icons/hi2";
-import { useGetAdminStats } from "@/services/Stats/getPublicStats";
+import { useGetAdminStats } from "@/services/Stats/getStats";
 export default function AnalyticsPage() {
   const { stats, isLoading, isError } = useGetAdminStats();
 

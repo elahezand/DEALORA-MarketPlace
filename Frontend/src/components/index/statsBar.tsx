@@ -1,7 +1,7 @@
 "use client";
 
 import { MotionDiv } from "../../utils/providers/MotionWrapper";
-import { useGetPublicStats } from "@/services/Stats/getPublicStats";
+import { useGetPublicStats } from "@/services/Stats/getStats";
 const LABELS = [
   { key: "activeListings", label: "Active Listings" },
   { key: "activeUsers", label: "Active Users" },

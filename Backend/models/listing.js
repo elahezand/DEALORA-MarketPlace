@@ -6,6 +6,8 @@ const LocationSchema = new Schema(
   {
     state: { type: String, trim: true, required: true },
     city: { type: String, trim: true, required: true },
+    lat: { type: Number },
+    lng: { type: Number },
   },
   { _id: false }
 );
@@ -134,7 +136,7 @@ UnifiedListingSchema.pre("save", async function () {
 UnifiedListingSchema.index({ listingType: 1, status: 1, categoryPath: 1, price: 1 });
 UnifiedListingSchema.index({ status: 1, "location.city": 1, "location.neighborhood": 1 });
 UnifiedListingSchema.index({ user: 1, status: 1 });
-UnifiedListingSchema.index({ store: 1, status: 1 }); // Index baraye store_product query-ha
+UnifiedListingSchema.index({ store: 1, status: 1 });
 UnifiedListingSchema.index({ "variants.sku": 1 }, { sparse: true });
 UnifiedListingSchema.index({ tags: 1 });
 

@@ -1,14 +1,39 @@
 const Store = require("../models/store");
 const UserModel = require("../models/user");
+const Listing = require("../models/listing");
 const paginate = require("../utils/helper");
 
 /*  PUBLIC  */
-const getVerifiedStores = async ({ limit } = {}) => {
-  return Store.find({ isVerified: true })
-    .select("name slug logo address.city meta.ratings meta.reviewsCount")
-    .sort({ "meta.ratings": -1, createdAt: -1 })
-    .limit(Math.min(Number(limit) || 12, 24))
+const getVerifiedStores = async ({ limit, cursor } = {}) => {
+  return paginate(Store, {
+    limit: limit || 12,
+    cursor,
+    filters: { isVerified: true },
+    sort: { createdAt: -1 },
+    select: "name slug logo address.city meta.ratings meta.reviewsCount",
+  });
+};
+
+const getStoreBySlug = async (slug, { cursor, limit } = {}) => {
+  const store = await Store.findOne({ slug, isVerified: true })
+    .select("name slug logo address meta isVerified")
     .lean();
+
+  if (!store) throw { status: 404, message: "Store not found" };
+
+  const { data, pagination } = await paginate(Listing, {
+    limit: limit || 12,
+    cursor,
+    filters: {
+      store: store._id,
+      listingType: "store_product",
+      status: "active",
+    },
+    sort: { createdAt: -1 },
+    select: "title slug price images condition shortIdentifier createdAt",
+  });
+
+  return { store, data, pagination };
 };
 
 /*  ADMIN  */
@@ -94,6 +119,7 @@ const deleteStore = async (userId, storeId) => {
 
 module.exports = {
   getVerifiedStores,
+  getStoreBySlug,
   getAllStores,
   getStoresByOwner,
   createStore,

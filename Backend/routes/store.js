@@ -12,6 +12,10 @@ storeRouter.get("/verified",
     cacheMiddleware(300),
     controller.getVerified);
 
+storeRouter.get("/slug/:slug",
+    cacheMiddleware(300),
+    controller.getBySlug);
+
 storeRouter.get("/",
     authUser,
     authAdmin,

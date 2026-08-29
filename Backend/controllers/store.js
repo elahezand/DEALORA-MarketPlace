@@ -3,8 +3,17 @@ const service = require("../services/stores");
 /*  PUBLIC  */
 exports.getVerified = async (req, res, next) => {
   try {
-    const data = await service.getVerifiedStores(req.query);
-    res.status(200).json({ success: true, data });
+    const result = await service.getVerifiedStores(req.query);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getBySlug = async (req, res, next) => {
+  try {
+    const result = await service.getStoreBySlug(req.params.slug, req.query);
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }

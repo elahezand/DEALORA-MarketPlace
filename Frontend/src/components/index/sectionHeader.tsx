@@ -7,6 +7,8 @@ interface SectionHeaderProps {
   icon?: string;
   linkHref?: string;
   linkLabel?: string;
+  itemCount?: number;
+  linkThreshold?: number;
 }
 
 export default function SectionHeader({
@@ -16,7 +18,12 @@ export default function SectionHeader({
   icon,
   linkHref,
   linkLabel = "View All",
+  itemCount,
+  linkThreshold = 12,
 }: SectionHeaderProps) {
+  const shouldShowLink =
+    Boolean(linkHref) && (itemCount === undefined || itemCount >= linkThreshold);
+
   return (
     <div className="flex items-end justify-between mb-8 gap-4">
       <div className="space-y-1.5">
@@ -30,9 +37,9 @@ export default function SectionHeader({
         )}
       </div>
 
-      {linkHref && (
+      {shouldShowLink && (
         <Link
-          href={linkHref}
+          href={linkHref!}
           className="shrink-0 text-xs font-bold bg-[var(--card-solid)] px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--foreground)] transition-all flex items-center gap-1.5 group"
         >
           {linkLabel} <span className="transform group-hover:translate-x-0.5 transition-transform">→</span>

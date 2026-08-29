@@ -27,6 +27,7 @@ import { IoLocationSharp } from "react-icons/io5";
 import Logo from "./Logo";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useGetProfile } from "@/services/Profile/getProfile";
+import { useQueryClient } from "@tanstack/react-query";
 
 const AuthModal = dynamic(() => import("../modals/AuthModal"), { ssr: false });
 const LocationsModal = dynamic(() => import("../modals/locations"), { ssr: false });
@@ -36,6 +37,7 @@ type NavItem = { label: string; href: string };
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useGetProfile();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -78,6 +80,9 @@ export default function Header() {
       void (async () => {
         try {
           await api.post("/auth/logout", {}, { withCredentials: true });
+
+          queryClient.setQueryData(["/auth/me", undefined], null);
+
           toast.success("Logged out successfully");
           setIsMenuOpen(false);
           router.replace("/");
@@ -86,7 +91,7 @@ export default function Header() {
         }
       })();
     });
-  }, [router]);
+  }, [router, queryClient]);
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300">

@@ -8,6 +8,7 @@ const paginate = async (
     filters = {},
     sort = { createdAt: -1 },
     populate = null,
+    select = null,
     cursorField = "_id",
   } = {}
 ) => {
@@ -31,6 +32,10 @@ const paginate = async (
 
   if (populate) {
     dbQuery = dbQuery.populate(populate);
+  }
+
+  if (select) {
+    dbQuery = dbQuery.select(select);
   }
 
   const data = await dbQuery;

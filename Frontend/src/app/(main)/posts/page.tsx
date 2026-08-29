@@ -44,10 +44,9 @@ export default async function PostsPage({
   return (
     <div className="w-full mx-auto pr-6 relative">
       <div className="flex w-full items-start justify-center mx-auto relative gap-6 lg:gap-8 h-full [overflow:visible]">
-        <aside className="sticky top-25 z-20 w-[350px] shrink-0 hidden md:block h-fit self-start">
+        <aside className="sticky z-20 w-[350px] shrink-0 hidden md:block h-fit self-start">
           <ClientWrapper />
         </aside>
-
         <div className="w-full flex flex-col gap-6">
           <Suspense fallback={<div className="h-16 w-full animate-pulse bg-gray-100 dark:bg-neutral-800 rounded-2xl" />}>
             <ListingTypeTabs currentType={currentType} />

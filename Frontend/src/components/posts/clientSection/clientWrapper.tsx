@@ -80,7 +80,7 @@ export default function ClientWrapper() {
     };
 
     return (
-        <div className="w-full flex flex-col border-r border-[var(--border)] min-h-screen px-4 bg-[var(--background-soft)] transition-all duration-300">
+        <div className="w-full flex flex-col border-r border-[var(--border)] min-h-screen px-4  transition-all duration-300">
             <CategorySection />
             
             <div className="border-b border-[var(--border)] py-6 space-y-6">

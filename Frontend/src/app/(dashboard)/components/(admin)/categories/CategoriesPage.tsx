@@ -1,97 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { HiOutlineRectangleGroup, HiOutlinePlus } from "react-icons/hi2";
+import { HiOutlineRectangleGroup, HiOutlinePlus, HiChevronDown } from "react-icons/hi2";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
-import { AdminFormModal, FormField, inputClass, textareaClass } from "../shared/AdminFormModal";
-import { CategoriesTypeResponse,AdminCategory } from "@/types/Category";
-import { useCreateCategory } from "@/services/Categories/useGetCategory";
+import { CategoriesTypeResponse, AdminCategory } from "@/types/Category";
 import { useDeleteCategory } from "@/services/Categories/useDeleteCategory";
-import { useUpdateCategory } from "@/services/Categories/useUpdateCategory";
+import { flattenCategories } from "@/utils/flattenCategories";
+import EditandCreateCategory from "./EditandCreateCategory";
 
 const ENDPOINT = "/categories";
 
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
+const getParentId = (parent: AdminCategory["parent"]): string => {
+  if (!parent) return "";
+  return typeof parent === "string" ? parent : parent._id ?? "";
+};
 
-interface FormState {
-  _id?: string;
-  title: string;
-  slug: string;
-  description: string;
-  isActive: boolean;
-}
+const getChildren = (cat: AdminCategory): AdminCategory[] =>
+  (cat as any).subCategories ?? cat.children ?? [];
 
-const EMPTY_FORM: FormState = { title: "", slug: "", description: "", isActive: true };
-
-interface CategoriesClientProps {
+interface CategoriesPageProps {
   initialData?: CategoriesTypeResponse;
 }
 
-export default function CategoriesClient({ initialData }: CategoriesClientProps) {
+export default function CategoriesPage({ initialData }: CategoriesPageProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [editingCategory, setEditingCategory] = useState<AdminCategory | null>(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
-  // Fetching Data with Initial Server Data
   const { data, isLoading, isError } = useGet<CategoriesTypeResponse>(
     ENDPOINT,
     undefined,
     { initialData }
   );
-  const categories = data?.data ?? [];
+  const categoryTree = data?.data ?? [];
+  const flatCategories = useMemo(() => flattenCategories(categoryTree), [categoryTree]);
 
-  // Service Mutations
-  const { mutate: createCategory, isPending: isCreating } = useCreateCategory(closeModal);
-  const { mutate: updateCategory, isPending: isUpdating } = useUpdateCategory(closeModal);
   const { mutate: removeCategory } = useDeleteCategory(() => setActioningId(null));
 
+  function toggle(id: string) {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   function openCreate() {
-    setForm(EMPTY_FORM);
+    setEditingCategory(null);
     setModalOpen(true);
   }
 
   function openEdit(cat: AdminCategory) {
-    setForm({
-      _id: cat._id,
-      title: cat.title,
-      slug: cat.slug,
-      description: cat.description ?? "",
-      isActive: cat.isActive,
-    });
+    setEditingCategory(cat);
     setModalOpen(true);
   }
 
   function closeModal() {
     setModalOpen(false);
-    setForm(EMPTY_FORM);
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.title.trim() || !form.slug.trim()) return;
-
-    const payload = {
-      title: form.title.trim(),
-      slug: form.slug.trim(),
-      description: form.description.trim(),
-      isActive: form.isActive,
-      filters: [],
-    };
-
-    if (form._id) {
-      updateCategory({ _id: form._id, ...payload });
-    } else {
-      createCategory(payload);
-    }
+    setEditingCategory(null);
   }
 
   function handleDelete(cat: AdminCategory) {
@@ -111,7 +83,79 @@ export default function CategoriesClient({ initialData }: CategoriesClientProps)
     });
   }
 
-  const isSaving = isCreating || isUpdating;
+  function renderRows(nodes: AdminCategory[], depth = 0): React.ReactNode[] {
+    return nodes.flatMap((cat) => {
+      const children = getChildren(cat);
+      const hasChildren = children.length > 0;
+      const isOpen = openIds.has(cat._id);
+      const busy = actioningId === cat._id;
+      const parentId = getParentId(cat.parent);
+      const parentCat = parentId ? flatCategories.find((c) => c._id === parentId) : null;
+      const filterCount = cat.filters?.length ?? 0;
+
+      const row = (
+        <tr key={cat._id} className="border-b border-[var(--border)] hover:bg-[var(--background-soft)] transition-colors">
+          <td className="px-6 py-4">
+            <div style={{ paddingLeft: depth * 24 }} className="flex items-center gap-2">
+              {hasChildren ? (
+                <button
+                  type="button"
+                  onClick={() => toggle(cat._id)}
+                  className="shrink-0 p-1 -m-1 text-[var(--foreground-subtle)] hover:text-[var(--foreground)] transition-colors"
+                  aria-label={isOpen ? "Collapse" : "Expand"}
+                >
+                  <HiChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-0" : "-rotate-90"}`}
+                  />
+                </button>
+              ) : (
+                <span className="w-3.5 shrink-0" />
+              )}
+              <div>
+                <p className="font-bold text-sm text-[var(--foreground)]">{cat.title}</p>
+                {cat.description && (
+                  <p className="text-xs text-[var(--foreground-muted)] truncate max-w-xs">{cat.description}</p>
+                )}
+              </div>
+            </div>
+          </td>
+          <td className="px-6 py-4 text-sm font-mono text-[var(--foreground-muted)]">{cat.slug}</td>
+          <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
+            {parentCat ? parentCat.title : <span className="italic text-[var(--foreground-subtle)]">Top-level</span>}
+          </td>
+          <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
+            {filterCount > 0 ? `${filterCount} filter${filterCount === 1 ? "" : "s"}` : "—"}
+          </td>
+          <td className="px-6 py-4">
+            <Badge tone={cat.isActive ? "success" : "neutral"} label={cat.isActive ? "Active" : "Inactive"} />
+          </td>
+          <td className="px-6 py-4">
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => openEdit(cat)}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--primary-500)]/10 hover:text-[var(--primary-500)] hover:border-[var(--primary-500)]/30 transition-colors"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => handleDelete(cat)}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-40"
+              >
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      );
+
+      return hasChildren && isOpen
+        ? [row, ...renderRows(children, depth + 1)]
+        : [row];
+    });
+  }
 
   return (
     <div className="flex flex-col gap-8 pb-10">
@@ -135,7 +179,7 @@ export default function CategoriesClient({ initialData }: CategoriesClientProps)
         header={<WidgetHeader icon={HiOutlineRectangleGroup} title="All Categories" href="/dashboard/admin/categories" />}
         isLoading={isLoading}
         isError={isError}
-        isEmpty={categories.length === 0}
+        isEmpty={categoryTree.length === 0}
         errorMessage="Error fetching categories"
         emptyTitle="No categories yet"
         emptyMessage="Create your first category to get started"
@@ -144,117 +188,21 @@ export default function CategoriesClient({ initialData }: CategoriesClientProps)
           <tr>
             <Th>Title</Th>
             <Th>Slug</Th>
+            <Th>Parent</Th>
+            <Th>Filters</Th>
             <Th>Status</Th>
             <Th align="right">Actions</Th>
           </tr>
         </thead>
-        <tbody>
-          {categories.map((cat) => {
-            const busy = actioningId === cat._id;
-            return (
-              <tr key={cat._id} className="border-b border-[var(--border)] hover:bg-[var(--background-soft)] transition-colors">
-                <td className="px-6 py-4">
-                  <p className="font-bold text-sm text-[var(--foreground)]">{cat.title}</p>
-                  {cat.description && (
-                    <p className="text-xs text-[var(--foreground-muted)] truncate max-w-xs">{cat.description}</p>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-sm font-mono text-[var(--foreground-muted)]">{cat.slug}</td>
-                <td className="px-6 py-4">
-                  <Badge tone={cat.isActive ? "success" : "neutral"} label={cat.isActive ? "Active" : "Inactive"} />
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(cat)}
-                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--primary-500)]/10 hover:text-[var(--primary-500)] hover:border-[var(--primary-500)]/30 transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => handleDelete(cat)}
-                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-40"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
+        <tbody>{renderRows(categoryTree)}</tbody>
       </TableCard>
 
-      <AdminFormModal
+      <EditandCreateCategory
         isOpen={modalOpen}
         onClose={closeModal}
-        title={form._id ? "Edit Category" : "New Category"}
-        icon={HiOutlineRectangleGroup}
-        footer={
-          <>
-            <button type="button" onClick={closeModal} className="text-xs font-bold px-4 h-9 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="category-form"
-              disabled={isSaving || !form.title.trim() || !form.slug.trim()}
-              className="btn-primary !w-auto px-5 h-9 text-xs disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : form._id ? "Save Changes" : "Create Category"}
-            </button>
-          </>
-        }
-      >
-        <form id="category-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <FormField label="Title">
-            <input
-              className={inputClass}
-              value={form.title}
-              onChange={(e) => {
-                const title = e.target.value;
-                setForm((f) => ({
-                  ...f,
-                  title,
-                  slug: f._id ? f.slug : slugify(title),
-                }));
-              }}
-              placeholder="e.g. Electronics"
-              required
-            />
-          </FormField>
-          <FormField label="Slug">
-            <input
-              className={`${inputClass} font-mono`}
-              value={form.slug}
-              onChange={(e) => setForm((f) => ({ ...f, slug: slugify(e.target.value) }))}
-              placeholder="electronics"
-              required
-            />
-          </FormField>
-          <FormField label="Description (optional)">
-            <textarea
-              className={textareaClass}
-              rows={3}
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Short description of this category"
-            />
-          </FormField>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-              className="w-4 h-4 rounded border-[var(--border)]"
-            />
-            <span className="text-xs font-bold text-[var(--foreground-muted)]">Active</span>
-          </label>
-        </form>
-      </AdminFormModal>
+        category={editingCategory}
+        categories={flatCategories}
+      />
     </div>
   );
 }

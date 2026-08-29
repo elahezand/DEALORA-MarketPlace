@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetPublicStats } from "@/services/Stats/getPublicStats";
+import { useGetPublicStats } from "@/services/Stats/getStats";
 export default function HeroLiveBadge() {
   const { stats, isLoading, isError } = useGetPublicStats();
 

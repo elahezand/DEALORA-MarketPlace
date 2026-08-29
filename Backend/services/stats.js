@@ -1,5 +1,7 @@
 const Listing = require("../models/listing");
 const User = require("../models/user");
+const Store = require("../models/store");
+const Order = require("../models/order");
 
 const PUBLISHED_LISTING_FILTER = {
   $or: [
@@ -40,4 +42,24 @@ const getPublicStats = async () => {
   };
 };
 
-module.exports = { getPublicStats };
+
+/*  ADMIN ONLY  */
+const getAdminStats = async () => {
+  const [totalUsers, totalStores, totalOrders, verifiedStores] =
+    await Promise.all([
+      User.countDocuments(),
+      Store.countDocuments(),
+      Order.countDocuments(),
+      Store.countDocuments({ isVerified: true }),
+    ]);
+
+  return {
+    totalUsers,
+    totalStores,
+    totalOrders,
+    pendingStoreVerifications: totalStores - verifiedStores,
+  };
+};
+
+module.exports = { getAdminStats };
+module.exports = { getPublicStats, getAdminStats };

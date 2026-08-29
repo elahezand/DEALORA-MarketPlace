@@ -15,7 +15,7 @@ interface GetPublicStatsResponse {
 
 export const useGetPublicStats = () => {
   const { data, isLoading, isError } = useGet<GetPublicStatsResponse>(
-    "/stats"
+    "/stats/admin"
   );
 
   return {
@@ -24,3 +24,27 @@ export const useGetPublicStats = () => {
     isError,
   };
 };
+interface AdminStats {
+  totalUsers: number;
+  totalStores: number;
+  totalOrders: number;
+  pendingStoreVerifications: number;
+}
+ 
+interface GetAdminStatsResponse {
+  success: boolean;
+  data: AdminStats;
+}
+ 
+export const useGetAdminStats = () => {
+  const { data, isLoading, isError } = useGet<GetAdminStatsResponse>(
+    "/admin/stats"
+  );
+ 
+  return {
+    stats: data?.data ?? null,
+    isLoading,
+    isError,
+  };
+};
+ 

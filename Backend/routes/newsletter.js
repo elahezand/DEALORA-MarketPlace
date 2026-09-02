@@ -2,7 +2,7 @@ const express = require("express");
 const newsLetterRouter = express.Router();
 
 const controller = require("../controllers/newsletter");
-const { authAdmin } = require("../middlewares/authMiddleware");
+const { authAdmin ,authUser} = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 
 const createNewsletterSchema = require("../validators/newsLetter");
@@ -10,6 +10,7 @@ const createNewsletterSchema = require("../validators/newsLetter");
 // GET all (admin)
 newsLetterRouter.get(
   "/",
+  authUser,
   authAdmin,
   controller.getAll
 );

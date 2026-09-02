@@ -2,7 +2,7 @@ const express = require("express");
 const contactRouter = express.Router();
 
 const controller = require("../controllers/contact");
-const { authAdmin } = require("../middlewares/authMiddleware");
+const { authAdmin,authUser } = require("../middlewares/authMiddleware");
 const validateObjectId = require("../middlewares/objectId");
 const validate = require("../middlewares/validate");
 
@@ -27,6 +27,7 @@ contactRouter.post(
 // ADMIN (get all)
 contactRouter.get(
   "/",
+  authUser,
   authAdmin,
   controller.get
 );
@@ -34,6 +35,7 @@ contactRouter.get(
 // ADMIN (get one)
 contactRouter.get(
   "/:id",
+  authUser,
   authAdmin,
   validateObjectId("id"),
   controller.getOne
@@ -42,6 +44,7 @@ contactRouter.get(
 // ADMIN (delete)
 contactRouter.delete(
   "/:id",
+  authUser,
   authAdmin,
   validateObjectId("id"),
   controller.remove
@@ -50,6 +53,7 @@ contactRouter.delete(
 // ADMIN (answer)
 contactRouter.patch(
   "/:id/answer",
+  authUser,
   authAdmin,
   validateObjectId("id"),
   controller.answer

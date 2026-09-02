@@ -20,7 +20,6 @@ const ENDPOINT = "/users";
 interface UsersClientProps {
   initialData?: any;
 }
-
 export default function UsersClient({ initialData }: UsersClientProps) {
   const { user: me } = useGetProfile();
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -59,7 +58,7 @@ export default function UsersClient({ initialData }: UsersClientProps) {
       },
       cancel: {
         label: "Cancel",
-        onClick: () => {},
+        onClick: () => { },
       },
     });
   };
@@ -188,9 +187,8 @@ export default function UsersClient({ initialData }: UsersClientProps) {
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : ""
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : ""
+                }`}
             />
           </button>
         </div>

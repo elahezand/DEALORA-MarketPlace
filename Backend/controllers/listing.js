@@ -10,6 +10,16 @@ exports.getAll = async (req, res, next) => {
   }
 };
 
+/* === ADMIN === */
+exports.getAllAdmin = async (req, res, next) => {
+  try {
+    const result = await listingService.getAllListingsAdmin(req.query);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 /* === AI SEARCH (PUBLIC) === */
 exports.handleSmartSearch = async (req, res, next) => {
   try {

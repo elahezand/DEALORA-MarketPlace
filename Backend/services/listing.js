@@ -7,11 +7,24 @@ const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const isValidId = mongoose.Types.ObjectId.isValid;
 
-/* === GET ALL === */
+/* === GET ALL (PUBLIC) === */
 async function getAllListings(query = {}) {
   const filters = await buildListingFilters(query);
   const maxLimit = query.listingType === "store_product" ? 100 : 50;
   const limit = Math.min(query.limit ? Number(query.limit) : 20, maxLimit);
+
+  return await paginate(Listing, {
+    limit,
+    cursor: query.cursor,
+    filters,
+    populate: ["categoryPath", "owner"],
+  });
+}
+
+/* === GET ALL (ADMIN — can filter/see any status, e.g. pending/rejected) === */
+async function getAllListingsAdmin(query = {}) {
+  const filters = await buildListingFilters(query, { isAdmin: true });
+  const limit = Math.min(query.limit ? Number(query.limit) : 20, 100);
 
   return await paginate(Listing, {
     limit,
@@ -273,6 +286,7 @@ Available listings: ${JSON.stringify(simplifiedPosts)}`;
 
 module.exports = {
   getAllListings,
+  getAllListingsAdmin,
   getListingById,
   createListing,
   updateListing,

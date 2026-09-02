@@ -11,10 +11,11 @@ router.post("/", authUser, validate(createReportSchema), controller.create);
 router.get("/mine", authUser, controller.getMyReports);
 
 /* ADMIN */
-router.get("/admin", authAdmin, controller.getAll);
-router.get("/admin/:id", authAdmin, validateObjectIdParam("id"), controller.getById);
+router.get("/admin",authUser, authAdmin, controller.getAll);
+router.get("/admin/:id", authUser,authAdmin, validateObjectIdParam("id"), controller.getById);
 router.patch(
   "/admin/:id/resolve",
+  authUser,
   authAdmin,
   validateObjectIdParam("id"),
   validate(resolveReportSchema),

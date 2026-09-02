@@ -175,9 +175,22 @@ const getOrderByIdAdmin = async (orderId) => {
   return order;
 };
 
-/* Update Order */
+/* Update Order (Admin — full access) */
 const updateOrder = async (orderId, data) => {
   const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new AppError(404, "Order not found");
+  }
+
+  Object.assign(order, data);
+
+  return order.save();
+};
+
+/* Update Order (Owner — restricted to their own order) */
+const updateOrderByOwner = async (orderId, userId, data) => {
+  const order = await Order.findOne({ _id: orderId, user: userId });
 
   if (!order) {
     throw new AppError(404, "Order not found");
@@ -216,5 +229,6 @@ module.exports = {
   getAllOrders,
   getOrderByIdAdmin,
   updateOrder,
+  updateOrderByOwner,
   cancelOrder,
 };

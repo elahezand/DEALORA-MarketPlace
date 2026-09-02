@@ -14,9 +14,10 @@ router.post("/", authUser, authSeller, validate(createWithdrawalSchema), control
 router.get("/mine", authUser, authSeller, controller.getMine);
 
 /* ADMIN */
-router.get("/admin", authAdmin, controller.getAll);
+router.get("/admin",authUser, authAdmin, controller.getAll);
 router.patch(
   "/admin/:id/process",
+  authUser,
   authAdmin,
   validateObjectIdParam("id"),
   validate(processWithdrawalSchema),

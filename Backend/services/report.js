@@ -1,13 +1,14 @@
 const mongoose = require("mongoose");
 const Report = require("../models/report");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 const isValidId = mongoose.Types.ObjectId.isValid;
 
 /* === USER: create a new report === */
 const createReport = async (reporterId, data) => {
   if (!isValidId(data.targetId)) {
-    throw { status: 400, message: "Invalid targetId" };
+    throw new AppError(400, "Invalid targetId");
   }
 
   try {
@@ -21,7 +22,7 @@ const createReport = async (reporterId, data) => {
     return report;
   } catch (err) {
     if (err.code === 11000) {
-      throw { status: 409, message: "You have already reported this item" };
+      throw new AppError(409, "You have already reported this item");
     }
     throw err;
   }
@@ -54,14 +55,14 @@ const getAllReports = async (query = {}) => {
 /* === ADMIN: get one report by id === */
 const getReportById = async (id) => {
   const report = await Report.findById(id).populate("reporter", "username phone");
-  if (!report) throw { status: 404, message: "Report not found" };
+  if (!report) throw new AppError(404, "Report not found");
   return report;
 };
 
 /* === ADMIN: resolve / update status of a report === */
 const resolveReport = async (id, adminId, data) => {
   const report = await Report.findById(id);
-  if (!report) throw { status: 404, message: "Report not found" };
+  if (!report) throw new AppError(404, "Report not found");
 
   report.status = data.status;
   report.resolution = {

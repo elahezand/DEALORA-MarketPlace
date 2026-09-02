@@ -1,11 +1,12 @@
 const Newsletter = require("../models/newsLetter");
+const AppError = require("../utils/AppError");
 
 // SUBSCRIBE
 async function subscribe(email) {
   const exists = await Newsletter.findOne({ email });
 
   if (exists) {
-    throw { status: 409, message: "Email already subscribed" };
+    throw new AppError(409, "Email already subscribed");
   }
 
   const newsletter = await Newsletter.create({ email });

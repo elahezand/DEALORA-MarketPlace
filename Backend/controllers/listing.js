@@ -27,7 +27,6 @@ exports.handleSmartSearch = async (req, res, next) => {
 };
 exports.getOne = async (req, res, next) => {
   try {
-    // req.query ro miferestim ta pagination-e comment-ha dorost kar kone
     const data = await listingService.getListingById(req.params.id, req.query);
     res.status(200).json(data);
   } catch (err) {
@@ -47,7 +46,6 @@ exports.getMyListings = async (req, res, next) => {
 
 exports.createListing = async (req, res, next) => {
   try {
-    // FIX: Data ro az req.parsed (Validator) va files ro az req.files miyad
     const listing = await listingService.createListing(
       req.user._id,
       req.parsed.data,

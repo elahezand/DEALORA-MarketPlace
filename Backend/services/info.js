@@ -1,4 +1,5 @@
 const Info = require("../models/info");
+const AppError = require("../utils/AppError");
 
 /* GET */
 async function getInfo() {
@@ -10,7 +11,7 @@ async function createInfo(data) {
   const exists = await Info.findOne({ key: "main" });
 
   if (exists) {
-    throw { status: 409, message: "Info already exists" };
+    throw new AppError(409, "Info already exists");
   }
 
   return Info.create({
@@ -50,10 +51,7 @@ async function updateInfo(data) {
 
 /* DELETE */
 async function deleteInfo() {
-  throw {
-    status: 403,
-    message: "Deleting singleton config is not allowed",
-  };
+  throw new AppError(403, "Deleting singleton config is not allowed");
 }
 
 module.exports = {

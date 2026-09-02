@@ -1,5 +1,6 @@
 
 const redis = require("../redis");
+const logger = require("./logger");
 
 const invalidateCache = async (pattern) => {
   try {
@@ -10,7 +11,7 @@ const invalidateCache = async (pattern) => {
       await redis.del(keys);
     }
   } catch (error) {
-    console.error("Redis Cache Invalidation Error:", error);
+    logger.error("Redis Cache Invalidation Error:", error);
   }
 };
 module.exports = invalidateCache;

@@ -1,7 +1,8 @@
 const Store = require("../models/store");
 const UserModel = require("../models/user");
 const Listing = require("../models/listing");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 /*  PUBLIC  */
 const getVerifiedStores = async ({ limit, cursor } = {}) => {
@@ -19,7 +20,7 @@ const getStoreBySlug = async (slug, { cursor, limit } = {}) => {
     .select("name slug logo address meta isVerified")
     .lean();
 
-  if (!store) throw { status: 404, message: "Store not found" };
+  if (!store) throw new AppError(404, "Store not found");
 
   const { data, pagination } = await paginate(Listing, {
     limit: limit || 12,
@@ -39,7 +40,7 @@ const getStoreBySlug = async (slug, { cursor, limit } = {}) => {
 /*  ADMIN  */
 const getAllStores = async ({ limit, cursor }) => {
   if (limit && Number(limit) > 50) {
-    throw { status: 400, message: "limit must be <= 50" };
+    throw new AppError(400, "limit must be <= 50");
   }
 
   return paginate(Store, {
@@ -52,17 +53,17 @@ const getAllStores = async ({ limit, cursor }) => {
 /*  SELLER  */
 const getStoresByOwner = async (userId) => {
   const user = await UserModel.findById(userId);
-  if (!user) throw { status: 404, message: "NOT found" };
+  if (!user) throw new AppError(404, "NOT found");
 
   const shopsSeller = await Store.find({ user: userId });
-  if (!shopsSeller) throw { status: 404, message: "NOT found" };
+  if (!shopsSeller) throw new AppError(404, "NOT found");
 
   return shopsSeller;
 };
 
 const createStore = async (userId, data) => {
   const user = await UserModel.findById(userId);
-  if (!user) throw { status: 404, message: "NOT found" };
+  if (!user) throw new AppError(404, "NOT found");
 
   const newSeller = await Store.create(data);
 
@@ -82,10 +83,10 @@ const createStore = async (userId, data) => {
 
 const updateStore = async (userId, storeId, data) => {
   const user = await UserModel.findById(userId);
-  if (!user) throw { status: 404, message: "NOT found" };
+  if (!user) throw new AppError(404, "NOT found");
 
   const existing = await Store.findById(storeId).lean();
-  if (!existing) throw { status: 404, message: "NOT found" };
+  if (!existing) throw new AppError(404, "NOT found");
 
   const merged = { ...existing, ...data };
   await Store.updateOne({ _id: storeId }, { $set: merged }).exec();
@@ -99,17 +100,17 @@ const verifyStore = async (storeId, isVerified) => {
     { new: true }
   ).populate("owner");
 
-  if (!store) throw { status: 404, message: "Store not found" };
+  if (!store) throw new AppError(404, "Store not found");
 
   return store;
 };
 
 const deleteStore = async (userId, storeId) => {
   const user = await UserModel.findById(userId);
-  if (!user) throw { status: 404, message: "NOT found" };
+  if (!user) throw new AppError(404, "NOT found");
 
   const deleted = await Store.findByIdAndDelete(storeId);
-  if (!deleted) throw { status: 404, message: "Seller not found" };
+  if (!deleted) throw new AppError(404, "Seller not found");
 
   //!delete Products
   //!delete Products from shoping Card

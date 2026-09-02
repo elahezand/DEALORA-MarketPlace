@@ -1,20 +1,21 @@
 const mongoose = require("mongoose");
 const Conversation = require("../models/conversation");
 const Message = require("../models/message");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 const isValidId = mongoose.Types.ObjectId.isValid;
 
 /* === start a new conversation, or reuse existing one for the same listing === */
 const startConversation = async (senderId, data) => {
   if (!isValidId(data.recipientId)) {
-    throw { status: 400, message: "Invalid recipientId" };
+    throw new AppError(400, "Invalid recipientId");
   }
   if (String(senderId) === String(data.recipientId)) {
-    throw { status: 400, message: "You cannot start a conversation with yourself" };
+    throw new AppError(400, "You cannot start a conversation with yourself");
   }
   if (data.listingId && !isValidId(data.listingId)) {
-    throw { status: 400, message: "Invalid listingId" };
+    throw new AppError(400, "Invalid listingId");
   }
 
   let conversation = await Conversation.findOne({
@@ -50,13 +51,13 @@ const startConversation = async (senderId, data) => {
 /* === send a message inside an existing conversation === */
 const sendMessage = async (conversationId, senderId, data) => {
   const conversation = await Conversation.findById(conversationId);
-  if (!conversation) throw { status: 404, message: "Conversation not found" };
+  if (!conversation) throw new AppError(404, "Conversation not found");
 
   const isParticipant = conversation.participants.some(
     (p) => String(p) === String(senderId)
   );
-  if (!isParticipant) throw { status: 403, message: "Access denied" };
-  if (conversation.isBlocked) throw { status: 403, message: "This conversation is blocked" };
+  if (!isParticipant) throw new AppError(403, "Access denied");
+  if (conversation.isBlocked) throw new AppError(403, "This conversation is blocked");
 
   const message = await Message.create({
     conversation: conversationId,
@@ -100,12 +101,12 @@ const getMyConversations = async (userId, query = {}) => {
 /* === get messages of one conversation (and mark as read) === */
 const getMessages = async (conversationId, userId, query = {}) => {
   const conversation = await Conversation.findById(conversationId);
-  if (!conversation) throw { status: 404, message: "Conversation not found" };
+  if (!conversation) throw new AppError(404, "Conversation not found");
 
   const isParticipant = conversation.participants.some(
     (p) => String(p) === String(userId)
   );
-  if (!isParticipant) throw { status: 403, message: "Access denied" };
+  if (!isParticipant) throw new AppError(403, "Access denied");
 
   const limit = Math.min(Math.max(Number(query.limit) || 30, 1), 100);
   const result = await paginate(Message, {

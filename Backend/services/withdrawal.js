@@ -1,16 +1,17 @@
 const mongoose = require("mongoose");
 const Withdrawal = require("../models/withdrawal");
 const Store = require("../models/store");
-const paginate = require("../utils/helper");
+const { paginate } = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 /* === SELLER: create a withdrawal request === */
 const createWithdrawal = async (userId, data) => {
   const store = await Store.findOne({ owner: userId });
-  if (!store) throw { status: 404, message: "Store not found" };
+  if (!store) throw new AppError(404, "Store not found");
 
   const balance = store.wallet?.balance || 0;
   if (data.amount > balance) {
-    throw { status: 400, message: "Insufficient wallet balance" };
+    throw new AppError(400, "Insufficient wallet balance");
   }
 
   store.wallet.balance = balance - data.amount;
@@ -28,7 +29,7 @@ const createWithdrawal = async (userId, data) => {
 /* === SELLER: list own withdrawal requests === */
 const getMyWithdrawals = async (userId, query = {}) => {
   const store = await Store.findOne({ owner: userId });
-  if (!store) throw { status: 404, message: "Store not found" };
+  if (!store) throw new AppError(404, "Store not found");
 
   const filters = { store: store._id };
   if (query.status) filters.status = query.status;
@@ -54,10 +55,10 @@ const getAllWithdrawals = async (query = {}) => {
 /* === ADMIN: process (approve/complete/reject) a withdrawal === */
 const processWithdrawal = async (id, adminId, data) => {
   const withdrawal = await Withdrawal.findById(id);
-  if (!withdrawal) throw { status: 404, message: "Withdrawal not found" };
+  if (!withdrawal) throw new AppError(404, "Withdrawal not found");
 
   if (withdrawal.status === "completed" || withdrawal.status === "rejected") {
-    throw { status: 400, message: "This withdrawal has already been finalized" };
+    throw new AppError(400, "This withdrawal has already been finalized");
   }
 
   if (data.status === "rejected") {

@@ -1,5 +1,6 @@
 const Note = require("../models/note");
 const mongoose = require("mongoose");
+const AppError = require("../utils/AppError");
 
 // helper
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -19,7 +20,7 @@ exports.getAll = async (userId, searchParams) => {
 // GET ONE
 exports.getOne = async (id, userId) => {
   if (!isValidId(id)) {
-    throw { status: 400, message: "Invalid id" };
+    throw new AppError(400, "Invalid id");
   }
 
   const note = await Note.findById(id)
@@ -27,11 +28,11 @@ exports.getOne = async (id, userId) => {
     .lean();
 
   if (!note) {
-    throw { status: 404, message: "Note not found" };
+    throw new AppError(404, "Note not found");
   }
 
   if (String(note.user._id) !== String(userId)) {
-    throw { status: 403, message: "Access denied" };
+    throw new AppError(403, "Access denied");
   }
 
   return note;
@@ -48,17 +49,17 @@ exports.create = async (userId, data) => {
 // UPDATE
 exports.update = async (id, userId, data) => {
   if (!isValidId(id)) {
-    throw { status: 400, message: "Invalid id" };
+    throw new AppError(400, "Invalid id");
   }
 
   const note = await Note.findById(id);
 
   if (!note) {
-    throw { status: 404, message: "Note not found" };
+    throw new AppError(404, "Note not found");
   }
 
   if (String(note.user) !== String(userId)) {
-    throw { status: 403, message: "Access denied" };
+    throw new AppError(403, "Access denied");
   }
 
   return await Note.findByIdAndUpdate(
@@ -71,17 +72,17 @@ exports.update = async (id, userId, data) => {
 // DELETE
 exports.remove = async (id, userId) => {
   if (!isValidId(id)) {
-    throw { status: 400, message: "Invalid id" };
+    throw new AppError(400, "Invalid id");
   }
 
   const note = await Note.findById(id);
 
   if (!note) {
-    throw { status: 404, message: "Note not found" };
+    throw new AppError(404, "Note not found");
   }
 
   if (String(note.user) !== String(userId)) {
-    throw { status: 403, message: "Access denied" };
+    throw new AppError(403, "Access denied");
   }
 
   await Note.findByIdAndDelete(id);

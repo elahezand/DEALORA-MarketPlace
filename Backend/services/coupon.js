@@ -1,5 +1,6 @@
 const Coupon = require("../models/coupon");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 const getCoupons = async (query = {}) => {
   const filter = {};
@@ -12,52 +13,52 @@ const getCoupons = async (query = {}) => {
 
 const getCouponById = async (id) => {
   const coupon = await Coupon.findById(id);
-  if (!coupon) throw { status: 404, message: "Coupon not found" };
+  if (!coupon) throw new AppError(404, "Coupon not found");
   return coupon;
 };
 
 const getCouponByCode = async (code) => {
   const coupon = await Coupon.findOne({ code: code.toUpperCase() });
-  if (!coupon) throw { status: 404, message: "Coupon not found" };
+  if (!coupon) throw new AppError(404, "Coupon not found");
   return coupon;
 };
 
 const createCoupon = async (data) => {
   const existing = await Coupon.findOne({ code: data.code.toUpperCase() });
-  if (existing) throw { status: 409, message: "Coupon code already exists" };
+  if (existing) throw new AppError(409, "Coupon code already exists");
 
   return Coupon.create(data);
 };
 
 const updateCoupon = async (id, data) => {
   const coupon = await Coupon.findByIdAndUpdate(id, data, { new: true, runValidators: true });
-  if (!coupon) throw { status: 404, message: "Coupon not found" };
+  if (!coupon) throw new AppError(404, "Coupon not found");
   return coupon;
 };
 
 const deleteCoupon = async (id) => {
   const coupon = await Coupon.findByIdAndDelete(id);
-  if (!coupon) throw { status: 404, message: "Coupon not found" };
+  if (!coupon) throw new AppError(404, "Coupon not found");
   return true;
 };
 
 const validateCoupon = async (code) => {
   const coupon = await Coupon.findOne({ code: code.toUpperCase() });
-  if (!coupon) throw { status: 404, message: "Coupon not found" };
+  if (!coupon) throw new AppError(404, "Coupon not found");
 
   const now = new Date();
 
   if (!coupon.isActive)
-    throw { status: 400, message: "Coupon is inactive" };
+    throw new AppError(400, "Coupon is inactive");
 
   if (coupon.startsAt && coupon.startsAt > now)
-    throw { status: 400, message: "Coupon has not started yet" };
+    throw new AppError(400, "Coupon has not started yet");
 
   if (coupon.expiresAt && coupon.expiresAt < now)
-    throw { status: 400, message: "Coupon has expired" };
+    throw new AppError(400, "Coupon has expired");
 
   if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit)
-    throw { status: 400, message: "Coupon usage limit reached" };
+    throw new AppError(400, "Coupon usage limit reached");
 
   return coupon;
 };

@@ -3,6 +3,8 @@ const Listing = require("../models/listing");
 const Comment = require("../models/comment");
 const { paginate, buildListingFilters } = require("../utils/helper");
 const invalidateCache = require("../utils/cache");
+const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 const isValidId = mongoose.Types.ObjectId.isValid;
 
 /* === GET ALL === */
@@ -21,7 +23,7 @@ async function getAllListings(query = {}) {
 
 /* === GET BY ID === */
 async function getListingById(id, query = {}) {
-  if (!isValidId(id)) throw { status: 400, message: "Invalid listing id" };
+  if (!isValidId(id)) throw new AppError(400, "Invalid listing id");
 
   let listingData = await Listing.findByIdAndUpdate(
     id,
@@ -32,7 +34,7 @@ async function getListingById(id, query = {}) {
     .populate("owner", "_id name")
     .lean({ virtuals: true });
 
-  if (!listingData) throw { status: 404, message: "Listing not found" };
+  if (!listingData) throw new AppError(404, "Listing not found");
 
   if (listingData.listingType === "store_product") {
     const [aggregatedData] = await Listing.aggregate([
@@ -105,13 +107,13 @@ async function createListing(userId, data, files = []) {
 
 /* === UPDATE === */
 async function updateListing(id, userId, data, files = []) {
-  if (!isValidId(id)) throw { status: 400, message: "Invalid listing id" };
+  if (!isValidId(id)) throw new AppError(400, "Invalid listing id");
 
   const listing = await Listing.findById(id);
-  if (!listing) throw { status: 404, message: "Listing not found" };
+  if (!listing) throw new AppError(404, "Listing not found");
 
   if (listing.listingType === "user_ad" && String(listing.user) !== String(userId)) {
-    throw { status: 403, message: "Unauthorized action" };
+    throw new AppError(403, "Unauthorized action");
   }
 
   const updateData = { ...data };
@@ -128,13 +130,13 @@ async function updateListing(id, userId, data, files = []) {
 
 /* === SOFT DELETE === */
 async function deleteListing(id, userId) {
-  if (!isValidId(id)) throw { status: 400, message: "Invalid listing id" };
+  if (!isValidId(id)) throw new AppError(400, "Invalid listing id");
 
   const listing = await Listing.findById(id);
-  if (!listing) throw { status: 404, message: "Listing not found" };
+  if (!listing) throw new AppError(404, "Listing not found");
 
   if (listing.listingType === "user_ad" && String(listing.user) !== String(userId)) {
-    throw { status: 403, message: "Unauthorized action" };
+    throw new AppError(403, "Unauthorized action");
   }
 
   listing.status = "deleted";
@@ -162,13 +164,13 @@ async function getMyListings(userId, query = {}) {
 
 /* === ADMIN CHANGE STATUS === */
 async function changeStatus(id, status) {
-  if (!isValidId(id)) throw { status: 400, message: "Invalid listing id" };
+  if (!isValidId(id)) throw new AppError(400, "Invalid listing id");
 
   const allowed = ["pending", "accepted", "rejected", "active", "inactive", "draft"];
-  if (!allowed.includes(status)) throw { status: 400, message: "Invalid status" };
+  if (!allowed.includes(status)) throw new AppError(400, "Invalid status");
 
   const listing = await Listing.findByIdAndUpdate(id, { status }, { new: true });
-  if (!listing) throw { status: 404, message: "Listing not found" };
+  if (!listing) throw new AppError(404, "Listing not found");
 
   await invalidateCache("/api/listings*");
   return listing;
@@ -240,7 +242,7 @@ Available listings: ${JSON.stringify(simplifiedPosts)}`;
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("OpenRouter Error:", response.status, errorText);
+    logger.error("OpenRouter Error:", response.status, errorText);
     throw new Error("Failed to communicate with AI service.");
   }
 
@@ -264,7 +266,7 @@ Available listings: ${JSON.stringify(simplifiedPosts)}`;
       reason: parsed.reason,
     };
   } catch (error) {
-    console.error("Failed to parse AI response:", content);
+    logger.error("Failed to parse AI response:", content);
     return { data: null, reason: "Failed to parse search results from AI." };
   }
 }

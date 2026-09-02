@@ -35,8 +35,11 @@ const verifyToken = async (token) => {
 }
 
 const verifyRefreshToken = async (refreshToken) => {
-  const verifiredfreshtoken = await verify(refreshToken, process.env.REFRESH_TOKEN,)
-  return verifiredfreshtoken
+  try {
+    return await verify(refreshToken, process.env.REFRESH_TOKEN)
+  } catch (err) {
+    return null
+  }
 }
 
 module.exports = {

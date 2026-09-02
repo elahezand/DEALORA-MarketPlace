@@ -2,7 +2,9 @@ const Offer = require("../models/offerSeller");
 const Coupon = require("../models/coupon");
 const Cart = require("../models/cart");
 const Listing = require("../models/listing");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 
 // ─── helpers 
 
@@ -132,7 +134,7 @@ const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) =>
   }
 
   if (skippedItems.length > 0) {
-    console.warn("[cart] skipped items while calculating totals:", skippedItems);
+    logger.warn("[cart] skipped items while calculating totals:", skippedItems);
   }
 
   let discount = 0;
@@ -210,13 +212,13 @@ const getCartById = async (id) => {
       select: "price discount stock store finalPrice",
     });
 
-  if (!cart) throw { status: 404, message: "Cart not found" };
+  if (!cart) throw new AppError(404, "Cart not found");
   return cart;
 };
 
 const deleteCart = async (id) => {
   const cart = await Cart.findByIdAndDelete(id);
-  if (!cart) throw { status: 404, message: "Cart not found" };
+  if (!cart) throw new AppError(404, "Cart not found");
   return true;
 };
 
@@ -248,11 +250,9 @@ const addToCart = async (userId, items) => {
   if (!cart) {
     const totals = await calculateCartTotals(items, null, 0);
     if (totals.items.length === 0 && items.length > 0) {
-      throw {
-        status: 400,
-        message: "None of the requested items could be added to the cart.",
+      throw new AppError(400, "None of the requested items could be added to the cart.", {
         details: totals.skippedItems,
-      };
+      });
     }
     return Cart.create({
       user: userId,
@@ -279,11 +279,9 @@ const addToCart = async (userId, items) => {
   const droppedRequested = items.filter((i) => !resultKeys.has(itemKey(i)));
 
   if (droppedRequested.length > 0) {
-    throw {
-      status: 400,
-      message: "Some items could not be added to the cart.",
+    throw new AppError(400, "Some items could not be added to the cart.", {
       details: totals.skippedItems,
-    };
+    });
   }
 
   cart.items = totals.items;
@@ -296,7 +294,7 @@ const addToCart = async (userId, items) => {
 /*Removes a single item from the cart.*/
 const removeFromCart = async (userId, itemId) => {
   const cart = await Cart.findOne({ user: userId, status: "active" });
-  if (!cart) throw { status: 404, message: "Cart not found" };
+  if (!cart) throw new AppError(404, "Cart not found");
 
   const beforeCount = cart.items.length;
   cart.items = cart.items.filter((item) => {
@@ -309,7 +307,7 @@ const removeFromCart = async (userId, itemId) => {
   });
 
   if (cart.items.length === beforeCount) {
-    throw { status: 404, message: "Cart item not found" };
+    throw new AppError(404, "Cart item not found");
   }
 
   let couponDoc = null;
@@ -332,7 +330,7 @@ const removeFromCart = async (userId, itemId) => {
 
 const updateCart = async (userId, data) => {
   const cart = await Cart.findOne({ user: userId, status: "active" });
-  if (!cart) throw { status: 404, message: "Cart not found" };
+  if (!cart) throw new AppError(404, "Cart not found");
 
   const items = data.items || cart.items;
 
@@ -340,27 +338,21 @@ const updateCart = async (userId, data) => {
   if (data.couponCode) {
     couponDoc = await Coupon.findOne({ code: data.couponCode.toUpperCase() });
     if (!couponDoc) {
-      throw { status: 404, message: "Coupon not found" };
+      throw new AppError(404, "Coupon not found");
     }
 
-    // BUGFIX: previously any coupon found by code was accepted and attached
-    // to the cart even if inactive/expired/not-started/usage-limit-reached.
-    // calculateCartTotals() would then quietly compute a $0 discount for it,
-    // so the user got no error and no discount, looking exactly like
-    // "applying a coupon does nothing". We now validate it up-front and
-    // return a clear error, matching services/coupon.js's validateCoupon().
     const now = new Date();
     if (!couponDoc.isActive) {
-      throw { status: 400, message: "Coupon is inactive" };
+      throw new AppError(400, "Coupon is inactive");
     }
     if (couponDoc.startsAt && couponDoc.startsAt > now) {
-      throw { status: 400, message: "Coupon has not started yet" };
+      throw new AppError(400, "Coupon has not started yet");
     }
     if (couponDoc.expiresAt && couponDoc.expiresAt < now) {
-      throw { status: 400, message: "Coupon has expired" };
+      throw new AppError(400, "Coupon has expired");
     }
     if (couponDoc.usageLimit !== null && couponDoc.usedCount >= couponDoc.usageLimit) {
-      throw { status: 400, message: "Coupon usage limit reached" };
+      throw new AppError(400, "Coupon usage limit reached");
     }
   } else if (cart.coupon?.couponRef) {
     couponDoc = await Coupon.findById(cart.coupon.couponRef);
@@ -372,17 +364,10 @@ const updateCart = async (userId, data) => {
     data.shippingCost ?? cart.pricing?.shippingCost ?? 0
   );
 
-  // BUGFIX: unlike addToCart(), this never checked whether
-  // calculateCartTotals() silently dropped any items (e.g. an offer that's
-  // no longer accepted, or gone out of stock in the meantime). That made
-  // cart items disappear with zero feedback whenever this endpoint was hit
-  // (quantity changes AND coupon apply both call updateCart()).
   if (totals.skippedItems.length > 0) {
-    throw {
-      status: 400,
-      message: "Some items in your cart are no longer available and could not be kept.",
+    throw new AppError(400, "Some items in your cart are no longer available and could not be kept.", {
       details: totals.skippedItems,
-    };
+    });
   }
 
   cart.items = totals.items;
@@ -403,7 +388,7 @@ const updateCart = async (userId, data) => {
 
 const clearCart = async (userId) => {
   const cart = await Cart.findOne({ user: userId, status: "active" });
-  if (!cart) throw { status: 404, message: "Cart not found" };
+  if (!cart) throw new AppError(404, "Cart not found");
 
   cart.items = [];
   cart.pricing = { subtotal: 0, discount: 0, shippingCost: 0, total: 0 };

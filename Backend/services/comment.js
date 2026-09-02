@@ -1,6 +1,7 @@
 const Comment = require("../models/comment");
 const mongoose = require("mongoose");
 const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -8,7 +9,7 @@ const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 exports.getByProduct = async (listing, query = {}) => {
   if (!isValidId(listing)) {
-    throw { status: 400, message: "Invalid listing" };
+    throw new AppError(400, "Invalid listing");
   }
 
   const filters = {
@@ -83,17 +84,17 @@ exports.create = async (userId, data) => {
 
   if (parentId) {
     if (!isValidId(parentId)) {
-      throw { status: 400, message: "Invalid parentId" };
+      throw new AppError(400, "Invalid parentId");
     }
 
     const parent = await Comment.findById(parentId);
 
     if (!parent) {
-      throw { status: 404, message: "Parent not found" };
+      throw new AppError(404, "Parent not found");
     }
 
     if (parent.parentId) {
-      throw { status: 409, message: "Only 1 level reply allowed" };
+      throw new AppError(409, "Only 1 level reply allowed");
     }
 
     listing = parent.listing;
@@ -117,11 +118,11 @@ exports.updateOwn = async (userId, id, data) => {
   });
 
   if (!comment) {
-    throw { status: 404, message: "Comment not found" };
+    throw new AppError(404, "Comment not found");
   }
 
   if (comment.status !== "pending") {
-    throw { status: 409, message: "Only pending comments can be edited" };
+    throw new AppError(409, "Only pending comments can be edited");
   }
 
   Object.assign(comment, data, {

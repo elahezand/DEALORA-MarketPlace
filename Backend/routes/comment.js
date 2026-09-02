@@ -31,10 +31,11 @@ const actionRateLimit = rateLimit({
 });
 
 // ADMIN
-router.get("/admin", authAdmin, controller.getAdmin);
+router.get("/admin",authUser, authAdmin, controller.getAdmin);
 
 router.patch(
   "/:id/moderate",
+  authUser,
   authAdmin,
   actionRateLimit,
   validateObjectId("id"),
@@ -44,6 +45,7 @@ router.patch(
 
 router.delete(
   "/:id",
+  authUser,
   authAdmin,
   actionRateLimit,
   validateObjectId("id"),

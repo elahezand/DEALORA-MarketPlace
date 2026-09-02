@@ -55,9 +55,7 @@ const getStoresByOwner = async (userId) => {
   const user = await UserModel.findById(userId);
   if (!user) throw new AppError(404, "NOT found");
 
-  const shopsSeller = await Store.find({ user: userId });
-  if (!shopsSeller) throw new AppError(404, "NOT found");
-
+  const shopsSeller = await Store.find({ owner: userId });
   return shopsSeller;
 };
 
@@ -65,7 +63,8 @@ const createStore = async (userId, data) => {
   const user = await UserModel.findById(userId);
   if (!user) throw new AppError(404, "NOT found");
 
-  const newSeller = await Store.create(data);
+  // Owner must always be the authenticated user, never trust the client body.
+  const newSeller = await Store.create({ ...data, owner: userId });
 
   try {
     await UserModel.findByIdAndUpdate(
@@ -81,6 +80,9 @@ const createStore = async (userId, data) => {
   return newSeller;
 };
 
+// Fields a seller is never allowed to set themselves via the update endpoint.
+const SELLER_RESTRICTED_FIELDS = ["owner", "isVerified", "meta"];
+
 const updateStore = async (userId, storeId, data) => {
   const user = await UserModel.findById(userId);
   if (!user) throw new AppError(404, "NOT found");
@@ -88,7 +90,16 @@ const updateStore = async (userId, storeId, data) => {
   const existing = await Store.findById(storeId).lean();
   if (!existing) throw new AppError(404, "NOT found");
 
-  const merged = { ...existing, ...data };
+  if (String(existing.owner) !== String(userId)) {
+    throw new AppError(403, "You do not have permission to update this store");
+  }
+
+  const safeData = { ...data };
+  for (const field of SELLER_RESTRICTED_FIELDS) {
+    delete safeData[field];
+  }
+
+  const merged = { ...existing, ...safeData };
   await Store.updateOne({ _id: storeId }, { $set: merged }).exec();
   return true;
 };
@@ -109,8 +120,14 @@ const deleteStore = async (userId, storeId) => {
   const user = await UserModel.findById(userId);
   if (!user) throw new AppError(404, "NOT found");
 
-  const deleted = await Store.findByIdAndDelete(storeId);
-  if (!deleted) throw new AppError(404, "Seller not found");
+  const existing = await Store.findById(storeId);
+  if (!existing) throw new AppError(404, "Seller not found");
+
+  if (String(existing.owner) !== String(userId)) {
+    throw new AppError(403, "You do not have permission to delete this store");
+  }
+
+  await Store.findByIdAndDelete(storeId);
 
   //!delete Products
   //!delete Products from shoping Card

@@ -58,7 +58,7 @@ const paginate = async (
 function escapeRegex(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
-async function buildListingFilters(query) {
+async function buildListingFilters(query, { isAdmin = false } = {}) {
   const filters = {};
   const andConditions = [];
 
@@ -67,7 +67,13 @@ async function buildListingFilters(query) {
     filters.listingType = query.listingType;
   }
 
-  if (query.status) {
+  // Only trusted admin requests may filter by arbitrary status (e.g. "pending",
+  // "rejected"). Public/unauthenticated requests may only ever see the
+  // publicly-visible statuses, otherwise unmoderated content would leak.
+  const PUBLIC_STATUSES = ["accepted", "active"];
+  if (isAdmin && query.status) {
+    filters.status = query.status;
+  } else if (query.status && PUBLIC_STATUSES.includes(query.status)) {
     filters.status = query.status;
   } else if (query.listingType === "user_ad") {
     filters.status = "accepted";

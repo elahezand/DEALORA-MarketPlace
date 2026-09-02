@@ -6,7 +6,7 @@ import { contactSchema } from "@/validations/contactUs";
 type ContactFormData = z.infer<typeof contactSchema>;
 
 export const useCreateContact = (onSuccessCallback?: () => void) => {
-  const { mutate, isPending, ...rest } = usePost<ContactFormData>("/contact", {
+  const { mutate, isPending, ...rest } = usePost<ContactFormData>("/contacts", {
     onSuccess: () => {
       toast.success("Your message was sent successfully!");
       if (onSuccessCallback) onSuccessCallback();

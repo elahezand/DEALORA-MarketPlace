@@ -15,7 +15,7 @@ export const useUpdateOrder = (orderId: string) => {
   return usePatch<
     AdminOrderResponse,
     Partial<{ status: OrderStatus; paymentStatus: PaymentStatus }>
-  >(`/orders/${orderId}`, {
+  >(endpoint, {
     onSuccess: () => {
       toast.success("Order updated");
       queryClient.invalidateQueries({ queryKey: [endpoint] });

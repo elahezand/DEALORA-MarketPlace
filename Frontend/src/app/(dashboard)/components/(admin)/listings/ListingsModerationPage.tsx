@@ -43,7 +43,7 @@ export default function ListingsModerationClient({
   const [status, setStatus] = useState<ListingStatus>("pending");
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const endpoint = "/listings";
+  const endpoint = "/listings/admin";
   const params = { status, limit: 20 };
 
   const {

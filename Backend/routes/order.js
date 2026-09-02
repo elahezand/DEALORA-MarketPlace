@@ -28,6 +28,15 @@ orderRouter.get(
     controller.getByIdAdmin
 );
 
+orderRouter.patch(
+    "/admin/:id",
+    authUser,
+    authAdmin,
+    validateObjectIdParam("id"),
+    validate(updateOrderSchema),
+    controller.patchAdmin
+);
+
 // USER ROUTES 
 orderRouter.post(
     "/checkout",

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const controller = require("../controllers/info");
-const { authAdmin } = require("../middlewares/authMiddleware");
+const { authAdmin,authUser } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 
 const {
@@ -16,6 +16,7 @@ router.get("/", controller.get);
 /* ADMIN */
 router.post(
   "/",
+  authUser,
   authAdmin,
   validate(createInfoSchema),
   controller.post
@@ -23,6 +24,7 @@ router.post(
 
 router.patch(
   "/",
+  authUser,
   authAdmin,
   validate(updateInfoSchema),
   controller.patch
@@ -30,6 +32,7 @@ router.patch(
 
 router.delete(
   "/",
+  authUser,
   authAdmin,
   controller.remove
 );

@@ -76,7 +76,7 @@ export default function MyStorePage() {
                     <h1 className="!text-2xl font-black text-[var(--foreground)] tracking-tight">My Store</h1>
                 </div>
                 <Link
-                    href="/dashboard/my-store/edit"
+                    href="/my-store/edit"
                     className="btn-primary !w-auto px-5 h-10 text-sm gap-2 flex items-center"
                 >
                     <HiOutlinePencilSquare className="w-4 h-4" />

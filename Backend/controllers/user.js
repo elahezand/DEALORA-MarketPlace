@@ -1,6 +1,6 @@
 const User = require("../models/user");
 const Ban = require("../models/ban");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
 const AppError = require("../utils/AppError");
 
 exports.getAllUsers = async (req, res, next) => {

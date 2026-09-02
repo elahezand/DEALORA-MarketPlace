@@ -1,5 +1,6 @@
 const Newsletter = require("../models/newsLetter");
 const AppError = require("../utils/AppError");
+const { paginate } = require("../utils/helper");
 
 // SUBSCRIBE
 async function subscribe(email) {

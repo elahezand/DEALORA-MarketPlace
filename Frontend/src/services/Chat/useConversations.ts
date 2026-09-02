@@ -12,7 +12,7 @@ export const useConversations = ({
 }: UseConversationsOptions = {}) => {
   return useInfiniteGet<ConversationsResponse>(
     "/chat/conversations",
-    {},
+    "conversations",
     {
       initialData: {
         pages: [{ success: true, data: initialData, pagination: initialPagination as any }],

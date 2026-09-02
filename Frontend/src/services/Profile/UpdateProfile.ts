@@ -1,4 +1,4 @@
-import { usePost } from "@/utils/hooks/useReactQueryHooks";
+import { usePut } from "@/utils/hooks/useReactQueryHooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -11,11 +11,11 @@ interface IUpdateProfilePayload {
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
 
-  const { mutate, ...rest } = usePost<void, FormData | IUpdateProfilePayload>(
+  const { mutate, ...rest } = usePut<void, FormData | IUpdateProfilePayload>(
     "/users/me/profile",
     {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
+        queryClient.invalidateQueries({ queryKey: ["/me/profile"] });
         toast.success("Profile updated successfully!");
       },
       onError: () => {

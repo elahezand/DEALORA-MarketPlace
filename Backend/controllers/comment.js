@@ -1,9 +1,9 @@
 const commentService = require("../services/comment");
 
 // GET PRODUCT COMMENTS
-exports.getByProduct = async (req, res, next) => {
+exports.getByListing = async (req, res, next) => {
   try {
-    const data = await commentService.getByProduct(req.params.productId);
+    const data = await commentService.getByProduct(req.params.listing);
     res.status(200).json({ data });
   } catch (err) {
     next(err);

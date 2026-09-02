@@ -11,6 +11,7 @@ import StepCategories from "@/components/newPost/stepCategories";
 import StepChooseState from "@/components/newPost/stepChooseState";
 import StepMedia from "@/components/newPost/stepMedia";
 import StepProductSpecAndVariants from "./stepProductSpecAndVariants";
+import { useRouter } from "next/navigation";
 import { MotionDiv } from "@/utils/providers/MotionWrapper";
 
 import { ZodError } from "zod";
@@ -25,8 +26,6 @@ const initialValues: FormValues = {
     location: {
         state: "",
         city: "",
-        lat: null,
-        lng: null,
     },
     price: 0,
     shipping: {
@@ -41,6 +40,7 @@ const steps = ["Category", "Details", "Specs", "Pricing", "Location", "Media", "
 export default function NewPost({ data, isLoading }: any) {
     const { mutate, isPending } = useCreatePost();
     const [step, setStep] = useState(0);
+    const router = useRouter()
     const profile = useGetProfile();
 
     const validateStep = (values: FormValues) => {
@@ -122,8 +122,6 @@ export default function NewPost({ data, isLoading }: any) {
                         location: {
                             state: values.location.state,
                             city: values.location.city,
-                            lat: values.location.lat ? Number(values.location.lat) : undefined,
-                            lng: values.location.lng ? Number(values.location.lng) : undefined,
                         },
                         shipping: {
                             type: values.shipping.type,
@@ -132,6 +130,7 @@ export default function NewPost({ data, isLoading }: any) {
                         owner: profile?.user?._id,
                     };
                     mutate(payload);
+                    router.replace("/posts")
                 }}
             >
                 {({ values, setFieldValue, validateForm, submitForm, errors }) => (

@@ -16,9 +16,9 @@ const offerSellerSchema = new mongoose.Schema(
       index: true,
     },
 
-    product: {
+    listing: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
+      ref: "Listing",
       required: true,
       index: true,
     },
@@ -76,37 +76,37 @@ offerSellerSchema.virtual("finalPrice").get(function () {
   return Math.round((price - (price * discount) / 100) * 100) / 100;
 });
 
-async function syncMinPrice(productId) {
+async function syncMinPrice(listingId) {
   const offers = await mongoose.model("OfferSeller").find({
-    product: productId,
+    listing: listingId,
     status: "accepted",
     stock: { $gt: 0 },
   });
 
   if (!offers.length) {
-    await mongoose.model("Product").findByIdAndUpdate(productId, { minPrice: 0 });
+    await mongoose.model("Listing").findByIdAndUpdate(listingId, { price: 0 });
     return;
   }
 
   const minFinalPrice = Math.min(...offers.map((o) => o.finalPrice));
-  await mongoose.model("Product").findByIdAndUpdate(productId, { minPrice: minFinalPrice });
+  await mongoose.model("Listing").findByIdAndUpdate(listingId, { price: minFinalPrice });
 }
 
 offerSellerSchema.post("save", async function () {
-  await syncMinPrice(this.product);
+  await syncMinPrice(this.listing);
 });
 offerSellerSchema.post("findOneAndUpdate", async function () {
   const doc = await this.model.findOne(this.getQuery());
-  if (doc) await syncMinPrice(doc.product);
+  if (doc) await syncMinPrice(doc.listing);
 });
 offerSellerSchema.post("updateOne", async function () {
   const doc = await this.model.findOne(this.getQuery());
-  if (doc) await syncMinPrice(doc.product);
+  if (doc) await syncMinPrice(doc.listing);
 });
 
-offerSellerSchema.index({ product: 1, status: 1 });
+offerSellerSchema.index({ listing: 1, status: 1 });
 offerSellerSchema.index({ seller: 1, status: 1 });
-offerSellerSchema.index({ product: 1, status: 1, stock: 1 });
+offerSellerSchema.index({ listing: 1, status: 1, stock: 1 });
 
 const Offer =
   mongoose.models.OfferSeller || mongoose.model("OfferSeller", offerSellerSchema);

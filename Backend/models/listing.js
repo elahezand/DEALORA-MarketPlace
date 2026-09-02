@@ -6,8 +6,6 @@ const LocationSchema = new Schema(
   {
     state: { type: String, trim: true, required: true },
     city: { type: String, trim: true, required: true },
-    lat: { type: Number },
-    lng: { type: Number },
   },
   { _id: false }
 );
@@ -48,7 +46,7 @@ const UnifiedListingSchema = new Schema(
       default: [],
     },
     price: { type: Number, required: true, min: 0 },
-    user: {
+    owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: function () { return this.listingType === "user_ad"; },
@@ -113,7 +111,7 @@ const UnifiedListingSchema = new Schema(
 UnifiedListingSchema.virtual("offers", {
   ref: "OfferSeller",
   localField: "_id",
-  foreignField: "product",
+  foreignField: "listing",
 });
 
 /* === MIDDLEWARES / HOOKS === */

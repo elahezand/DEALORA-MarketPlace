@@ -9,8 +9,6 @@ export interface FormValues {
     location: {
         state: string;
         city: string;
-        lat: number | null;
-        lng: number | null;
     };
     price: number;
     shipping: {

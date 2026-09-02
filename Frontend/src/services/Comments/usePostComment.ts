@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export interface NewCommentPayload {
-  productId: string;
+  listing: string;
   rating: number;
   body: string;
   title?: string;
@@ -13,12 +13,12 @@ export interface NewCommentPayload {
   parentId?: string;
 }
 
-export function usePostComment(productId: string) {
+export function usePostComment(listingId: string) {
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = usePost<any, NewCommentPayload>("/comments", {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", productId] });
+      queryClient.invalidateQueries({ queryKey: ["comments",listingId ] });
       toast.success("Your review was submitted and is awaiting approval.");
     },
     onError: () => {

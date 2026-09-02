@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Star, MessageCircle } from "lucide-react";
-import { HiChevronRight } from "react-icons/hi"; 
+import { Star, MessageCircle, Plus, X } from "lucide-react";
+import { HiChevronRight } from "react-icons/hi";
 import SectionHeading from "./SectionHeading";
 import CommentCard from "./CommentCard";
 import SkeletonComments from "@/components/skeleton/SkeletonComments";
@@ -13,14 +13,108 @@ import { useGetProfile } from "@/services/Profile/getProfile";
 import { CommentItemType } from "@/types/CommetTypes";
 const AuthModal = dynamic(() => import("../../modals/AuthModal"), { ssr: false });
 
+type Recommendation = "recommended" | "not_recommended" | "no_idea";
+
 interface CommentsProps {
-  productId: string;
-  initialComments?: any; 
+  listingId: string;
+  initialComments?: any;
   initialPagination?: any;
 }
 
-export default function Comments({ productId, initialComments, initialPagination }: CommentsProps) {
-  const endpoint = `/comments/product/${productId}`;
+// Small reusable "tag list" input for pros/cons -- type a value, hit
+// Enter or the + button to add it as a chip, click the x to remove it.
+function TagListInput({
+  label,
+  placeholder,
+  values,
+  onChange,
+  max = 10,
+}: {
+  label: string;
+  placeholder: string;
+  values: string[];
+  onChange: (next: string[]) => void;
+  max?: number;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const addValue = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    if (values.includes(trimmed)) {
+      setDraft("");
+      return;
+    }
+    if (values.length >= max) return;
+    onChange([...values, trimmed]);
+    setDraft("");
+  };
+
+  const removeValue = (val: string) => {
+    onChange(values.filter((v) => v !== val));
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-bold text-[var(--foreground-muted)]">{label}</span>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addValue();
+            }
+          }}
+          placeholder={placeholder}
+          disabled={values.length >= max}
+          className="flex-1 h-9 px-3 rounded-lg text-sm bg-[var(--background-soft)] border border-[var(--border)] focus:outline-none disabled:opacity-50"
+        />
+        <button
+          type="button"
+          onClick={addValue}
+          disabled={!draft.trim() || values.length >= max}
+          className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] disabled:opacity-40"
+          aria-label={`Add ${label.toLowerCase()}`}
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+      {values.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {values.map((val) => (
+            <span
+              key={val}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-[var(--background-soft)] border border-[var(--border)] text-[var(--foreground)]"
+            >
+              {val}
+              <button
+                type="button"
+                onClick={() => removeValue(val)}
+                className="text-[var(--foreground-subtle)] hover:text-[var(--destructive)]"
+                aria-label={`Remove ${val}`}
+              >
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const RECOMMENDATION_OPTIONS: { value: Recommendation; label: string }[] = [
+  { value: "recommended", label: "👍 Recommended" },
+  { value: "no_idea", label: "🤷 Not sure" },
+  { value: "not_recommended", label: "👎 Not recommended" },
+];
+
+export default function Comments({ listingId, initialComments, initialPagination }: CommentsProps) {
+  // Fixed: was /comments/product/:id, backend route is now /comments/listing/:id
+  const endpoint = `/comments/listing/${listingId}`;
 
   const {
     data,
@@ -36,37 +130,57 @@ export default function Comments({ productId, initialComments, initialPagination
   });
 
   const { user } = useGetProfile();
-  const { postComment, isPosting } = usePostComment(productId);
+  const { postComment, isPosting } = usePostComment(listingId);
 
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [pros, setPros] = useState<string[]>([]);
+  const [cons, setCons] = useState<string[]>([]);
+  const [recommendation, setRecommendation] = useState<Recommendation>("no_idea");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  const rawList = data?.pages 
+  const rawList = data?.pages
     ? data.pages.flatMap((page: any) => page?.data?.data ?? page?.data ?? page)
     : [];
 
   const comments: CommentItemType[] = Array.isArray(rawList) ? rawList : [];
 
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!user) {
-    setIsAuthOpen(true);
-    return;
-  }
-  if (!productId || !rating || !body.trim()) return;
+  const resetForm = () => {
+    setBody("");
+    setTitle("");
+    setRating(0);
+    setPros([]);
+    setCons([]);
+    setRecommendation("no_idea");
+  };
 
-  postComment(
-    { productId, rating, body: body.trim() },
-    {
-      onSuccess: () => {
-        setBody("");
-        setRating(0);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      setIsAuthOpen(true);
+      return;
+    }
+    if (!listingId || !rating || !body.trim()) return;
+
+    postComment(
+      {
+        listing: listingId,
+        rating,
+        title: title.trim() || undefined,
+        body: body.trim(),
+        pros,
+        cons,
+        recommendation,
       },
-    } as any
-  );
-};
+      {
+        onSuccess: () => {
+          resetForm();
+        },
+      } as any
+    );
+  };
 
   return (
     <div className="card p-6 space-y-6 w-full">
@@ -76,7 +190,7 @@ const handleSubmit = (e: React.FormEvent) => {
       />
 
       {/* WRITE A REVIEW */}
-      <form onSubmit={handleSubmit} className="space-y-3 pb-6 border-b border-[var(--border)]">
+      <form onSubmit={handleSubmit} className="space-y-4 pb-6 border-b border-[var(--border)]">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold text-[var(--foreground-muted)]">Your rating:</span>
           <div className="flex items-center gap-1" onMouseLeave={() => setHoverRating(0)}>
@@ -101,6 +215,15 @@ const handleSubmit = (e: React.FormEvent) => {
           </div>
         </div>
 
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Give your review a title (optional)"
+          maxLength={120}
+          className="w-full h-10 px-3 rounded-xl text-sm bg-[var(--background-soft)] border border-[var(--border)] focus:outline-none"
+        />
+
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
@@ -108,6 +231,44 @@ const handleSubmit = (e: React.FormEvent) => {
           rows={3}
           className="w-full p-3 rounded-xl resize-none text-sm bg-[var(--background-soft)] border border-[var(--border)] focus:outline-none"
         />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <TagListInput
+            label="Pros (optional)"
+            placeholder="e.g. Great battery life"
+            values={pros}
+            onChange={setPros}
+          />
+          <TagListInput
+            label="Cons (optional)"
+            placeholder="e.g. A bit heavy"
+            values={cons}
+            onChange={setCons}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-bold text-[var(--foreground-muted)]">Would you recommend this?</span>
+          <div className="flex flex-wrap gap-2">
+            {RECOMMENDATION_OPTIONS.map((opt) => {
+              const isSelected = recommendation === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRecommendation(opt.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    isSelected
+                      ? "border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)]"
+                      : "border-[var(--border)] bg-[var(--background-soft)] text-[var(--foreground-muted)]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="flex justify-end">
           <button

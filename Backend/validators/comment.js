@@ -28,7 +28,7 @@ const uniqueStringArray = (maxItems, maxLen) =>
 
 const createCommentSchema = z
   .object({
-    productId: objectId("productId"),
+    listing: objectId("listing"),
     rating: z.coerce.number().int().min(1).max(5),
     title: optionalTrimmedString(120),
     body: trimmedString(1, 5000),

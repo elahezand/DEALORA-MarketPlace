@@ -4,7 +4,7 @@ const categoryRouter = express.Router();
 const controller = require("../controllers/category");
 const cacheMiddleware = require("../middlewares/cache");
 
-const { authAdmin } = require("../middlewares/authMiddleware");
+const { authAdmin, authUser } = require("../middlewares/authMiddleware");
 const validateObjectIdParam = require("../middlewares/objectId");
 const validate = require("../middlewares/validate");
 
@@ -30,6 +30,7 @@ categoryRouter.get(
 
 categoryRouter.post(
     "/",
+    authUser,
     authAdmin,
     validate(CategorySchema),
     controller.post
@@ -37,6 +38,7 @@ categoryRouter.post(
 
 categoryRouter.put(
     "/:id",
+    authUser,
     authAdmin,
     validateObjectIdParam("id"),
     validate(UpdateCategorySchema),
@@ -45,6 +47,7 @@ categoryRouter.put(
 
 categoryRouter.delete(
     "/:id",
+    authUser,
     authAdmin,
     validateObjectIdParam("id"),
     controller.remove

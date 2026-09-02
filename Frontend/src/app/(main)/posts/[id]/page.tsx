@@ -21,7 +21,7 @@ export default async function PostsPage({ params }: { params: Promise<{ id: stri
 
     const [commentsRes, similarRes] = await Promise.all([
         isStoreProduct 
-            ? useServerData<any>(`/comments/product/${id}?page=1`, `comments-${id}`, revalidate)
+            ? useServerData<any>(`/comments/listing/${id}?page=1`, `comments-${id}`, revalidate)
             : Promise.resolve(null),
         tags 
             ? useServerData<any>(`/listings?tags=${tags}&limit=5`, `similar-${id}`, revalidate) 
@@ -42,7 +42,7 @@ export default async function PostsPage({ params }: { params: Promise<{ id: stri
 
             {isStoreProduct && (
                 <Comments
-                    productId={listingData._id}
+                    listingId={listingData._id}
                     initialComments={initialComments}
                     initialPagination={initialPagination}
                 />

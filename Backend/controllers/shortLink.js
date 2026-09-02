@@ -1,19 +1,19 @@
-const Product = require("../models/product");
+const Listing = require("../models/listing");
 
-exports.redirectToProduct = async (req, res, next) => {
+exports.redirectToListing = async (req, res, next) => {
   try {
     const { shortIdentifier } = req.params;
 
     if (!shortIdentifier) {
       return next({ status: 400, message: "shortIdentifier is required" });
     }
-    const product = await Product.findOne({ shortIdentifier }).lean();
+    const Listing = await Listing.findOne({ shortIdentifier }).lean();
 
-    if (!product) {
-      return next({ status: 404, message: "Product not found" });
+    if (!Listing) {
+      return next({ status: 404, message: "Listing not found" });
     }
 
-    return res.status(200).json({ data: product });
+    return res.status(200).json({ data: Listing });
   } catch (err) {
     return next(err);
   }

@@ -1,6 +1,6 @@
 "use client"
 import React from 'react'
-import { Accordion, AccordionItem, Slider } from "@heroui/react";
+import { Accordion, AccordionItem } from "@heroui/react";
 import { useGet } from '@/utils/hooks/useReactQueryHooks';
 import BooleanFilterItem from './BooleanFilterItem';
 import RadioFilterItem from './RadioFilterItem';

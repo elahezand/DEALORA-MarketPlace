@@ -1,18 +1,18 @@
 const Comment = require("../models/comment");
 const mongoose = require("mongoose");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 /*  GET BY PRODUCT  */
 
-exports.getByProduct = async (productId, query = {}) => {
-  if (!isValidId(productId)) {
-    throw { status: 400, message: "Invalid productId" };
+exports.getByProduct = async (listing, query = {}) => {
+  if (!isValidId(listing)) {
+    throw { status: 400, message: "Invalid listing" };
   }
 
   const filters = {
-    productId,
+    listing,
     parentId: null,
     status: "approved",
     deletedAt: null,
@@ -28,7 +28,7 @@ const parents = await paginate(Comment, {
 
   const replies = parentIds.length
     ? await Comment.find({
-        productId,
+        listing,
         parentId: { $in: parentIds },
         status: "approved",
         deletedAt: null,
@@ -59,7 +59,7 @@ const parents = await paginate(Comment, {
 exports.getAdmin = async (query = {}) => {
   const filters = {};
   if (query.status) filters.status = query.status;
-  if (query.productId && isValidId(query.productId)) filters.productId = query.productId;
+  if (query.productId && isValidId(query.listing)) filters.listing = query.listing;
 
   const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 100);
 
@@ -69,7 +69,7 @@ exports.getAdmin = async (query = {}) => {
     filters,
     populate: [
       { path: "user", select: "username phone" },
-      { path: "productId", select: "title" },
+      { path: "listing", select: "title" },
     ],
   });
 };
@@ -79,7 +79,7 @@ exports.getAdmin = async (query = {}) => {
 exports.create = async (userId, data) => {
   let { parentId, ...rest } = data;
 
-  let productId = rest.productId;
+  let listing = rest.listing;
 
   if (parentId) {
     if (!isValidId(parentId)) {
@@ -96,12 +96,12 @@ exports.create = async (userId, data) => {
       throw { status: 409, message: "Only 1 level reply allowed" };
     }
 
-    productId = parent.productId;
+    listing = parent.listing;
   }
 
   return Comment.create({
     user: userId,
-    productId,
+    listing,
     parentId: parentId || null,
     ...rest,
   });

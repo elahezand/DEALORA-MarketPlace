@@ -5,7 +5,7 @@ const path = require("path");
 const helmet = require("helmet");
 
 const errorHandler = require("./middlewares/errorHandler");
-const { redirectToProduct } = require("./controllers/shortLink");
+const { redirectToListing } = require("./controllers/shortLink");
 
 const authRouter = require("./routes/auth");
 const storeRouter = require("./routes/store");
@@ -126,7 +126,7 @@ routes.forEach(([routePath, router]) => {
   app.use(`/api${routePath}`, router);
 });
 
-app.get("/p/:shortIdentifier", redirectToProduct);
+app.get("/p/:shortIdentifier", redirectToListing);
 
 // 404 handler
 app.use((req, res, next) => {

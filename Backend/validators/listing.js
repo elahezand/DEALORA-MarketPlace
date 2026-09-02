@@ -7,13 +7,6 @@ const variantSchema = z.object({
   stock: z.number().int().min(0).default(0),
 });
 
-// BUGFIX: the "specs" step of the new-post form stores boolean values for
-// boolean-type category filters (e.g. `updateSpec(slug, e.target.checked)`),
-// but this schema only accepted strings, so posting an ad with any boolean
-// spec filled in threw a 422 "Invalid data" error. We now accept
-// string/number/boolean values and normalize them all to strings, which
-// matches the Mongoose model (`specs: { type: Map, of: String }`) and the
-// listing search filters (which compare against string query params).
 const specValueSchema = z.union([z.string(), z.number(), z.boolean()]).transform(String);
 
 const baseListingSchema = z.object({

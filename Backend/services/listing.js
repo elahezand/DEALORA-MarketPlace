@@ -1,137 +1,13 @@
 const mongoose = require("mongoose");
 const Listing = require("../models/listing");
 const Comment = require("../models/comment");
-const paginate = require("../utils/helper");
+const { paginate, buildListingFilters } = require("../utils/helper");
 const invalidateCache = require("../utils/cache");
-
 const isValidId = mongoose.Types.ObjectId.isValid;
-
-function escapeRegex(text) {
-  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-}
-
-function buildListingFilters(query) {
-  const filters = {};
-  const andConditions = [];
-
-  // 1. Status & ListingType Filters
-  if (query.listingType) {
-    filters.listingType = query.listingType;
-  }
-
-  if (query.status) {
-    filters.status = query.status;
-  } else if (query.listingType === "user_ad") {
-    filters.status = "accepted";
-  } else if (query.listingType === "store_product") {
-    filters.status = "active";
-  } else {
-    andConditions.push({
-      $or: [
-        { listingType: "user_ad", status: "accepted" },
-        { listingType: "store_product", status: "active" },
-      ],
-    });
-  }
-
-  // 2. Photos Filter
-  if (query.hasPhoto === "true") {
-    filters["images.0"] = { $exists: true };
-  }
-
-  // 3. SKU Filter
-  if (query.sku) {
-    filters["variants.sku"] = query.sku;
-  }
-
-  // 4. Category Filter
-  if (query.categoryId && isValidId(query.categoryId)) {
-    filters.categoryPath = new mongoose.Types.ObjectId(query.categoryId);
-  }
-
-  // 5. Price Range Filter
-  if (query.price) {
-    if (query.price.includes("-")) {
-      const [min, max] = query.price.split("-").map(Number);
-      filters.price = {};
-      if (!isNaN(min)) filters.price.$gte = min;
-      if (!isNaN(max)) filters.price.$lte = max;
-    } else {
-      const p = Number(query.price);
-      if (!isNaN(p)) filters.price = p;
-    }
-  }
-
-  // 6. Location Filters
-  if (query.city) {
-    filters["location.city"] = { $regex: new RegExp(escapeRegex(query.city), "i") };
-  }
-  if (query.neighborhood) {
-    filters["location.neighborhood"] = { $regex: new RegExp(escapeRegex(query.neighborhood), "i") };
-  }
-
-  // 7. Variants attributes (color, size)
-  for (const [key, value] of Object.entries(query)) {
-    if (["color", "size"].includes(key)) {
-      filters[`variants.attributes.${key}`] = value;
-    }
-  }
-
-  // 8. Reserved Keys & Specs Dynamic Filters
-  const reservedKeys = [
-    "categoryId", "price", "status", "q", "color", "size",
-    "sku", "city", "neighborhood", "listingType", "limit", "page", "cursor", "hasPhoto", "exchange"
-  ];
-
-  for (const [key, value] of Object.entries(query)) {
-    if (!reservedKeys.includes(key)) {
-      filters[`specs.${key}`] = value;
-    }
-  }
-
-  // 9. Advanced Smart Search Query (q)
-  if (query.q) {
-    const normalizeText = (str) => {
-      return str
-        .toLowerCase()
-        .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
-        .replace(/[\u064B-\u065F]/g, "")
-        .trim();
-    };
-
-    const cleanQuery = normalizeText(query.q);
-    const compactQuery = cleanQuery.replace(/\s+/g, "");
-    const tokens = cleanQuery.split(/\s+/).filter(Boolean);
-
-    const searchConditions = [];
-
-    searchConditions.push({ title: { $regex: new RegExp(escapeRegex(cleanQuery), "i") } });
-
-    if (compactQuery !== cleanQuery) {
-      searchConditions.push({ title: { $regex: new RegExp(escapeRegex(compactQuery), "i") } });
-    }
-
-    if (tokens.length > 1) {
-      const allTokensCondition = tokens.map((token) => ({
-        title: { $regex: new RegExp(escapeRegex(token), "i") },
-      }));
-      searchConditions.push({ $and: allTokensCondition });
-    }
-
-    andConditions.push({ $or: searchConditions });
-  }
-
-  // Combine and conditions safely to prevent overwriting $or
-  if (andConditions.length > 0) {
-    filters.$and = andConditions;
-  }
-
-  return filters;
-}
 
 /* === GET ALL === */
 async function getAllListings(query = {}) {
-  const filters = buildListingFilters(query);
+  const filters = await buildListingFilters(query);
   const maxLimit = query.listingType === "store_product" ? 100 : 50;
   const limit = Math.min(query.limit ? Number(query.limit) : 20, maxLimit);
 
@@ -139,7 +15,7 @@ async function getAllListings(query = {}) {
     limit,
     cursor: query.cursor,
     filters,
-    populate: ["categoryPath", "user"],
+    populate: ["categoryPath", "owner"],
   });
 }
 
@@ -153,7 +29,7 @@ async function getListingById(id, query = {}) {
     { new: true }
   )
     .populate("categoryPath", "_id title slug")
-    .populate("user", "_id name")
+    .populate("owner", "_id name")
     .lean({ virtuals: true });
 
   if (!listingData) throw { status: 404, message: "Listing not found" };
@@ -216,7 +92,7 @@ async function createListing(userId, data, files = []) {
   }
 
   if (payload.listingType === "user_ad") {
-    payload.user = userId;
+    payload.owner = userId;
     payload.status = "pending";
   } else {
     payload.status = "draft";

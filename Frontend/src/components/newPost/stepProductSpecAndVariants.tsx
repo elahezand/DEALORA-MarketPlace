@@ -14,15 +14,11 @@ export default function StepProductSpecAndVariants({
   const { data: res, isLoading } = useGet<ISingleCategoryResponse>(
     `/categories/${categoryId}`,
     undefined,
-    { enabled: !!categoryId } 
+    { enabled: !!categoryId }
   );
 
   const category = res?.data;
-  const filters = (category?.filters ?? []).filter(
-    (f: any) =>
-      !f.slug?.toLowerCase().includes("price") &&
-      !f.name?.toLowerCase().includes("price")
-  );
+  const filters = (category?.filters ?? [])
   const specs = values?.snapshot?.specs ?? {};
 
   const updateSpec = (key: string, value: any) => {
@@ -59,12 +55,12 @@ export default function StepProductSpecAndVariants({
 
       {/* ERROR ALERT */}
       {isSpecEmpty && (
-        <div 
+        <div
           className="flex items-center gap-2 p-4 rounded-xl text-sm font-medium border"
-          style={{ 
-            backgroundColor: "var(--destructive-bg)", 
-            borderColor: "var(--destructive)", 
-            color: "var(--destructive)" 
+          style={{
+            backgroundColor: "var(--destructive-bg)",
+            borderColor: "var(--destructive)",
+            color: "var(--destructive)"
           }}
         >
           <span>📍</span>
@@ -103,16 +99,16 @@ export default function StepProductSpecAndVariants({
                       Select {field.name}
                     </option>
                     {field.options?.map((opt: any) => (
-                      <option 
-                        key={opt.value} 
-                        value={opt.value} 
+                      <option
+                        key={opt.value}
+                        value={opt.value}
                         style={{ backgroundColor: "var(--card-solid)", color: "var(--foreground)" }}
                       >
                         {opt.label}
                       </option>
                     ))}
                   </select>
-                  <div 
+                  <div
                     className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
                     style={{ color: "var(--foreground-subtle)" }}
                   >
@@ -165,7 +161,7 @@ export default function StepProductSpecAndVariants({
                       checked={Boolean(value)}
                       onChange={(e) => updateSpec(field.slug, e.target.checked)}
                     />
-                    <div 
+                    <div
                       className="w-11 h-6 rounded-full transition-all duration-200 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"
                       style={{
                         backgroundColor: value ? "var(--primary-500)" : "var(--border-strong)"

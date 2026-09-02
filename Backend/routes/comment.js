@@ -52,10 +52,10 @@ router.delete(
 
 // PUBLIC
 router.get(
-  "/product/:productId",
-  validateObjectId("productId"),
+  "/listing/:listing",
+  validateObjectId("listing"),
   cacheMiddleware(120),
-  controller.getByProduct
+  controller.getByListing
 );
 
 // USER

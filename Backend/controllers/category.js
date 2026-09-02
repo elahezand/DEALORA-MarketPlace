@@ -1,5 +1,6 @@
 const service = require("../services/category");
 const invalidateCache = require("../utils/cache");
+const AppError = require("../utils/AppError");
 
 exports.get = async (req, res, next) => {
   try {
@@ -14,7 +15,7 @@ exports.getOne = async (req, res, next) => {
   try {
     const data = await service.getCategoryById(req.params.id);
     if (!data)
-      return next({ status: 404, message: "Category not found" });    
+      return next(new AppError(404, "Category not found"));    
     res.status(200).json({ success: true, data });
   } catch (e) {
     next(e);
@@ -45,9 +46,8 @@ exports.put = async (req, res, next) => {
     );
 
     if (!updated) {
-      return next({ status: 404, message: "Category not found" });
+      return next(new AppError(404, "Category not found"));
     }
-
     await invalidateCache("/api/categories*");
 
     res.status(200).json({

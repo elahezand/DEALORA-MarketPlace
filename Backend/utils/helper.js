@@ -55,7 +55,6 @@ const paginate = async (
     },
   };
 };
-
 function escapeRegex(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
@@ -198,4 +197,4 @@ async function buildListingFilters(query) {
 }
 
 
-module.exports = { paginate, buildListingFilters };
+module.exports = { paginate, buildListingFilters, escapeRegex };

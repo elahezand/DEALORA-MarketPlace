@@ -2,7 +2,9 @@ const { Types } = require("mongoose");
 const Cart = require("../models/cart");
 const Order = require("../models/order");
 const Listing = require("../models/listing");
-const paginate = require("../utils/helper");
+const { paginate } = require("../utils/helper");
+const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 const {
   createPayment,
   verifyPayment,
@@ -16,10 +18,9 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
   }).populate("items.product items.offer");
 
   if (!cart || cart.items.length === 0) {
-    throw { status: 400, message: "Cart is empty" };
+    throw new AppError(400, "Cart is empty");
   }
 
-  // Transform cart items to order items (map variantId → variant, priceSnapshot → price)
   const orderItems = cart.items.map((item) => ({
     product: item.product,
     variant: item.variantId,
@@ -45,7 +46,7 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
   );
 
   if (!payment?.data?.authority) {
-    throw { status: 500, message: "Payment init failed" };
+    throw new AppError(500, "Payment init failed");
   }
 
   order.payment = {
@@ -69,7 +70,7 @@ const verify = async (authority) => {
   });
 
   if (!order) {
-    throw { status: 404, message: "Order not found" };
+    throw new AppError(404, "Order not found");
   }
 
   if (order.paymentStatus === "paid") {
@@ -92,10 +93,10 @@ const verify = async (authority) => {
   await Promise.all(
     order.items.map(async (item) => {
       const result = await Listing.updateOne(
-        { 
+        {
           _id: item.product,
-          "variants._id": item.variantId,        
-          "variants.stock": { $gte: item.quantity } 
+          "variants._id": item.variantId,
+          "variants.stock": { $gte: item.quantity }
         },
         {
           $inc: {
@@ -104,13 +105,13 @@ const verify = async (authority) => {
           }
         },
         {
-          arrayFilters: [{ 
+          arrayFilters: [{
             "elem._id": new Types.ObjectId(item.variantId)
           }]
         }
       );
       if (result.modifiedCount === 0) {
-        console.warn(`Stock update failed for variant ${item.variantId} - possibly out of stock`);
+        logger.warn(`Stock update failed for variant ${item.variantId} - possibly out of stock`);
       }
     })
   );
@@ -121,7 +122,7 @@ const verify = async (authority) => {
 
 /* User Orders */
 const getMyOrders = async (userId, query = {}) => {
- const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
+  const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
 
   return paginate(Order, {
     limit,
@@ -141,7 +142,7 @@ const getOrderById = async (orderId, userId) => {
   });
 
   if (!order) {
-    throw { status: 404, message: "Order not found" };
+    throw new AppError(404, "Order not found");
   }
 
   return order;
@@ -168,7 +169,7 @@ const getOrderByIdAdmin = async (orderId) => {
   const order = await Order.findById(orderId);
 
   if (!order) {
-    throw { status: 404, message: "Order not found" };
+    throw new AppError(404, "Order not found");
   }
 
   return order;
@@ -179,7 +180,7 @@ const updateOrder = async (orderId, data) => {
   const order = await Order.findById(orderId);
 
   if (!order) {
-    throw { status: 404, message: "Order not found" };
+    throw new AppError(404, "Order not found");
   }
 
   Object.assign(order, data);
@@ -195,14 +196,11 @@ const cancelOrder = async (orderId, userId) => {
   });
 
   if (!order) {
-    throw { status: 404, message: "Order not found" };
+    throw new AppError(404, "Order not found");
   }
 
   if (["shipped", "completed"].includes(order.status)) {
-    throw {
-      status: 400,
-      message: "Order cannot be cancelled",
-    };
+    throw new AppError(400, "Order cannot be cancelled");
   }
 
   order.status = "cancelled";

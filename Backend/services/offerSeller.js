@@ -1,50 +1,45 @@
 const mongoose = require("mongoose");
 const OfferSeller = require("../models/offerSeller");
 const Store = require("../models/store");
-const Listing = require("../models/listing"); // Sync ba model-e yekparche va daqiqi ke dari
-const paginate = require("../utils/helper");
+const Listing = require("../models/listing");
+const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // === CREATE OFFER ===
 exports.createOffer = async (userId, data) => {
-  const { productId, price, stock, description } = data; // Strict destructuring baraye jolo-giri az Mass Assignment
-
-  if (!isValidId(productId)) {
-    throw { status: 400, message: "Invalid productId" };
+  const {listingId, price, stock, description } = data;
+  if (!isValidId(listingId)) {
+    throw new AppError(400, "Invalid listingId");
   }
 
   const store = await Store.findOne({ owner: userId }).lean();
   if (!store) {
-    throw { status: 404, message: "Store not found" };
+    throw new AppError(404, "Store not found");
   }
 
-  // Peida kardan va check kardan-e type mahsul az model-e Listing
-  const listing = await Listing.findById(productId).lean();
+  const listing = await Listing.findById(listingId).lean();
   if (!listing) {
-    throw { status: 404, message: "Product/Listing not found" };
-  }
-  
-  if (listing.listingType !== "store_product") {
-    throw { status: 400, message: "Offers can only be created for store products" };
+    throw new AppError(404, "Listing not found");
   }
 
-  // Jolo-giri az Concurrent Request Bugs (Race Condition)
+  if (listing.listingType !== "store_product") {
+    throw new AppError(400, "Offers can only be created for store listings");
+  }
+
   const existingOffer = await OfferSeller.findOne({
-    product: productId,
+    listing: listingId,
     seller: userId,
     status: { $in: ["pending", "accepted"] },
   }).lean();
 
   if (existingOffer) {
-    throw {
-      status: 409,
-      message: "You already have an active or pending offer for this product",
-    };
+    throw new AppError(409, "You already have an active or pending offer for this Listing");
   }
 
   return await OfferSeller.create({
-    product: productId,
+    listing: listingId,
     seller: userId,
     store: store._id,
     price,
@@ -56,21 +51,20 @@ exports.createOffer = async (userId, data) => {
 
 // === UPDATE OFFER ===
 exports.updateOffer = async (userId, data) => {
-  const { productId, price, stock, description } = data;
+  const { listingId, price, stock, description } = data;
 
-  if (!isValidId(productId)) throw { status: 400, message: "Invalid productId" };
+  if (!isValidId(listingId)) throw new AppError(400, "Invalid listingId");
 
   const offer = await OfferSeller.findOne({
-    product: productId,
+    listing: listingId,
     seller: userId,
     status: { $in: ["pending", "accepted"] },
   });
 
   if (!offer) {
-    throw { status: 404, message: "Active offer not found" };
+    throw new AppError(404, "Active offer not found");
   }
 
-  // Faqat field-haye mojaz updatable hastand ta data leakage rukh nade
   if (price !== undefined) offer.price = price;
   if (stock !== undefined) offer.stock = stock;
   if (description !== undefined) offer.description = description;
@@ -83,14 +77,14 @@ exports.updateOffer = async (userId, data) => {
 exports.getAll = async (query = {}) => {
   const limit = Number(query.limit);
   if (limit && limit > 100) {
-    throw { status: 400, message: "Limit must be <= 100" };
+    throw new AppError(400, "Limit must be <= 100");
   }
 
   const filters = {};
   if (query.status) {
     const allowed = ["pending", "accepted", "rejected"];
     if (!allowed.includes(query.status)) {
-      throw { status: 400, message: "Invalid status parameter" };
+      throw new AppError(400, "Invalid status parameter");
     }
     filters.status = query.status;
   }
@@ -101,7 +95,7 @@ exports.getAll = async (query = {}) => {
     filters,
     populate: [
       { path: "seller", select: "-password" },
-      { path: "product" },
+      { path: "listing" },
       { path: "store" },
     ],
   });
@@ -114,7 +108,7 @@ exports.getMine = async (userId, query = {}) => {
   if (query.status) {
     const allowed = ["pending", "accepted", "rejected"];
     if (!allowed.includes(query.status)) {
-      throw { status: 400, message: "Invalid status parameter" };
+      throw new AppError(400, "Invalid status parameter");
     }
     filters.status = query.status;
   }
@@ -123,25 +117,24 @@ exports.getMine = async (userId, query = {}) => {
     limit: query.limit,
     cursor: query.cursor,
     filters,
-    populate: ["product", "store"],
+    populate: ["listing", "store"],
   });
 };
 
 // === DELETE OFFER ===
 exports.remove = async (offerId, user) => {
-  if (!isValidId(offerId)) throw { status: 400, message: "Invalid offerId" };
+  if (!isValidId(offerId)) throw new AppError(400, "Invalid offerId");
 
   const offer = await OfferSeller.findById(offerId);
-  if (!offer) throw { status: 404, message: "Offer not found" };
+  if (!offer) throw new AppError(404, "Offer not found");
 
   const isOwner = offer.seller.toString() === user._id.toString();
   const isAdmin = user.role === "ADMIN";
 
-  if (!isOwner && !isAdmin) throw { status: 403, message: "Forbidden" };
+  if (!isOwner && !isAdmin) throw new AppError(403, "Forbidden");
 
-  // Sellers faqat pishnahad-haye pending ro mitonand pak konand
   if (!isAdmin && offer.status !== "pending") {
-    throw { status: 409, message: "Only pending offers can be deleted by the seller" };
+    throw new AppError(409, "Only pending offers can be deleted by the seller");
   }
 
   await OfferSeller.findByIdAndDelete(offerId);
@@ -151,7 +144,7 @@ exports.remove = async (offerId, user) => {
 // === APPROVE / REJECT OFFER (ADMIN) ===
 exports.approve = async (offerId, adminId, data) => {
   if (!["accepted", "rejected"].includes(data.status)) {
-    throw { status: 400, message: "Invalid action status. Must be accepted or rejected" };
+    throw new AppError(400, "Invalid action status. Must be accepted or rejected");
   }
 
   const session = await mongoose.startSession();
@@ -159,29 +152,29 @@ exports.approve = async (offerId, adminId, data) => {
 
   try {
     const offer = await OfferSeller.findById(offerId).session(session);
-    if (!offer) throw { status: 404, message: "Offer not found" };
+    if (!offer) throw new AppError(404, "Offer not found");
 
     if (offer.status !== "pending") {
-      throw { status: 409, message: "Offer has already been processed" };
+      throw new AppError(409, "Offer has already been processed");
     }
 
     // 1. REJECT LOGIC
     if (data.status === "rejected") {
       offer.status = "rejected";
       offer.adminComment = data.adminComment || "Rejected by administration";
-      
+
       await offer.save({ session });
       await session.commitTransaction();
       return offer;
     }
 
-    // 2. ACCEPT LOGIC (Kamelan ba model-e Virtual relation-e to match shod)
-    const listing = await Listing.findById(offer.product).session(session);
-    if (!listing) throw { status: 404, message: "Target listing product not found" };
+    // 2. ACCEPT LOGIC 
+    const listing = await Listing.findById(offer.listing).session(session);
+    if (!listing) throw new AppError(404, "Target listing not found");
 
     offer.status = "accepted";
     offer.adminComment = data.adminComment || "Approved by administration";
-    
+
     await offer.save({ session });
 
     await session.commitTransaction();

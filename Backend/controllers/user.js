@@ -1,13 +1,14 @@
 const User = require("../models/user");
 const Ban = require("../models/ban");
 const paginate = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 exports.getAllUsers = async (req, res, next) => {
   try {
     const { limit, cursor } = req.query;
 
     if (limit && Number(limit) > 50) {
-      return res.status(400).json({ message: "Limit must be <= 50" });
+      return next(new AppError(400, "Limit must be <= 50"));
     }
 
     const result = await paginate(User, { limit, cursor });
@@ -23,12 +24,12 @@ exports.postNewUser = async (req, res, next) => {
 
     const isBanUser = await Ban.exists({ phone });
     if (isBanUser) {
-      return res.status(403).json({ message: "User is banned" });
+      return next(new AppError(403, "User is banned"));
     }
 
     const isUserExist = await User.exists({ phone });
     if (isUserExist) {
-      return res.status(409).json({ message: "User already exists" });
+      return next(new AppError(409, "User already exists"));
     }
 
     const usersCount = await User.countDocuments();
@@ -60,7 +61,7 @@ exports.putUser = async (req, res, next) => {
     ).select("-password");
 
     if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+      return next(new AppError(404, "User not found"));
     }
 
     return res.status(200).json({ message: "Profile updated successfully", user: updatedUser });
@@ -75,11 +76,11 @@ exports.toggleBan = async (req, res, next) => {
     const user = await User.findById(targetUserId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return next(new AppError(404, "User not found"));
     }
 
     if (user.role.includes("ADMIN")) {
-      return res.status(400).json({ message: "Cannot ban an ADMIN user" });
+      return next(new AppError(400, "Cannot ban an ADMIN user"));
     }
 
     const existingBan = await Ban.findOne({ phone: user.phone });
@@ -101,7 +102,7 @@ exports.toggleRole = async (req, res, next) => {
     const user = await User.findById(targetUserId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return next(new AppError(404, "User not found"));
     }
 
     user.role = user.role.includes("ADMIN") ? ["USER"] : ["ADMIN"];
@@ -124,7 +125,7 @@ exports.createAddress = async (req, res, next) => {
     );
 
     if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+      return next(new AppError(404, "User not found"));
     }
 
     return res.status(200).json({
@@ -143,11 +144,11 @@ exports.updatedAddress = async (req, res, next) => {
     delete updateData._id;
 
     const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return next(new AppError(404, "User not found"));
 
     const address = user.addresses.id(addressId);
     if (!address) {
-      return res.status(404).json({ message: "Address not found" });
+      return next(new AppError(404, "Address not found"));
     }
 
     address.set(updateData);
@@ -167,11 +168,11 @@ exports.removeAddress = async (req, res, next) => {
     const { addressId } = req.params;
 
     const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return next(new AppError(404, "User not found"));
 
     const address = user.addresses.id(addressId);
     if (!address) {
-      return res.status(404).json({ message: "Address not found" });
+      return next(new AppError(404, "Address not found"));
     }
 
     user.addresses.pull(addressId);
@@ -192,7 +193,7 @@ exports.removeUser = async (req, res, next) => {
     const deletedUser = await User.findByIdAndDelete(targetUserId);
 
     if (!deletedUser) {
-      return res.status(404).json({ message: "User not found" });
+      return next(new AppError(404, "User not found"));
     }
 
     return res.status(200).json({ message: "User removed successfully" });

@@ -5,6 +5,8 @@ const path = require("path");
 const helmet = require("helmet");
 
 const errorHandler = require("./middlewares/errorHandler");
+const AppError = require("./utils/AppError");
+const logger = require("./utils/logger");
 const { redirectToListing } = require("./controllers/shortLink");
 
 const authRouter = require("./routes/auth");
@@ -63,7 +65,7 @@ app.use(express.urlencoded({ extended: false, limit: "20mb" }));
 
 // Log all incoming requests
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.originalUrl}`);
+  logger.http(`${req.method} ${req.originalUrl}`);
   next();
 });
 
@@ -78,14 +80,6 @@ app.use(
 app.use(
   "/users/avatars",
   express.static(path.join(__dirname, "public", "users", "avatars"), {
-    index: false,
-    maxAge: "1d",
-  })
-);
-
-app.use(
-  "/articles/images",
-  express.static(path.join(__dirname, "public", "articles", "images"), {
     index: false,
     maxAge: "1d",
   })
@@ -118,11 +112,11 @@ const routes = [
 
 routes.forEach(([routePath, router]) => {
   if (!router) {
-    console.error(`Router not found for ${routePath}`);
+    logger.error(`Router not found for ${routePath}`);
     return;
   }
 
-  console.log(`Loaded route: /api${routePath}`);
+  logger.debug(`Loaded route: /api${routePath}`);
   app.use(`/api${routePath}`, router);
 });
 
@@ -130,11 +124,8 @@ app.get("/p/:shortIdentifier", redirectToListing);
 
 // 404 handler
 app.use((req, res, next) => {
-  console.error(`404 -> ${req.method} ${req.originalUrl}`);
-
-  const error = new Error("Route not found");
-  error.statusCode = 404;
-  next(error);
+  logger.warn(`404 -> ${req.method} ${req.originalUrl}`);
+  next(new AppError(404, "Route not found"));
 });
 
 app.use(errorHandler);

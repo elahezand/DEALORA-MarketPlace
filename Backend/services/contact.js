@@ -1,6 +1,7 @@
 const Contact = require("../models/contact");
 const sendEmail = require("../utils/sendEmail");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 async function getContacts(query = {}) {
   const limit = Math.min(Number(query.limit) || 15, 100);
@@ -10,7 +11,7 @@ async function getContacts(query = {}) {
 
 async function getContactById(id) {
   const contact = await Contact.findById(id);
-  if (!contact) throw { status: 404, message: "Contact not found" };
+  if (!contact) throw new AppError(404, "Contact not found");
   return contact;
 }
 
@@ -22,10 +23,10 @@ async function createContact(data) {
 async function answerContact(id, adminId, content) {
   const contact = await Contact.findById(id);
 
-  if (!contact) throw { status: 404, message: "Contact not found" };
+  if (!contact) throw new AppError(404, "Contact not found");
 
   if (contact.status === "answered") {
-    throw { status: 400, message: "Already answered" };
+    throw new AppError(400, "Already answered");
   }
 
   contact.status = "answered";
@@ -49,7 +50,7 @@ async function answerContact(id, adminId, content) {
 
 async function deleteContact(id) {
   const deleted = await Contact.findByIdAndDelete(id);
-  if (!deleted) throw { status: 404, message: "Contact not found" };
+  if (!deleted) throw new AppError(404, "Contact not found");
   return true;
 }
 

@@ -4,6 +4,8 @@ const { hash, compare } = require("bcryptjs");
 const crypto = require("crypto");
 const axios = require("axios");
 const redisClient = require("../redis");
+const AppError = require("../utils/AppError");
+const logger = require("../utils/logger");
 
 const {
   generateToken,
@@ -47,25 +49,19 @@ exports.send = async (req, res, next) => {
 
     const isBanned = await Ban.findOne({ phone });
     if (isBanned) {
-      return next({
-        status: 403,
-        message: "User is banned",
-      });
+      return next(new AppError(403, "User is banned"));
     }
 
     const { expired, remainingTime } =
       await getOtpDetails(phone);
 
     if (!expired) {
-      return next({
-        status: 429,
-        message: `Try again after ${remainingTime}`,
-      });
+      return next(new AppError(429, `Try again after ${remainingTime}`));
     }
 
     const code = crypto.randomInt(10000, 99999);
     if (process.env.NODE_ENV !== "production") {
-      console.log("[DEV OTP]", code);
+      logger.debug("[DEV OTP]", code);
     }    
     
 
@@ -93,10 +89,7 @@ exports.send = async (req, res, next) => {
         }
       );
     } catch (err) {
-      return next({
-        status: 500,
-        message: "SMS service failed",
-      });
+      return next(new AppError(500, "SMS service failed"));
     }
 
     const hashedOtp = await hash(
@@ -128,10 +121,7 @@ exports.verify = async (req, res, next) => {
     );
 
     if (!savedOtp) {
-      return next({
-        status: 410,
-        message: "OTP expired",
-      });
+      return next(new AppError(410, "OTP expired"));
     }
 
     const isValid = await compare(
@@ -140,10 +130,7 @@ exports.verify = async (req, res, next) => {
     );
 
     if (!isValid) {
-      return next({
-        status: 410,
-        message: "Invalid OTP",
-      });
+      return next(new AppError(410, "Invalid OTP"));
     }
 
     await redisClient.del(getOtpKey(phone));
@@ -232,10 +219,7 @@ exports.refreshToken = async (req, res, next) => {
     const { refreshToken } = req.cookies;
 
     if (!refreshToken) {
-      return next({
-        status: 401,
-        message: "Unauthorized",
-      });
+      return next(new AppError(401, "Unauthorized"));
     }
 
     const payload = await verifyRefreshToken(refreshToken);
@@ -244,10 +228,7 @@ exports.refreshToken = async (req, res, next) => {
       res.clearCookie("accessToken", { path: "/" });
       res.clearCookie("refreshToken", { path: "/" });
 
-      return next({
-        status: 401,
-        message: "Invalid token",
-      });
+      return next(new AppError(401, "Invalid token"));
     }
 
     const user = await User.findById(payload.id);
@@ -256,10 +237,7 @@ exports.refreshToken = async (req, res, next) => {
       res.clearCookie("accessToken", { path: "/" });
       res.clearCookie("refreshToken", { path: "/" });
 
-      return next({
-        status: 401,
-        message: "Session invalid",
-      });
+      return next(new AppError(401, "Session invalid"));
     }
 
     const match = await compare(refreshToken, user.refreshToken)
@@ -267,10 +245,7 @@ exports.refreshToken = async (req, res, next) => {
       res.clearCookie("accessToken", { path: "/" });
       res.clearCookie("refreshToken", { path: "/" });
 
-      return next({
-        status: 401,
-        message: "Session invalid",
-      });
+      return next(new AppError(401, "Session invalid"));
     }
 
 
@@ -302,7 +277,7 @@ exports.refreshToken = async (req, res, next) => {
       message: "Token refreshed",
     });
   } catch (err) {
-    console.error("refresh error:", err);
+    logger.error("refresh error:", err);
     next(err);
   }
 };

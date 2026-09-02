@@ -1,3 +1,5 @@
+const AppError = require("../utils/AppError");
+
 const validate = (schema) => (req, res, next) => {
   const parsed = schema.safeParse(req.body);
 
@@ -9,11 +11,7 @@ const validate = (schema) => (req, res, next) => {
       received: err.received,
     }));
 
-    return next({
-      status: 422,
-      message: "Invalid data",
-      errors,
-    });
+    return next(new AppError(422, "Invalid data", { errors }));
   }
 
   req.parsed = parsed;

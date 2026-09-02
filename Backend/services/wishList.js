@@ -1,6 +1,7 @@
 const Favorite = require("../models/wishList");
 const Listing = require("../models/listing");
-const paginate = require("../utils/helper");
+const {paginate} = require("../utils/helper");
+const AppError = require("../utils/AppError");
 
 /* === GET USER FAVORITES === */
 async function getUserFavorites(userId, query = {}) {
@@ -24,10 +25,7 @@ async function addFavorite(userId, productId, productType) {
     const product = await Listing.findById(productId);
 
     if (!product) {
-        throw {
-            status: 404,
-            message: "Product not found",
-        };
+        throw new AppError(404, "Product not found");
     }
 
     const exists = await Favorite.findOne({
@@ -36,10 +34,7 @@ async function addFavorite(userId, productId, productType) {
     });
 
     if (exists) {
-        throw {
-            status: 409,
-            message: "Already in favorites",
-        };
+        throw new AppError(409, "Already in favorites");
     }
 
     return Favorite.create({
@@ -56,10 +51,7 @@ async function removeFavorite(userId, productId) {
     });
 
     if (!favorite) {
-        throw {
-            status: 404,
-            message: "Favorite not found",
-        };
+        throw new AppError(404, "Favorite not found");
     }
 
     return true;

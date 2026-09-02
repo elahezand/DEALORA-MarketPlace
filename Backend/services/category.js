@@ -1,5 +1,6 @@
 const Category = require("../models/category");
 const { all } = require("../routes/category");
+const AppError = require("../utils/AppError");
 
 /*  tree builder  */
 const buildTree = (items, parent = null) => {
@@ -50,7 +51,7 @@ const createCategory = async (data) => {
         return await Category.create(data);
     } catch (e) {
         if (e.code === 11000) {
-            throw { status: 409, message: "Category already exists" };
+            throw new AppError(409, "Category already exists");
         }
         throw e;
     }

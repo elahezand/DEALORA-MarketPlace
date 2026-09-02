@@ -1,5 +1,6 @@
 const Notification = require("../models/notification");
 const mongoose = require("mongoose");
+const AppError = require("../utils/AppError");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -13,7 +14,7 @@ exports.getAll = async (userId) => {
 // GET ONE
 exports.get = async (id) => {
   if (!isValidId(id)) {
-    throw { status: 400, message: "Invalid id" };
+    throw new AppError(400, "Invalid id");
   }
 
   const notification = await Notification.findById(id)
@@ -21,7 +22,7 @@ exports.get = async (id) => {
     .lean();
 
   if (!notification) {
-    throw { status: 404, message: "Notification not found" };
+    throw new AppError(404, "Notification not found");
   }
 
   return notification;
@@ -35,7 +36,7 @@ exports.create = async (data) => {
 // MARK AS SEEN
 exports.markSeen = async (id) => {
   if (!isValidId(id)) {
-    throw { status: 400, message: "Invalid id" };
+    throw new AppError(400, "Invalid id");
   }
 
   const updated = await Notification.findByIdAndUpdate(
@@ -45,7 +46,7 @@ exports.markSeen = async (id) => {
   );
 
   if (!updated) {
-    throw { status: 404, message: "Notification not found" };
+    throw new AppError(404, "Notification not found");
   }
 
   return updated;
@@ -54,13 +55,13 @@ exports.markSeen = async (id) => {
 // DELETE
 exports.remove = async (id) => {
   if (!isValidId(id)) {
-    throw { status: 400, message: "Invalid id" };
+    throw new AppError(400, "Invalid id");
   }
 
   const deleted = await Notification.findByIdAndDelete(id);
 
   if (!deleted) {
-    throw { status: 404, message: "Notification not found" };
+    throw new AppError(404, "Notification not found");
   }
 
   return true;

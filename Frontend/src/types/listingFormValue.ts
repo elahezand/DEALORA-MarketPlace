@@ -2,7 +2,7 @@ export interface FormValues {
     snapshot: {
         title: string;
         description: string;
-        images: string[];
+        images: File[];
         specs: Record<string, any>;
         categoryPath: string[];
     };

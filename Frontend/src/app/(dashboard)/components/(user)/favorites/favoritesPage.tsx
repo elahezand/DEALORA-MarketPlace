@@ -7,6 +7,7 @@ import { HiChevronRight } from "react-icons/hi";
 import { HiOutlineHeart, HiOutlineEye, HiOutlineTrash } from "react-icons/hi2";
 import qs from "qs";
 import { useQueryClient } from "@tanstack/react-query";
+import { getUrl } from "@/utils/helper"
 import { useInfiniteGet, useDelete } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
@@ -74,7 +75,7 @@ export default function InfiniteFavoritesSection({
       },
       cancel: {
         label: "Cancel",
-        onClick: () => {},
+        onClick: () => { },
       },
     });
   };
@@ -108,6 +109,7 @@ export default function InfiniteFavoritesSection({
         <tbody>
           {favorites.map((favorite: any) => {
             if (!favorite) return null;
+            const src = getUrl(favorite.images?.[0])
             const product = favorite.product || {};
             const statusKey = product.status?.toLowerCase() || "inactive";
             const tone = STATUS_TONE[statusKey] ?? "destructive";
@@ -124,7 +126,7 @@ export default function InfiniteFavoritesSection({
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-[var(--background-soft)] rounded-lg overflow-hidden flex-shrink-0 border border-[var(--border)]">
                       <img
-                        src={product.images?.[0] || "/placeholder.png"}
+                        src={src || "/placeholder.png"}
                         alt={product.title}
                         className="w-full h-full object-cover"
                       />
@@ -190,9 +192,8 @@ export default function InfiniteFavoritesSection({
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : "group-hover:translate-x-0.5"
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : "group-hover:translate-x-0.5"
+                }`}
             />
           </button>
         </div>

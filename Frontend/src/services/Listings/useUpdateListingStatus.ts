@@ -3,7 +3,7 @@ import { usePatch } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
 import { ListingProps } from "@/types/Listings";
 
-const ENDPOINT = "/listings";
+const ENDPOINT = "/listings/admin";
 
 export const useUpdateListingStatus = (onSettledCallback?: () => void) => {
   const queryClient = useQueryClient();
@@ -11,7 +11,8 @@ export const useUpdateListingStatus = (onSettledCallback?: () => void) => {
   return usePatch<
     { success: boolean; message: string; data: ListingProps },
     { id: string; status: "accepted" | "rejected" }
-  >((d) => `${ENDPOINT}/${d.id}/status`, {
+  >((d) => `/listings/${d.id}/status`, {
+   
     onSuccess: (res) => {
       toast.success(res?.message || "Status updated successfully");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });

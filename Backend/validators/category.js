@@ -9,24 +9,31 @@ const objectId = (field = "id") =>
 const SLUG = /^[a-z0-9-]+$/i;
 
 const OptionSchema = z.object({
-  value: z.string(),
-  label: z.string(),
+  value: z.string().trim().min(1),
+  label: z.string().trim().min(1),
   metadata: z.any().optional(),
 });
 
 const FieldSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().regex(SLUG),
+  name: z.string().trim().min(1),
+  slug: z.string().trim().regex(SLUG),
   description: z.string().optional().default(""),
-  type: z.enum(["radio", "selectBox"]),
+
+  // هماهنگ با frontend
+  type: z.enum(["select", "radio", "boolean", "text"]),
+
+  required: z.boolean().optional().default(false),
+
   options: z.array(OptionSchema).default([]),
 });
 
 const CategorySchema = z.object({
-  title: z.string().min(1),
+  title: z.string().trim().min(1),
 
   parent: objectId("parent").nullable().optional(),
-  slug: z.string().regex(SLUG),
+
+  slug: z.string().trim().regex(SLUG),
+
   description: z.string().optional().default(""),
 
   filters: z.array(FieldSchema).default([]),
@@ -36,7 +43,21 @@ const CategorySchema = z.object({
   metadata: z.any().optional(),
 });
 
-const UpdateCategorySchema = CategorySchema.partial();
+const UpdateCategorySchema = z.object({
+  title: z.string().trim().min(1).optional(),
+
+  parent: objectId("parent").nullable().optional(),
+
+  slug: z.string().trim().regex(SLUG).optional(),
+
+  description: z.string().optional(),
+
+  filters: z.array(FieldSchema).optional(),
+
+  isActive: z.boolean().optional(),
+
+  metadata: z.any().optional(),
+});
 
 module.exports = {
   CategorySchema,

@@ -1,12 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Formik, Form, FormikErrors } from "formik";
 import { GiConfirmed } from "react-icons/gi";
 import { HiOutlineMapPin, HiOutlineTag, HiOutlineTruck } from "react-icons/hi2";
 import { useCreatePost } from "@/services/Listings/createPost";
 import { FormValues } from "@/types/listingFormValue";
 import { stepSchemas } from "@/validations/postSchema";
-import { useGetProfile } from "@/services/Profile/getProfile";
 import StepCategories from "@/components/newPost/stepCategories";
 import StepChooseState from "@/components/newPost/stepChooseState";
 import StepMedia from "@/components/newPost/stepMedia";
@@ -15,6 +14,32 @@ import { useRouter } from "next/navigation";
 import { MotionDiv } from "@/utils/providers/MotionWrapper";
 
 import { ZodError } from "zod";
+function FilePreviewImg({
+    file,
+    alt,
+    className,
+}: {
+    file: File;
+    alt: string;
+    className?: string;
+}) {
+    const [url, setUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!(file instanceof File)) {
+            setUrl(null);
+            return;
+        }
+        const objectUrl = URL.createObjectURL(file);
+        setUrl(objectUrl);
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [file]);
+
+    if (!url) return null;
+
+    return <img src={url} alt={alt} className={className} />;
+}
+
 const initialValues: FormValues = {
     snapshot: {
         title: "",
@@ -41,7 +66,6 @@ export default function NewPost({ data, isLoading }: any) {
     const { mutate, isPending } = useCreatePost();
     const [step, setStep] = useState(0);
     const router = useRouter()
-    const profile = useGetProfile();
 
     const validateStep = (values: FormValues) => {
         try {
@@ -115,10 +139,8 @@ export default function NewPost({ data, isLoading }: any) {
                         images: values.snapshot.images ?? [],
                         categoryPath: values.snapshot.categoryPath ?? [],
                         specs: values.snapshot.specs ?? {},
-
                         price: values.price,
                         condition: values.condition,
-
                         location: {
                             state: values.location.state,
                             city: values.location.city,
@@ -127,10 +149,9 @@ export default function NewPost({ data, isLoading }: any) {
                             type: values.shipping.type,
                             cost: Number(values.shipping.cost) || 0,
                         },
-                        owner: profile?.user?._id,
-                    };
+                    }
                     mutate(payload);
-                    router.replace("/posts")
+                    router.push("/posts")
                 }}
             >
                 {({ values, setFieldValue, validateForm, submitForm, errors }) => (
@@ -291,8 +312,8 @@ export default function NewPost({ data, isLoading }: any) {
                                 <div className="rounded-xl border border-[var(--border)] bg-[var(--background-soft)] p-6 flex items-center gap-4">
                                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-[var(--card)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
                                         {values.snapshot.images?.[0] ? (
-                                            <img
-                                                src={values.snapshot.images[0]}
+                                            <FilePreviewImg
+                                                file={values.snapshot.images[0]}
                                                 alt="Main product"
                                                 className="w-full h-full object-cover"
                                             />
@@ -360,10 +381,10 @@ export default function NewPost({ data, isLoading }: any) {
                                             Photos
                                         </p>
                                         <div className="grid grid-cols-4 gap-3">
-                                            {values.snapshot.images.map((img, idx) => (
-                                                <img
+                                            {values.snapshot.images.map((file: File, idx: number) => (
+                                                <FilePreviewImg
                                                     key={idx}
-                                                    src={img}
+                                                    file={file}
                                                     alt={`Preview ${idx + 1}`}
                                                     className="aspect-square rounded-lg object-cover border border-[var(--border)]"
                                                 />

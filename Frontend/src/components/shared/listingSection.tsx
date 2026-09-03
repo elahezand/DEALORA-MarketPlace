@@ -5,6 +5,7 @@ import Image from "next/image";
 import { HiOutlinePhoto, HiOutlineExclamationTriangle } from "react-icons/hi2";
 import { ListingProps } from "@/types/Listings";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { getUrl } from "@/utils/helper"
 import { Pagination, EffectFade, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
@@ -78,13 +79,14 @@ export default function ListingsSection({ listings }: Props) {
                             >
                                 {images.length > 0 ? (
                                     images.map((image, idx) => {
+                                        const src = getUrl(image)                                        
                                         const hasError = imageErrors[`${item._id}_${idx}`];
                                         return (
                                             <SwiperSlide key={idx} className="w-full h-full">
                                                 {!hasError ? (
                                                     <div className="relative w-full h-full">
                                                         <Image
-                                                            src={image}
+                                                            src={src||""}
                                                             alt={`${title}-photo-${idx + 1}`}
                                                             unoptimized
                                                             fill

@@ -100,11 +100,10 @@ async function getListingById(id, query = {}) {
 
 /* === CREATE === */
 async function createListing(userId, data, files = []) {
-  const payload = { ...data };
-
-  if (files?.length) {
-    payload.images = files.map((f) => `/listings/images/${f.filename}`);
-  }
+  const payload = { ...data };        
+if (files?.length) {
+  payload.images = files.map((f) => `/listings/images/${f.filename}`);
+}
 
   if (payload.listingType === "user_ad") {
     payload.owner = userId;
@@ -115,6 +114,7 @@ async function createListing(userId, data, files = []) {
 
   const listing = await Listing.create(payload);
   await invalidateCache("/api/listings*");
+  
   return listing;
 }
 
@@ -167,7 +167,7 @@ async function getMyListings(userId, query = {}) {
     limit,
     cursor: query.cursor,
     filters: {
-      user: userId,
+      owner: userId,
       status: { $ne: "deleted" },
     },
     sort: { createdAt: -1 },

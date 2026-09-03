@@ -10,7 +10,7 @@ import { IUser } from "@/types/User";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
-
+import { getUrl } from "@/utils/helper"
 import { useToggleBanUser } from "@/services/User/useToggleBanUser";
 import { useToggleUserRole } from "@/services/User/useToggleUserRole";
 import { useDeleteUser } from "@/services/User/useDeleteUser";
@@ -96,6 +96,7 @@ export default function UsersClient({ initialData }: UsersClientProps) {
         </thead>
         <tbody>
           {users.map((user) => {
+            const src = getUrl(user.profilePicture)
             const isSelf = user._id === me?._id;
             const isAdmin = user.role.includes("ADMIN");
             const busy = actioningId === user._id;
@@ -108,7 +109,7 @@ export default function UsersClient({ initialData }: UsersClientProps) {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <EntityAvatar
-                      src={user.profilePicture}
+                      src={src}
                       alt={user.username ?? user.phone}
                       fallback={(user.username ?? user.phone)
                         .slice(0, 2)

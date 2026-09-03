@@ -4,7 +4,7 @@ import { HiOutlineUser, HiOutlineCamera } from "react-icons/hi2";
 interface ProfilePhotoCardProps {
   profilePicture?: string | null;
   username?: string | null;
-  subtitle?: string | null; // phone برای user، role برای admin مثلاً
+  subtitle?: string | null; 
   onPhotoChange?: (file: File) => void;
 }
 

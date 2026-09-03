@@ -69,17 +69,17 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(
-  "/public",
-  express.static(path.join(__dirname, "public"), {
-    index: false,
-    maxAge: "1d",
-  })
-);
 
 app.use(
   "/users/avatars",
   express.static(path.join(__dirname, "public", "users", "avatars"), {
+    index: false,
+    maxAge: "1d",
+  })
+);
+app.use(
+  "/listings/images",
+  express.static(path.join(__dirname, "public", "listings", "images"), {
     index: false,
     maxAge: "1d",
   })

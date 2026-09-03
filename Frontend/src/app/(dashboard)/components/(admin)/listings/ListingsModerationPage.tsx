@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
@@ -9,7 +8,10 @@ import { ListingProps } from "@/types/Listings";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
+import { toast } from "sonner";
 import { useUpdateListingStatus } from "@/services/Listings/useUpdateListingStatus";
+import { getUrl } from "@/utils/helper"
+
 
 type ListingStatus = ListingProps["status"];
 
@@ -64,10 +66,35 @@ export default function ListingsModerationClient({
     setActioningId(null)
   );
 
-  function handleStatusChange(id: string, newStatus: "accepted" | "rejected") {
-    setActioningId(id);
-    updateStatus({ id, status: newStatus });
+  function handleStatusChange(
+    id: string,
+    newStatus: "accepted" | "rejected"
+  ) {
+    const statusLabel = newStatus === "accepted" ? "accept" : "reject";
+
+    toast.warning(`Are you sure you want to ${statusLabel} this listing?`, {
+      description: "This action will change the listing status.",
+
+      action: {
+        label: "Confirm",
+        onClick: () => {
+          setActioningId(id);
+          updateStatus(
+            { id, status: newStatus },
+            {
+              onSettled: () => setActioningId(null),
+            }
+          );
+        },
+      },
+
+      cancel: {
+        label: "Cancel",
+        onClick: () => { },
+      },
+    });
   }
+
 
   return (
     <div className="flex flex-col gap-8 pb-10">
@@ -85,11 +112,10 @@ export default function ListingsModerationClient({
             key={tab.value}
             type="button"
             onClick={() => setStatus(tab.value)}
-            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${
-              status === tab.value
-                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
-            }`}
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
+              ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+              : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              }`}
           >
             {tab.label}
           </button>
@@ -122,6 +148,7 @@ export default function ListingsModerationClient({
         </thead>
         <tbody>
           {listings.map((listing) => {
+            const src = getUrl(listing.images?.[0])
             const busy = actioningId === listing._id;
             const sellerName =
               listing.listingType === "store_product"
@@ -136,7 +163,7 @@ export default function ListingsModerationClient({
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <EntityAvatar
-                      src={listing.images?.[0]}
+                      src={src}
                       alt={listing.title}
                       fallback={(listing.title || "—").slice(0, 2).toUpperCase()}
                       shape="square"
@@ -202,9 +229,8 @@ export default function ListingsModerationClient({
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : ""
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : ""
+                }`}
             />
           </button>
         </div>

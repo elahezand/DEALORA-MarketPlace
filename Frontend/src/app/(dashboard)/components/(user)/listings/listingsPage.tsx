@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getUrl } from "@/utils/helper"
 import { HiChevronRight } from "react-icons/hi";
 import {
   HiOutlineEye,
@@ -191,7 +192,8 @@ const handleDelete = (id: string) => {
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-[var(--background-soft)] rounded-lg overflow-hidden flex-shrink-0 border border-[var(--border)]">
                       <img
-                        src={listing.images?.[0] || "/placeholder.png"}
+                        src={getUrl( listing.images?.[0])
+                        || "/placeholder.png"}
                         alt={listing.title}
                         className="w-full h-full object-cover"
                       />

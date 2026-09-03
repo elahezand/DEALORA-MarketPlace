@@ -55,7 +55,7 @@ exports.getMyListings = async (req, res, next) => {
 };
 
 exports.createListing = async (req, res, next) => {
-  try {
+  try {                
     const listing = await listingService.createListing(
       req.user._id,
       req.parsed.data,

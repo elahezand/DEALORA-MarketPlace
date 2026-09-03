@@ -15,8 +15,10 @@ export const useUpdateCategory = (onSuccessCallback?: () => void) => {
         queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
         onSuccessCallback?.();
       },
-      onError: (err: any) =>
-        toast.error(err?.response?.data?.message || "Failed to update category"),
-    }
+       onError: (error: any) => {
+        toast.error(
+          error?.response?.data?.message || "Unknown Error"
+        );
+      }}
   );
 };

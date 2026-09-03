@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { HiOutlineRectangleGroup, HiOutlinePlus, HiOutlineTrash } from "react-icons/hi2";
 import { AdminFormModal, FormField, inputClass, textareaClass } from "../shared/AdminFormModal";
 import { AdminCategory, CategoryFilterType } from "@/types/Category";
-import { useCreateCategory } from "@/services/Categories/useGetCategory";
+import { useCreateCategory } from "@/services/Categories/useCreateCategory";
 import { useUpdateCategory } from "@/services/Categories/useUpdateCategory";
 
 const slugify = (s: string) =>
@@ -203,7 +203,7 @@ export default function EditandCreateCategory({
     };
 
     if (form._id) {
-      updateCategory({ _id: form._id, ...payload });
+      updateCategory({_id: form._id, ...payload });
     } else {
       createCategory(payload);
     }

@@ -10,8 +10,6 @@ import { useGetProfile } from "@/services/Profile/getProfile";
 export default function ProfileBanner() {
   const { user, isLoading } = useGetProfile();
 
-  // Don't flash the banner before we know the real profile state,
-  // and don't show anything if we couldn't load the user at all.
   if (isLoading || !user) return null;
 
   const missing = [

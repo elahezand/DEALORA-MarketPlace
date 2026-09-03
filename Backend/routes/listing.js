@@ -20,8 +20,7 @@ listingRouter.post("/smart-search", controller.handleSmartSearch);
 
 listingRouter.get("/my", authUser, controller.getMyListings);
 
-/* ADMIN — must come before "/:id" and requires elevated auth so
-   non-public statuses (pending/rejected) are never exposed publicly. */
+/* ADMIN — must come before*/
 listingRouter.get(
   "/admin",
   authUser,
@@ -61,9 +60,9 @@ listingRouter.delete(
   controller.deleteListing
 );
 
-/* =========================================================
+/* 
    3. ADMIN ROUTES
-   ========================================================= */
+    */
 
 listingRouter.patch(
   "/:id/status",

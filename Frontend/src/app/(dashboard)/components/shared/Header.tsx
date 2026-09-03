@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import { ThemeSwitcher } from "@/context/ThemeSwitcher";
 import { HiOutlineBellAlert } from "react-icons/hi2";
+import { getUrl } from "@/utils/helper"
 import { IUser } from "@/types/User";
 import {
   TbLayoutSidebarLeftCollapseFilled,
@@ -12,7 +13,8 @@ import {
 interface AppHeaderProps {
   isOpen: boolean;
   onToggle: () => void;
-  user?: IUser | null}
+  user?: IUser | null
+}
 
 export function AppHeader({ isOpen, onToggle, user }: AppHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +81,7 @@ export function AppHeader({ isOpen, onToggle, user }: AppHeaderProps) {
             <div className="user-chip cursor-pointer">
               {user.profilePicture ? (
                 <img
-                  src={user.profilePicture}
+                  src={getUrl(user.profilePicture)||""}
                   alt={user.username}
                   className="w-8 h-8 rounded-full object-cover"
                 />

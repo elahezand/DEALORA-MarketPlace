@@ -10,6 +10,7 @@ import {
 } from "react-icons/hi2";
 import { Spinner } from "@heroui/react";
 import { useUpdateProfile } from "@/services/Profile/UpdateProfile";
+import { getUrl } from "@/utils/helper"
 
 interface PersonalInfoFormProps {
   initialUsername?: string | null;
@@ -25,6 +26,7 @@ export function PersonalInfoForm({
   phone,
   profilePicture,
 }: PersonalInfoFormProps) {
+  
   const [username, setUsername] = useState(initialUsername ?? "");
   const [email, setEmail] = useState(initialEmail ?? "");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -39,15 +41,11 @@ export function PersonalInfoForm({
     if (initialEmail) setEmail(initialEmail);
   }, [initialUsername, initialEmail]);
 
-  const getAvatarUrl = (path?: string | null) => {
-    if (!path) return null;
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-    return `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
-  };
+
 
   // Handle file selection & client-side preview
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -76,13 +74,13 @@ export function PersonalInfoForm({
     updateProfile(formData, {
       onSuccess: () => {
         setSaved(true);
-        setSelectedFile(null); 
+        setSelectedFile(null);
         setTimeout(() => setSaved(false), 3000);
       },
     });
   }
 
-  const avatarSrc = previewUrl || getAvatarUrl(profilePicture);
+  const avatarSrc = previewUrl || getUrl(profilePicture);  
 
   return (
     <div className="card rounded-2xl border border-[var(--border)] p-6 flex flex-col gap-6">
@@ -108,11 +106,10 @@ export function PersonalInfoForm({
           </div>
 
           <label
-            className={`absolute -bottom-2 -right-2 w-7 h-7 rounded-lg bg-[var(--primary-500)] text-white flex items-center justify-center shadow-sm transition-all ${
-              isUpdating
+            className={`absolute -bottom-2 -right-2 w-7 h-7 rounded-lg bg-[var(--primary-500)] text-white flex items-center justify-center shadow-sm transition-all ${isUpdating
                 ? "opacity-50 cursor-not-allowed"
                 : "hover:bg-[var(--primary-600)] cursor-pointer"
-            }`}
+              }`}
           >
             <HiOutlineCamera className="w-3.5 h-3.5" />
             <input

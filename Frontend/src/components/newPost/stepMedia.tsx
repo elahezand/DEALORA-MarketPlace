@@ -1,18 +1,44 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { GrGallery } from "react-icons/gr";
-import { FaPlus as FaPlusIcon } from "react-icons/fa"; 
-import Image from "next/image";
+import { FaPlus as FaPlusIcon } from "react-icons/fa";
 import { useFormikContext } from "formik";
 
 const MAX_IMAGES = 4;
+
+function ImagePreview({
+    file,
+    alt,
+    className,
+}: {
+    file: File;
+    alt: string;
+    className?: string;
+}) {
+    const [url, setUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!(file instanceof File)) {
+            setUrl(null);
+            return;
+        }
+        const objectUrl = URL.createObjectURL(file);
+        setUrl(objectUrl);
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [file]);
+
+    if (!url) return null;
+
+    return <img src={url} alt={alt} className={className} />;
+}
 
 export default function StepMedia() {
     const { values, setFieldValue, setFieldTouched } = useFormikContext<any>();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const pics = values?.snapshot?.images || [];
+    const images: File[] = values?.snapshot?.images || [];
+
     const handleFocus = () => {
         setFieldTouched("snapshot.images", true);
     };
@@ -22,34 +48,22 @@ export default function StepMedia() {
         if (!files) return;
 
         const fileArr = Array.from(files);
-        const readers = fileArr.map(
-            (file) =>
-                new Promise<string>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => resolve(ev.target?.result as string);
-                    reader.readAsDataURL(file);
-                })
-        );
-
-        Promise.all(readers).then((images) => {
-            const updated = [...pics, ...images].slice(0, MAX_IMAGES);
-            setFieldValue("snapshot.images", updated);
-            setFieldTouched("snapshot.images", true);
-        });
+        const updated = [...images, ...fileArr].slice(0, MAX_IMAGES);
+        setFieldValue("snapshot.images", updated);
+        setFieldTouched("snapshot.images", true);
 
         e.target.value = "";
     };
 
     const handleRemoveImage = (idx: number) => {
-        const updated = pics.filter((_: string, i: number) => i !== idx);
+        const updated = images.filter((_: File, i: number) => i !== idx);
         setFieldValue("snapshot.images", updated);
     };
 
-    const hasError = values?.snapshot?.images && pics.length === 0;
+    const hasError = values?.snapshot?.images && images.length === 0;
 
     return (
         <div className="space-y-6 antialiased">
-            {/* HEADER SECTION */}
             <div className="flex items-center justify-between p-4 rounded-2xl border transition-colors duration-200"
                  style={{
                      backgroundColor: "var(--background-soft)",
@@ -79,11 +93,10 @@ export default function StepMedia() {
                          backgroundColor: "var(--border)",
                          color: "var(--foreground-muted)"
                      }}>
-                    {pics.length} / {MAX_IMAGES}
+                    {images.length} / {MAX_IMAGES}
                 </div>
             </div>
 
-            {/* ERROR ALERT */}
             {hasError && (
                 <div className="flex items-center gap-2 p-4 rounded-xl text-sm font-medium border transition-colors duration-200"
                      style={{
@@ -96,9 +109,8 @@ export default function StepMedia() {
                 </div>
             )}
 
-            {/* IMAGES GRID */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {pics.map((img: string, idx: number) => {
+                {images.map((file: File, idx: number) => {
                     const isMain = idx === 0;
                     return (
                         <div
@@ -109,11 +121,10 @@ export default function StepMedia() {
                                 boxShadow: isMain ? "var(--focus-ring-shadow)" : "var(--card-shadow-2)"
                             }}
                         >
-                            <Image
-                                src={img}
-                                fill
+                            <ImagePreview
+                                file={file}
                                 alt={`product-preview-${idx}`}
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
 
                             <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-slate-900/30 transition-all duration-300" />
@@ -143,8 +154,7 @@ export default function StepMedia() {
                     );
                 })}
 
-                {/* ADD BUTTON */}
-                {pics.length < MAX_IMAGES && (
+                {images.length < MAX_IMAGES && (
                     <div
                         className="aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 group relative"
                         style={{
@@ -183,7 +193,7 @@ export default function StepMedia() {
                             ref={fileInputRef}
                             className="hidden"
                             onChange={handleAddImage}
-                            disabled={pics.length >= MAX_IMAGES}
+                            disabled={images.length >= MAX_IMAGES}
                         />
                     </div>
                 )}

@@ -4,6 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { Heart, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { getUrl } from "@/utils/helper"
+
 
 interface ImageGalleryProps {
     images: string[];
@@ -21,6 +23,7 @@ export default function ImageGallery({
 }: ImageGalleryProps) {
     const [selectedImage, setSelectedImage] = useState(0);
     const displayImages = images.length > 0 ? images : ["/placeholder.png"];
+    const src = getUrl(displayImages[selectedImage])
 
     const handleShare = async () => {
         if (navigator.share) {
@@ -38,12 +41,13 @@ export default function ImageGallery({
         }
     };
 
+
     return (
         <div className="relative w-full h-full flex flex-col justify-between">
             {/* MAIN IMAGE */}
             <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[var(--background-soft)] border border-[var(--border)]">
                 <Image
-                    src={displayImages[selectedImage]}
+                    src={src || "/placeholder.png"}
                     alt={title}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -83,27 +87,28 @@ export default function ImageGallery({
             {/* THUMBNAILS */}
             {displayImages.length > 1 && (
                 <div className="flex items-center gap-4 mt-4 overflow-x-auto pb-1">
-                    {displayImages.map((img, idx) => (
-                        <button
+                    {displayImages.map((img, idx) => {
+                        const src = getUrl(img)
+                        return (< button
                             key={idx}
                             onClick={() => setSelectedImage(idx)}
-                            className={`relative h-16 w-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all duration-200 ${
-                                selectedImage === idx
-                                    ? "border-[var(--primary-500)] scale-105 shadow-sm"
-                                    : "border-[var(--border)] opacity-70 hover:opacity-100"
-                            }`}
+                            className={`relative h-16 w-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all duration-200 ${selectedImage === idx
+                                ? "border-[var(--primary-500)] scale-105 shadow-sm"
+                                : "border-[var(--border)] opacity-70 hover:opacity-100"
+                                }`}
                         >
                             <Image
-                                src={img}
+                                src={src || ""}
                                 alt={`${title} ${idx + 1}`}
                                 fill
                                 sizes="64px"
                                 className="object-cover"
                             />
-                        </button>
-                    ))}
+                        </button>)
+                    })}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

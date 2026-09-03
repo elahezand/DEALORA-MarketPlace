@@ -47,8 +47,7 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
     );
   }
 
-  // Ownership is also enforced server-side (PUT will 403 for a non-owner),
-  // but we check here too so the user gets a clear message instead of a failed save.
+
   const isOwner = profileLoading || !listing.user || listing.user._id === user?._id;
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -14,8 +14,7 @@ function formatStat(value: number) {
 }
 
 export default function StatsBar() {
-  const { stats, isLoading, isError } = useGetPublicStats();
-
+  const { stats, isLoading, isError } = useGetPublicStats();  
   return (
     <MotionDiv
       initial={{ y: 15, opacity: 0 }}

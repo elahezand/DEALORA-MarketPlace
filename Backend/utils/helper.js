@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Store = require("../models/store");
+const AppError = require("./AppError");
 const isValidId = mongoose.Types.ObjectId.isValid;
 
 const paginate = async (
@@ -14,7 +15,7 @@ const paginate = async (
     cursorField = "_id",
   } = {}
 ) => {
-  limit = Math.min(Math.max(Number(limit), 1), 50);
+  limit = Math.min(Math.max(Number(limit) || 20, 1), 50);
 
   const query = { ...filters };
 
@@ -67,9 +68,6 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     filters.listingType = query.listingType;
   }
 
-  // Only trusted admin requests may filter by arbitrary status (e.g. "pending",
-  // "rejected"). Public/unauthenticated requests may only ever see the
-  // publicly-visible statuses, otherwise unmoderated content would leak.
   const PUBLIC_STATUSES = ["accepted", "active"];
   if (isAdmin && query.status) {
     filters.status = query.status;
@@ -157,7 +155,12 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     }
   }
   if (query.filter) {
-    const parsedFilter = JSON.parse(query.filter);
+    let parsedFilter;
+    try {
+      parsedFilter = JSON.parse(query.filter);
+    } catch {
+      throw new AppError(400, "Invalid 'filter' query parameter: must be valid JSON");
+    }
     for (const [key, value] of Object.entries(parsedFilter)) {
       filters[`specs.${key}`] = value;
     }
@@ -194,7 +197,6 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     andConditions.push({ $or: searchConditions });
   }
 
-  // Combine and conditions safely to prevent overwriting $or
   if (andConditions.length > 0) {
     filters.$and = andConditions;
   }

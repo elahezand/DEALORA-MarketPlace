@@ -11,8 +11,8 @@ import {
   HiOutlinePencilSquare,
   HiOutlineQueueList,
 } from "react-icons/hi2";
-import { useQueryClient } from "@tanstack/react-query";
-import { useInfiniteGet, useDelete } from "@/utils/hooks/useReactQueryHooks";
+import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import { useDeleteListing } from "@/services/Listings/useDeleteListing";
 import { ListingProps } from "@/types/Listings";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
@@ -62,20 +62,7 @@ export default function ListingsPage({
     },
   });
 
-  const queryClient = useQueryClient();
-
-  const { mutate: deleteListing, isPending: isDeleting } = useDelete<
-    ListingProps,
-    { id: string }
-  >((data) => `/listings/${data.id}`, {
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/listings/my"] });
-      toast.success("Listing deleted successfully!");
-    },
-    onError: () => {
-      toast.error("Failed to delete listing.");
-    },
-  });
+  const { mutate: deleteListing, isPending: isDeleting } = useDeleteListing();
 
 const handleDelete = (id: string) => {
   toast.warning("Are you sure you want to delete this listing?", {

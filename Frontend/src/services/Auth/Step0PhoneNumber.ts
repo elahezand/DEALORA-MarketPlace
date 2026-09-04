@@ -1,27 +1,24 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
-import { ApiError } from "@/types/api/ErrorTypes";
+import { StartRegistrationResponse } from "@/types/Auth/AuthTypes";
 
 interface StartRegistrationValues {
   phone: string;
 }
-export const useStartRegistration = (onSuccess: () => void
+export const useStartRegistration = (
+  onSuccess: (remainingTime: string) => void
 ) => {
-  const { mutate, isPending } = usePost<StartRegistrationValues>
-    ("/auth/send", {
-      onSuccess: (data) => {
-        console.log(data);
-                
-        toast.success("Code Sent Succcessfully:)");
-        
-        onSuccess();        
-      },
-      onError: (error: ApiError) => {
-        const errorMessage =
-          error.response?.data?.message || "UNKOWN ERROR";
-        toast.error(errorMessage);
-      },
-    });
+  const { mutate, isPending } = usePost<
+    StartRegistrationResponse,
+    StartRegistrationValues
+  >("/auth/send", {
+    onSuccess: (data) => {
+      toast.success("Code Sent Succcessfully:)");
+
+      onSuccess(data.remainingTime);
+    },
+    errorFallback: "Failed to send code",
+  });
 
   return { mutate, isPending };
 };

@@ -1,11 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useGet, usePatch } from "@/utils/hooks/useReactQueryHooks";
+import { useGet, usePatch, useDelete } from "@/utils/hooks/useReactQueryHooks";
+import { toast } from "sonner";
 
 export const useIsFavorited = (productId?: string) =>
   useGet<{ isFavorited: boolean }>(
     `/wishList/is-favorited/${productId}`,
     undefined,
-    { enabled: !!productId }
+    { enabled: !!productId, silentError: true }
   );
 
 export const useToggleFavorite = (productId?: string) => {
@@ -19,6 +20,21 @@ export const useToggleFavorite = (productId?: string) => {
         }
         queryClient.invalidateQueries({ queryKey: ["/wishList/my"] });
       },
+    }
+  );
+};
+
+export const useRemoveFavorite = () => {
+  const queryClient = useQueryClient();
+
+  return useDelete<any, { productId: string }>(
+    (data) => `/wishList/${data.productId}`,
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/wishList/my"] });
+        toast.success("Removed from favorites.");
+      },
+      errorFallback: "Failed to remove from favorites.",
     }
   );
 };

@@ -12,9 +12,7 @@ export const useDeleteAddress = () => {
         queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
         toast.success("Address deleted successfully!");
       },
-      onError: () => {
-        toast.error("Failed to delete address.");
-      },
+      errorFallback: "Failed to delete address.",
     }
   );
 

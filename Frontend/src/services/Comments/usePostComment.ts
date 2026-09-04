@@ -21,9 +21,7 @@ export function usePostComment(listingId: string) {
       queryClient.invalidateQueries({ queryKey: ["comments",listingId ] });
       toast.success("Your review was submitted and is awaiting approval.");
     },
-    onError: () => {
-      toast.error("Something went wrong, please try again.");
-    },
+    errorFallback: "Something went wrong, please try again.",
   });
 
   return { postComment: mutate, isPosting: isPending };

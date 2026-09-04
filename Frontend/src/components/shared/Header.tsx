@@ -22,6 +22,7 @@ import { api } from "@/services/interceptor";
 import clsx from "clsx";
 import Link from "next/link";
 import { ThemeSwitcher } from "@/context/ThemeSwitcher";
+import { getUrl } from "@/utils/helper"
 import { toast } from "sonner";
 import { IoLocationSharp } from "react-icons/io5";
 import Logo from "./Logo";
@@ -39,6 +40,10 @@ export default function Header() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useGetProfile();
+  
+  const initials = user?.username
+    ? user.username.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLocationsModalOpen, setIsLocationsModalOpen] = useState(false);
@@ -177,19 +182,22 @@ export default function Header() {
             <Dropdown placement="bottom-end">
               <DropdownTrigger>
                 <button className="user-chip text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
-                  <Avatar
-                    isBordered
-                    className="ring-2 ring-[var(--border)] border-2 border-[var(--primary-400)] w-9 h-9 min-w-[36px]"
-                    color="primary"
-                    size="sm"
-                    src={user.profilePicture || undefined}
-                  />
+                  {user.profilePicture ? (
+                    <img
+                      src={getUrl(user.profilePicture) || ""}
+                      alt={user.username}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-[var(--gradient)] flex items-center justify-center text-white text-xs font-black flex-shrink-0">
+                      {initials}
+                    </div>
+                  )}
 
                   <div className="hidden md:flex flex-col max-w-[120px]">
                     <span className="text-[13px] font-bold truncate leading-tight text-[var(--foreground)]">
                       {user.username || "My Account"}
                     </span>
-
                     <span className="text-[11px] text-[var(--foreground-subtle)] truncate">
                       {user.phone || user.email || "Verified User"}
                     </span>

@@ -26,7 +26,7 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
     variant: item.variantId,
     quantity: item.quantity,
     price: item.priceSnapshot || 0,
-    seller: item.offer?.store || null,
+    seller: item.store || item.offer?.store || null,
   }));
 
   const order = await Order.create({
@@ -40,27 +40,32 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
     status: "created",
   });
 
-  const payment = await createPayment(
-    order.pricing.total * 10,
-    `Order ${order._id}`
-  );
+  let paymentUrl = null;
 
-  if (!payment?.data?.authority) {
-    throw new AppError(500, "Payment init failed");
+  if (paymentMethod === "zarinpal") {
+    const payment = await createPayment(
+      order.pricing.total * 10,
+      `Order ${order._id}`
+    );
+
+    if (!payment?.data?.authority) {
+      throw new AppError(500, "Payment init failed");
+    }
+
+    order.payment = {
+      authority: payment.data.authority,
+    };
+
+    paymentUrl = `https://www.zarinpal.com/pg/StartPay/${payment.data.authority}`;
+
+    await order.save();
   }
-
-  order.payment = {
-    authority: payment.data.authority,
-  };
-
-  await order.save();
-
   cart.status = "converted";
   await cart.save();
 
   return {
     order,
-    paymentUrl: `https://www.zarinpal.com/pg/StartPay/${payment.data.authority}`,
+    paymentUrl,
   };
 };
 
@@ -92,26 +97,36 @@ const verify = async (authority) => {
 
   await Promise.all(
     order.items.map(async (item) => {
-      const result = await Listing.updateOne(
-        {
-          _id: item.product,
-          "variants._id": item.variantId,
-          "variants.stock": { $gte: item.quantity }
-        },
-        {
-          $inc: {
-            "metrics.sold": item.quantity,
-            "variants.$[elem].stock": -item.quantity
+      let result;
+
+      if (item.variant) {
+        result = await Listing.updateOne(
+          {
+            _id: item.product,
+            "variants._id": item.variant,
+            "variants.stock": { $gte: item.quantity },
+          },
+          {
+            $inc: {
+              "metrics.sold": item.quantity,
+              "variants.$[elem].stock": -item.quantity,
+            },
+          },
+          {
+            arrayFilters: [{ "elem._id": new Types.ObjectId(item.variant) }],
           }
-        },
-        {
-          arrayFilters: [{
-            "elem._id": new Types.ObjectId(item.variantId)
-          }]
-        }
-      );
+        );
+      } else {
+        result = await Listing.updateOne(
+          { _id: item.product, stock: { $gte: item.quantity } },
+          { $inc: { "metrics.sold": item.quantity, stock: -item.quantity } }
+        );
+      }
+
       if (result.modifiedCount === 0) {
-        logger.warn(`Stock update failed for variant ${item.variantId} - possibly out of stock`);
+        logger.error(
+          `[order ${order._id}] stock update FAILED for product ${item.product} (variant: ${item.variant || "none"}, qty: ${item.quantity}) - payment was captured but stock could not be reserved; needs manual review/refund.`
+        );
       }
     })
   );
@@ -175,7 +190,10 @@ const getOrderByIdAdmin = async (orderId) => {
   return order;
 };
 
-/* Update Order (Admin — full access) */
+const ADMIN_UPDATABLE_FIELDS = ["paymentStatus", "status", "isDelivered", "deliveredAt"];
+const OWNER_UPDATABLE_FIELDS = ["shippingAddress"];
+
+/* Update Order (Admin — full access, but still whitelisted) */
 const updateOrder = async (orderId, data) => {
   const order = await Order.findById(orderId);
 
@@ -183,12 +201,15 @@ const updateOrder = async (orderId, data) => {
     throw new AppError(404, "Order not found");
   }
 
-  Object.assign(order, data);
+  for (const field of ADMIN_UPDATABLE_FIELDS) {
+    if (data[field] !== undefined) {
+      order[field] = data[field];
+    }
+  }
 
   return order.save();
 };
 
-/* Update Order (Owner — restricted to their own order) */
 const updateOrderByOwner = async (orderId, userId, data) => {
   const order = await Order.findOne({ _id: orderId, user: userId });
 
@@ -196,7 +217,15 @@ const updateOrderByOwner = async (orderId, userId, data) => {
     throw new AppError(404, "Order not found");
   }
 
-  Object.assign(order, data);
+  if (["shipped", "completed", "cancelled"].includes(order.status)) {
+    throw new AppError(400, "Order can no longer be modified");
+  }
+
+  for (const field of OWNER_UPDATABLE_FIELDS) {
+    if (data[field] !== undefined) {
+      order[field] = { ...order[field]?.toObject?.(), ...data[field] };
+    }
+  }
 
   return order.save();
 };

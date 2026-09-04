@@ -9,7 +9,7 @@ import {
   HiOutlineMapPin,
   HiOutlineCreditCard,
 } from "react-icons/hi2";
-import { useDelete } from "@/utils/hooks/useReactQueryHooks";
+import { useCancelOrder } from "@/services/Order/useCancelOrder";
 import { Badge } from "../../shared/table/TableParts";
 import { IOrder, OrderStatus, PaymentStatus } from "@/types/Order";
 import { toast } from "sonner";
@@ -41,22 +41,22 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
   const router = useRouter();
   const [order, setOrder] = useState<IOrder | null>(initialOrder);
 
-  const { mutate: cancelOrder, isPending: isCancelling } = useDelete<
-    { success: boolean; data: IOrder },
-    { id: string }
-  >((data) => `/orders/${data.id}`, {
-    onSuccess: (res) => {
-      if (res?.data) setOrder(res.data);
-      router.refresh();
-    },
-  });
+  const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
 
   const handleCancel = () => {
       toast.warning("Are you sure you want to delete this Order?", {
     description: "This action cannot be undone.",
     action: {
       label: "Delete",
-      onClick: () => cancelOrder({ id:orderId }),
+      onClick: () => cancelOrder(
+        { id: orderId },
+        {
+          onSuccess: (res) => {
+            if (res?.data) setOrder(res.data);
+            router.refresh();
+          },
+        }
+      ),
     },
     cancel: {
       label: "Cancel",

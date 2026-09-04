@@ -3,9 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { HiOutlineArrowLeft } from "react-icons/hi2";
-import { usePut } from "@/utils/hooks/useReactQueryHooks";
+import { useUpdateListing } from "@/services/Listings/useUpdateListing";
 import { useGetProfile } from "@/services/Profile/getProfile";
 import { ListingProps } from "@/types/Listings";
 
@@ -25,16 +24,7 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
   const [shippingType, setShippingType] = useState(listing?.shipping?.type ?? "standard");
   const [shippingCost, setShippingCost] = useState(listing?.shipping?.cost ?? 0);
 
-  const { mutate: updateListing, isPending } = usePut<any, any>(`/listings/${listingId}`, {
-    onSuccess: () => {
-      toast.success("Listing updated successfully");
-      router.push("/dashboard/listings");
-      router.refresh();
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to update listing");
-    },
-  });
+  const { mutate: updateListing, isPending } = useUpdateListing(listingId);
 
   if (!listing) {
     return (
@@ -53,17 +43,25 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    updateListing({
-      listingType: listing.listingType,
-      title,
-      description,
-      price: Number(price),
-      condition,
-      shipping: {
-        type: shippingType,
-        cost: Number(shippingCost) || 0,
+    updateListing(
+      {
+        listingType: listing.listingType,
+        title,
+        description,
+        price: Number(price),
+        condition,
+        shipping: {
+          type: shippingType,
+          cost: Number(shippingCost) || 0,
+        },
       },
-    });
+      {
+        onSuccess: () => {
+          router.push("/dashboard/listings");
+          router.refresh();
+        },
+      }
+    );
   };
 
   return (

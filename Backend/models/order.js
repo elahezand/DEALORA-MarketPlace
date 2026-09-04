@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const { Schema, Types } = mongoose;
-const citiesByState = require("../data/cities.json");
 
 const orderItemSchema = new Schema(
   {
@@ -10,8 +9,8 @@ const orderItemSchema = new Schema(
       required: true,
     },
     variant: {
-      type: Types.ObjectId, 
-      required: true,
+      type: Types.ObjectId,
+      default: null,
     },
     quantity: {
       type: Number,

@@ -10,7 +10,7 @@ export default async function PostsPage({ params }: { params: Promise<{ id: stri
     const { id } = await params;
 
     const listingRes = await useServerData<any>(`/listings/${id}`, `listing-${id}`, revalidate);
-    const listingData = listingRes?.data || null;
+    const listingData = listingRes?.data || null;    
 
     if (!listingData) {
         notFound();
@@ -39,7 +39,6 @@ export default async function PostsPage({ params }: { params: Promise<{ id: stri
     return (
         <main className="max-w-7xl w-full p-4 md:p-6 antialiased overflow-x-hidden mx-auto space-y-6">
             <ListingDetailsClient data={listingData} />
-
             {isStoreProduct && (
                 <Comments
                     listingId={listingData._id}

@@ -2,12 +2,7 @@ import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import { useGetProfile } from "@/services/Profile/getProfile";
 import { ConversationsResponse } from "@/types/Chat";
 
-/**
- * Polls the conversations list and sums up the unread counter that belongs
- * to the current user, so we can show a small badge on the sidebar link.
- * Uses the same endpoint as the inbox page, so it stays in the react-query
- * cache and doesn't cost an extra request once the inbox is opened.
- */
+
 export const useUnreadConversationsCount = () => {
   const { user } = useGetProfile();
 

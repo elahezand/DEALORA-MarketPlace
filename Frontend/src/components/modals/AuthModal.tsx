@@ -14,6 +14,7 @@ export default function AuthModal({
 }) {
     const [step, setStep] = useState<Step>(0);
     const [phone, setPhone] = useState("");
+    const [remainingTime, setRemainingTime] = useState<string | undefined>();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -88,9 +89,20 @@ export default function AuthModal({
                 {/* Content Sections */}
                 <div className="transition-all duration-200">
                     {step === 0 ? (
-                        <Step0phoneNumber onSuccess={() => setStep(1)} setPhone={setPhone} />
+                        <Step0phoneNumber
+                            onSuccess={(rt) => {
+                                setRemainingTime(rt);
+                                setStep(1);
+                            }}
+                            setPhone={setPhone}
+                        />
                     ) : (
-                        <Step1Verification onSuccess={() => setIsOpen(false)} phone={phone} goBack={() => setStep(0)} />
+                        <Step1Verification
+                            onSuccess={() => setIsOpen(false)}
+                            phone={phone}
+                            goBack={() => setStep(0)}
+                            initialRemainingTime={remainingTime}
+                        />
                     )}
                 </div>
 

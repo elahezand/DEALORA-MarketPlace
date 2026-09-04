@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Flag, X, Send } from "lucide-react";
-import { toast } from "sonner";
-import { usePost } from "@/utils/hooks/useReactQueryHooks";
+import { useCreateReport } from "@/services/Report/useCreateReport";
 
 const REASONS: { value: string; label: string }[] = [
   { value: "fraud", label: "Fraud or scam" },
@@ -25,24 +24,23 @@ export default function ReportModal({ isOpen, setIsOpen, targetType, targetId }:
   const [reason, setReason] = useState("");
   const [description, setDescription] = useState("");
 
-  const { mutate, isPending } = usePost<any>("/reports", {
-    onSuccess: () => {
-      toast.success("Report submitted. Our team will review it shortly.");
-      setReason("");
-      setDescription("");
-      setIsOpen(false);
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message || "Could not submit report, please try again.");
-    },
-  });
+  const { mutate, isPending } = useCreateReport();
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason) return;
-    mutate({ targetType, targetId, reason, description });
+    mutate(
+      { targetType, targetId, reason, description },
+      {
+        onSuccess: () => {
+          setReason("");
+          setDescription("");
+          setIsOpen(false);
+        },
+      }
+    );
   };
 
   const handleClose = () => {

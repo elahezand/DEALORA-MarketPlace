@@ -11,9 +11,7 @@ export const useCreateContact = (onSuccessCallback?: () => void) => {
       toast.success("Your message was sent successfully!");
       if (onSuccessCallback) onSuccessCallback();
     },
-    onError: () => {
-      toast.error("Something went wrong, please try again.");
-    },
+    errorFallback: "Something went wrong, please try again.",
   });
 
   return { mutate, isPending, ...rest };

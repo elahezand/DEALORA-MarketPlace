@@ -14,8 +14,7 @@ export const useToggleActiveCoupon = () => {
         toast.success("Coupon updated");
         queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
       },
-      onError: (err: any) =>
-        toast.error(err?.response?.data?.message || "Action failed"),
+      errorFallback: "Action failed",
     }
   );
 };

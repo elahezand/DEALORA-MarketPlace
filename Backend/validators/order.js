@@ -1,21 +1,27 @@
 const { z } = require("zod");
 
-const shippingSchema = z.object({
-    fullName: z.string().min(2),
-    phone: z.string().min(6),
+// Mirrors models/order.js -> shippingAddressSchema
+const shippingAddressSchema = z.object({
+    _id: z.string().optional(),
+    name: z.string().min(2),
+    phone: z.string().optional(),
     address: z.string().min(5),
     city: z.string().min(2),
-    postalCode: z.string().optional(),
-    country: z.string().optional(),
+    state: z.string().min(2),
+    postalCode: z.string().min(3),
+    location: z.object({
+        lat: z.number(),
+        lng: z.number(),
+    }),
 });
 
 const checkoutSchema = z.object({
-    shipping: shippingSchema,
-
-    paymentMethod: z.enum(["cash", "card", "paypal"]),
+    shippingAddress: shippingAddressSchema,
+    paymentMethod: z.enum(["cash", "zarinpal"]),
 });
 
-const updateOrderSchema = z.object({
+// ADMIN: full control over an order's lifecycle/payment state.
+const updateOrderAdminSchema = z.object({
     paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
 
     status: z.enum(["created", "processing", "shipped", "completed", "cancelled"]).optional(),
@@ -25,12 +31,17 @@ const updateOrderSchema = z.object({
     deliveredAt: z.string().datetime().optional(),
 });
 
+const updateOrderOwnerSchema = z.object({
+    shippingAddress: shippingAddressSchema.partial().optional(),
+});
+
 const cancelOrderSchema = z.object({
     reason: z.string().min(3).max(200).optional(),
 });
 
 module.exports = {
     checkoutSchema,
-    updateOrderSchema,
+    updateOrderAdminSchema,
+    updateOrderOwnerSchema,
     cancelOrderSchema,
 };

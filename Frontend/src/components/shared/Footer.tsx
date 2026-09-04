@@ -2,8 +2,7 @@
 import { useState } from "react";
 import Logo from "./Logo";
 import Link from "next/link";
-import { toast } from "sonner";
-import { usePost } from "@/utils/hooks/useReactQueryHooks";
+import { useSubscribeNewsletter } from "@/services/Newsletter/useSubscribeNewsletter";
 
 export function NewsletterBanner({ email, setEmail, handleSubscribe, isPending }: any) {
   return (
@@ -41,24 +40,7 @@ export function NewsletterBanner({ email, setEmail, handleSubscribe, isPending }
 export default function Footer() {
   const [email, setEmail] = useState("");
 
-  const { mutate, isPending } = usePost<any>("/newsletters", {
-    onSuccess: () => {
-      toast.success("Subscribed successfully! Welcome aboard.");
-      setEmail("");
-    },
-    onError: (error: any) => {
-      const status = error?.response?.status;
-      const message = error?.response?.data?.message;
-
-      if (status === 409) {
-        toast.info(message || "This email is already subscribed.");
-        setEmail("");
-        return;
-      }
-
-      toast.error(message || "Something went wrong, please try again.");
-    },
-  });
+  const { mutate, isPending } = useSubscribeNewsletter(() => setEmail(""));
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();

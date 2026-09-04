@@ -129,7 +129,9 @@ exports.remove = async (offerId, user) => {
   if (!offer) throw new AppError(404, "Offer not found");
 
   const isOwner = offer.seller.toString() === user._id.toString();
-  const isAdmin = user.role === "ADMIN";
+  const isAdmin = Array.isArray(user.role)
+    ? user.role.includes("ADMIN")
+    : user.role === "ADMIN";
 
   if (!isOwner && !isAdmin) throw new AppError(403, "Forbidden");
 

@@ -5,13 +5,13 @@ const { authUser, authAdmin } = require("../middlewares/authMiddleware");
 const controller = require("../controllers/stats");
 const cacheMiddleware = require("../middlewares/cache");
 
-statsRouter.get("/", cacheMiddleware(300), controller.get);
+statsRouter.get("/", cacheMiddleware(300), controller.getPublic);
 
 /*  ADMIN ONLY  */
 statsRouter.get("/admin",
     authUser,
     authAdmin,
     cacheMiddleware(60),
-    controller.get);
+    controller.getAdmin);
 
 module.exports = statsRouter;

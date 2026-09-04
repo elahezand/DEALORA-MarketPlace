@@ -24,7 +24,6 @@ export const useUpdateSiteInfo = () => {
       toast.success("Site info updated");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
     },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Failed to update"),
+    errorFallback: "Failed to update",
   });
 };

@@ -12,7 +12,6 @@ export const useDeleteSupportMessage = () => {
       toast.success("Message deleted");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
     },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Failed to delete"),
+    errorFallback: "Failed to delete",
   });
 };

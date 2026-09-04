@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { IMessage, SendMessagePayload } from "@/types/Chat";
-import { toast } from "sonner";
 
 interface SendMessageResponse {
   success: boolean;
@@ -21,11 +20,7 @@ export const useSendMessage = (conversationId: string) => {
       });
       queryClient.invalidateQueries({ queryKey: ["/chat/conversations"] });
     },
-    onError: (err: any) => {
-      toast.error(
-        err?.response?.data?.message || "Could not send the message, try again."
-      );
-    },
+    errorFallback: "Could not send the message, try again.",
   });
 
   return { mutate, mutateAsync, ...rest };

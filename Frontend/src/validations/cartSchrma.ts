@@ -12,7 +12,7 @@ export const checkoutSchema = z.object({
         location: z.object({
             lat: z.number(),
             lng: z.number(),
-        }).optional(),
+        }),
     }),
     paymentMethod: z.enum(["cash", "zarinpal"]),
 });

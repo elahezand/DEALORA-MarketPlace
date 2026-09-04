@@ -15,7 +15,7 @@ interface GetPublicStatsResponse {
 
 export const useGetPublicStats = () => {
   const { data, isLoading, isError } = useGet<GetPublicStatsResponse>(
-    "/stats/admin"
+    "/stats"
   );
 
   return {
@@ -38,7 +38,7 @@ interface GetAdminStatsResponse {
  
 export const useGetAdminStats = () => {
   const { data, isLoading, isError } = useGet<GetAdminStatsResponse>(
-    "/admin/stats"
+    "/stats/admin"
   );
  
   return {

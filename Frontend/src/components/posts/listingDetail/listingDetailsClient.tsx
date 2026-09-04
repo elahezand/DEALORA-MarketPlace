@@ -48,6 +48,7 @@ interface ListingComponentProps {
 }
 
 export default function ListingDetailsClient({ data }: ListingComponentProps) {
+
     const [phoneRevealed, setPhoneRevealed] = useState(false);
     const [saved, setSaved] = useState(false);
     const [descExpanded, setDescExpanded] = useState(false);
@@ -66,7 +67,6 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
     const { data: favoriteData } = useIsFavorited(data?._id);
     const toggleFavoriteMutation = useToggleFavorite(data?._id);
 
-    // Sync saved state with backend status
     useEffect(() => {
         if (favoriteData?.isFavorited !== undefined) {
             setSaved(favoriteData.isFavorited);
@@ -112,10 +112,9 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
     const isOutOfStock = isStoreProduct ? currentVariantStock === 0 : false;
     const isAddToCartDisabled =
         addToCartMutation.isPending ||
-        isOutOfStock ||
-        (isStoreProduct && !(selectedVariant?._id || defaultVariant?._id));
-
+        isOutOfStock
     // Report
+   
     const handleReportClick = () => {
         if (!user) {
             setIsAuthOpen(true);
@@ -149,37 +148,47 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
         }
 
         setCartError(null);
-        const validOfferId = typeof offerId === "string" ? offerId : undefined;
+
+        const validOfferId =
+            typeof offerId === "string" ? offerId : undefined;
 
         const selectedOffer = validOfferId
-            ? data?.offers?.find((o: any) => o._id === validOfferId)
-            : defaultOffer;
+            ? data?.offers?.find((offer: any) => offer._id === validOfferId)
+            : data?.offers?.[0];
 
-        const targetOfferId = validOfferId || selectedOffer?._id;
-        const targetVariantId = selectedVariant?._id || defaultVariant?._id;
-
-        if (!targetVariantId) {
-            setCartError("This item is missing option details and can't be added right now.");
+        const targetVariant =
+            selectedVariant || data?.variants?.[0];
+        if (!data?._id) {
+            setCartError("Product id is missing.");
             return;
         }
 
-        const priceSnapshot = selectedOffer
-            ? selectedOffer.price
-            : (selectedVariant?.price ?? data?.price ?? 0);
+        if (!targetVariant?._id) {
+            setCartError("Please select a product option.");
+            return;
+        }
 
-        const itemPayload: Record<string, unknown> = {
-            product: data?._id,
-            variantId: targetVariantId,
+        const itemPayload = {
+            product: data._id,
+            variantId: targetVariant._id,
             quantity: 1,
-            priceSnapshot: priceSnapshot,
+            priceSnapshot:
+                selectedOffer?.price ??
+                targetVariant?.price ??
+                data.price ??
+                0,
+
+            ...(selectedOffer?._id && {
+                offer: selectedOffer._id,
+            }),
         };
 
-        if (targetOfferId) {
-            itemPayload.offer = targetOfferId;
-        }
-        addToCartMutation.mutate({ items: [itemPayload] });
-    };
 
+        addToCartMutation.mutate(
+            { items: [itemPayload] },
+            { onSuccess: (res) => { toast.success("Added to cart") } }
+        );
+    };
     // Toggle Favorite
     const handleSaveToggle = () => {
         if (!user) {
@@ -195,9 +204,6 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                     const isFav = res?.isFavorited ?? !saved;
                     setSaved(isFav);
                     toast.success(isFav ? "Added to favorites" : "Removed from favorites");
-                },
-                onError: () => {
-                    toast.error("Failed to update favorites");
                 },
             }
         );

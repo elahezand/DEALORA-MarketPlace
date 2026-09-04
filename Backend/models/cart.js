@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const cartItemSchema = new Schema(
   {
     offer: { type: Types.ObjectId, ref: "OfferSeller", required: false, default: null },
+    store: { type: Types.ObjectId, ref: "Store", default: null },
     product: { type: Types.ObjectId, ref: "Listing", required: true },
     variantId: { type: Types.ObjectId, required: true },
     quantity: { type: Number, required: true, min: 1, default: 1 },

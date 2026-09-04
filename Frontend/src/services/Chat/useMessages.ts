@@ -23,7 +23,6 @@ export const useMessages = (
             pageParams: [null],
           }
         : undefined,
-      // Keep the thread reasonably fresh without hammering the API
       refetchInterval: 15000,
       refetchOnWindowFocus: true,
     }

@@ -17,8 +17,7 @@ export const useUpdateListingStatus = (onSettledCallback?: () => void) => {
       toast.success(res?.message || "Status updated successfully");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
     },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Action failed"),
+    errorFallback: "Action failed",
     onSettled: () => {
       onSettledCallback?.();
     },

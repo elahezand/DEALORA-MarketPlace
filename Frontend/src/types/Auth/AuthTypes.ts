@@ -10,11 +10,12 @@ export interface RegistrationData {
 // Step0Email
 export interface Step0PhoneProps {
   setPhone: (phone: string) => void
-  onSuccess: () => void;
+  onSuccess: (remainingTime: string) => void;
 }
 
 export interface StartRegistrationResponse {
-  phone: string;
+  message: string;
+  remainingTime: string;
 }
 
 // Step1Verification
@@ -23,4 +24,5 @@ export interface Step1VerificationProps {
   phone: string
   onSuccess: () => void;
   goBack: () => void;
+  initialRemainingTime?: string;
 }

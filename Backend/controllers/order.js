@@ -4,7 +4,7 @@ const orderService = require("../services/order");
 exports.checkout = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const { shippingAddress, paymentMethod } = req.body;
+    const { shippingAddress, paymentMethod } = req.parsed.data;
 
     const result = await orderService.checkout(
       userId,
@@ -103,7 +103,7 @@ exports.patch = async (req, res, next) => {
     const order = await orderService.updateOrderByOwner(
       req.params.id,
       req.user._id,
-      req.body
+      req.parsed.data
     );
 
     res.status(200).json({
@@ -120,7 +120,7 @@ exports.patchAdmin = async (req, res, next) => {
   try {
     const order = await orderService.updateOrder(
       req.params.id,
-      req.body
+      req.parsed.data
     );
 
     res.status(200).json({

@@ -14,8 +14,7 @@ export const useDeleteUser = () => {
         toast.success(res?.message || "User deleted");
         queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
       },
-      onError: (err: any) =>
-        toast.error(err?.response?.data?.message || "Action failed"),
+      errorFallback: "Action failed",
     }
   );
 };

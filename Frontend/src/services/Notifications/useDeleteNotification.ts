@@ -11,7 +11,6 @@ export const useDeleteNotification = () => {
       toast.success("Note deleted");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
     },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Action failed"),
+    errorFallback: "Action failed",
   });
 };

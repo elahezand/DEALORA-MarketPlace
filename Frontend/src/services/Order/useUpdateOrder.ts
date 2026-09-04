@@ -21,7 +21,6 @@ export const useUpdateOrder = (orderId: string) => {
       queryClient.invalidateQueries({ queryKey: [endpoint] });
       queryClient.invalidateQueries({ queryKey: ["/orders/admin"] });
     },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Update failed"),
+    errorFallback: "Update failed",
   });
 };

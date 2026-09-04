@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import { HiChevronRight } from "react-icons/hi";
 import { HiOutlineHeart, HiOutlineEye, HiOutlineTrash } from "react-icons/hi2";
 import qs from "qs";
-import { useQueryClient } from "@tanstack/react-query";
 import { getUrl } from "@/utils/helper"
-import { useInfiniteGet, useDelete } from "@/utils/hooks/useReactQueryHooks";
+import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import { useRemoveFavorite } from "@/services/Favorites/favorites";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge, ViewAction } from "../../shared/table/TableParts";
@@ -46,20 +46,7 @@ export default function InfiniteFavoritesSection({
     },
   });
 
-  const queryClient = useQueryClient();
-
-  const { mutate: deleteFavorite } = useDelete<any, { productId: string }>(
-    (data) => `/wishList/${data.productId}`,
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/wishList/my"] });
-        toast.success("Removed from favorites.");
-      },
-      onError: () => {
-        toast.error("Failed to remove from favorites.");
-      },
-    }
-  );
+  const { mutate: deleteFavorite } = useRemoveFavorite();
 
   const favorites = (
     data?.pages.flatMap((page: any) => page?.data ?? []) || []

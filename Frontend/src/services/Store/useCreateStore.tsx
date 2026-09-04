@@ -9,9 +9,7 @@ export const useCreateStore = () => {
     onSuccess: () => {
       toast.success("Store Created Successfully :)");
     },
-    onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Unknown Error");
-    },
+    errorFallback: "Unknown Error",
   });
 
   return {

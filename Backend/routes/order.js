@@ -9,7 +9,8 @@ const validate = require("../middlewares/validate");
 
 const {
     checkoutSchema,
-    updateOrderSchema,
+    updateOrderAdminSchema,
+    updateOrderOwnerSchema,
     cancelOrderSchema,
 } = require("../validators/order");
 
@@ -33,7 +34,7 @@ orderRouter.patch(
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    validate(updateOrderSchema),
+    validate(updateOrderAdminSchema),
     controller.patchAdmin
 );
 
@@ -63,7 +64,7 @@ orderRouter.patch(
     "/:id",
     authUser,
     validateObjectIdParam("id"),
-    validate(updateOrderSchema),
+    validate(updateOrderOwnerSchema),
     controller.patch
 );
 orderRouter.delete(

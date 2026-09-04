@@ -42,8 +42,6 @@ export function PersonalInfoForm({
   }, [initialUsername, initialEmail]);
 
 
-
-  // Handle file selection & client-side preview
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
 
     const file = e.target.files?.[0];

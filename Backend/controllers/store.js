@@ -33,7 +33,7 @@ exports.getAll = async (req, res, next) => {
 exports.get = async (req, res, next) => {
   try {
     const seller = await service.getStoresByOwner(req.user._id);
-    return res.status(201).json({ seller });
+    return res.status(200).json({ seller });
   } catch (err) {
     return next(err);
   }

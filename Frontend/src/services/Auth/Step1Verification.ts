@@ -11,21 +11,19 @@ interface ResendCodeValues {
   phone: string;
 }
 
-export const useVerify = (onSuccess: (token: string) => void) => {
+export const useVerify = (onSuccess: () => void) => {
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = usePost<VerifyPhoneValues>(
     "/auth/verify",
     {
-      onSuccess: (data: any) => {
+      onSuccess: () => {
         toast.success("LogIn Successfully:)");
         queryClient.invalidateQueries({ queryKey: ["/auth/me", undefined] });
 
-        onSuccess(data.token);
+        onSuccess();
       },
-      onError: (error: any) => {
-        toast.error(error.response?.data?.message || "Code Not Valid");
-      },
+      errorFallback: "Code Not Valid",
     }
   );
 
@@ -33,11 +31,10 @@ export const useVerify = (onSuccess: (token: string) => void) => {
 };
 
 export const useResendCode = () => {
-  const { mutate, isPending } = usePost<void, ResendCodeValues>(
+  const { mutate, isPending } = usePost<any, ResendCodeValues>(
     "/auth/send",
     {
       onSuccess: () => toast.success("CODE Sent Successfully:)"),
-      onError: () => toast.error("UnKNOWN error"),
     }
   );
 

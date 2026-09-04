@@ -31,14 +31,10 @@ export default function CheckoutPage() {
 
     const onSubmit = (data: CheckoutFormValues) => {
         placeOrder({
-            shipping: {
-                fullName: data.shippingAddress.name,
+            shippingAddress: {
+                ...data.shippingAddress,
                 phone: user?.phone || "",
-                address: data.shippingAddress.address,
-                city: data.shippingAddress.city,
-                postalCode: data.shippingAddress.postalCode,
             },
-            shippingAddress: data.shippingAddress,
             paymentMethod: data.paymentMethod,
         });
     };

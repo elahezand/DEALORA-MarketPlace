@@ -13,7 +13,6 @@ export const useCreateCategory = (onSuccessCallback?: () => void) => {
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
       onSuccessCallback?.();
     },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Failed to create category"),
+    errorFallback: "Failed to create category",
   });
 };

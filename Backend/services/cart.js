@@ -16,12 +16,11 @@ const itemKey = (item) => {
 const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) => {
   const normalizedItems = [];
   let subtotal = 0;
-  const skippedItems = []; // track why items were dropped, instead of silently losing them
-
+  const skippedItems = [];
   const offerItems = items.filter((item) => item.offer || item.offerId);
   const directItems = items.filter((item) => !(item.offer || item.offerId));
 
-  // ── 1) OFFER-BASED ITEMS (bought through a seller's accepted offer) ──
+  // ── 1) OFFER-BASED ITEMS  ──
   const offerIds = [...new Set(offerItems.map((item) => item.offer || item.offerId).filter(Boolean))];
 
   const offers = await Offer.find({
@@ -64,6 +63,7 @@ const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) =>
 
     normalizedItems.push({
       offer: offer._id,
+      store: offer.store,
       product: offer.product._id,
       variantId: item.variantId,
       quantity: item.quantity,
@@ -71,7 +71,7 @@ const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) =>
     });
   }
 
-  // ── 2) DIRECT ITEMS (no seller offer exists yet — buy at the listing's own price) ──
+  // ── 2) DIRECT ITEMS (no seller offer exists yet) ──
   const directProductIds = [...new Set(directItems.map((item) => item.product).filter(Boolean))];
   const listings = directProductIds.length
     ? await Listing.find({ _id: { $in: directProductIds } })
@@ -126,6 +126,7 @@ const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) =>
 
     normalizedItems.push({
       offer: null,
+      store: listing.listingType === "store_product" ? listing.store : null,
       product: listing._id,
       variantId: item.variantId,
       quantity: item.quantity,
@@ -196,7 +197,7 @@ const mergeCartItems = (currentItems, newItems) => {
   return merged;
 };
 
-// ─── ADMIN ──────────────────────────────────────────────────────────────────
+// ─── ADMIN 
 
 const getAdminCarts = async (query = {}) => {
   const limit = Math.min(Math.max(Number(query.limit) || 15, 1), 100);

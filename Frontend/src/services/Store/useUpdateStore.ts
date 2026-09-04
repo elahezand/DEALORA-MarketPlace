@@ -19,8 +19,7 @@ export const useUpdateStore = (onSuccessCallback?: () => void) => {
       queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
       onSuccessCallback?.();
     },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Failed to update store"),
+    errorFallback: "Failed to update store",
   });
 
   return { mutate, isPending, ...rest };

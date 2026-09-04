@@ -22,9 +22,7 @@ export const useUpdateAddress = () => {
         queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
         toast.success("Address updated successfully!");
       },
-      onError: () => {
-        toast.error("Failed to update address.");
-      },
+      errorFallback: "Failed to update address.",
     }
   );
 

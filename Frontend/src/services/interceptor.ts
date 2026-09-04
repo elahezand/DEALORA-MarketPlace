@@ -50,6 +50,10 @@ api.interceptors.response.use(
           toast.error("Please LogIn");
         }
 
+        if (refreshError && typeof refreshError === "object") {
+          (refreshError as any)._authToastShown = true;
+        }
+
         return Promise.reject(refreshError);
       }
     }

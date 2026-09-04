@@ -8,22 +8,32 @@ const AppError = require("../utils/AppError");
 const createWithdrawal = async (userId, data) => {
   const store = await Store.findOne({ owner: userId });
   if (!store) throw new AppError(404, "Store not found");
+  
+  const updatedStore = await Store.findOneAndUpdate(
+    { _id: store._id, "wallet.balance": { $gte: data.amount } },
+    { $inc: { "wallet.balance": -data.amount } },
+    { new: true }
+  );
 
-  const balance = store.wallet?.balance || 0;
-  if (data.amount > balance) {
+  if (!updatedStore) {
     throw new AppError(400, "Insufficient wallet balance");
   }
 
-  store.wallet.balance = balance - data.amount;
-  await store.save();
+  try {
+    const withdrawal = await Withdrawal.create({
+      store: store._id,
+      amount: data.amount,
+      bankAccount: data.bankAccount,
+    });
 
-  const withdrawal = await Withdrawal.create({
-    store: store._id,
-    amount: data.amount,
-    bankAccount: data.bankAccount,
-  });
-
-  return withdrawal;
+    return withdrawal;
+  } catch (err) {
+    await Store.updateOne(
+      { _id: store._id },
+      { $inc: { "wallet.balance": data.amount } }
+    );
+    throw err;
+  }
 };
 
 /* === SELLER: list own withdrawal requests === */

@@ -20,7 +20,14 @@ const cookieOptions = {
   path: "/",
 };
 /* OTP UTIL*/
+const OTP_TTL_SECONDS = 60;
 const getOtpKey = (phone) => `otp:${phone}`;
+
+const formatRemainingTime = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
 
 const getOtpDetails = async (phone) => {
   const ttl = await redisClient.ttl(getOtpKey(phone));
@@ -31,14 +38,9 @@ const getOtpDetails = async (phone) => {
     };
   }
 
-  const minutes = Math.floor(ttl / 60);
-  const seconds = ttl % 60;
-
   return {
     expired: false,
-    remainingTime: `${String(minutes).padStart(2, "0")}:${String(
-      seconds
-    ).padStart(2, "0")}`,
+    remainingTime: formatRemainingTime(ttl),
   };
 };
 
@@ -52,11 +54,14 @@ exports.send = async (req, res, next) => {
       return next(new AppError(403, "User is banned"));
     }
 
-    const { expired, remainingTime } =
-      await getOtpDetails(phone);
+    const { expired, remainingTime } = await getOtpDetails(phone);
 
     if (!expired) {
-      return next(new AppError(429, `Try again after ${remainingTime}`));
+      return next(
+        new AppError(429, `Try again after ${remainingTime}`, {
+          details: { remainingTime },
+        })
+      );
     }
 
     const code = crypto.randomInt(10000, 99999);
@@ -100,12 +105,12 @@ exports.send = async (req, res, next) => {
     await redisClient.set(
       getOtpKey(phone),
       hashedOtp,
-      "EX",
-      60
+      { EX: OTP_TTL_SECONDS }
     );
 
     res.status(200).json({
-      message: "OTP sent successfully"
+      message: "OTP sent successfully",
+      remainingTime: formatRemainingTime(OTP_TTL_SECONDS),
     });
   } catch (err) {
     next(err);

@@ -14,8 +14,7 @@ export const useToggleUserRole = () => {
         toast.success(res?.message || "Role updated successfully");
         queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
       },
-      onError: (err: any) =>
-        toast.error(err?.response?.data?.message || "Action failed"),
+      errorFallback: "Action failed",
     }
   );
 };

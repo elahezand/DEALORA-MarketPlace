@@ -6,7 +6,7 @@ export const useGetProfile = () => {
   const { data, error, isError, isLoading } = useGet<UserType>(
     "/auth/me",
     undefined,
-    { axiosConfig: { silentAuth: true } }
+    { axiosConfig: { silentAuth: true }, silentError: true }
   );
 
   return {

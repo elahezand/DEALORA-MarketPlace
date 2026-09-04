@@ -12,7 +12,6 @@ export const useDeleteCoupon = () => {
       toast.success("Coupon deleted");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
     },
-    onError: (err: any) =>
-      toast.error(err?.response?.data?.message || "Failed to delete coupon"),
+    errorFallback: "Failed to delete coupon",
   });
 };

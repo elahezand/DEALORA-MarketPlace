@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Spinner } from "@heroui/react";
 import { Step1VerificationProps } from "@/types/Auth/AuthTypes";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,12 +13,30 @@ const validationCode = z.object({
 
 type ValidateCode = z.infer<typeof validationCode>;
 
+// "mm:ss" -> total seconds
+const toSeconds = (mmss: string) => {
+    const [minutes, seconds] = mmss.split(":").map(Number);
+    return (minutes || 0) * 60 + (seconds || 0);
+};
+
+const formatSeconds = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
 export const Step1Verification = ({
     phone,
     onSuccess,
     goBack,
+    initialRemainingTime,
 }: Step1VerificationProps) => {
-    const [isResend, setIsResend] = useState(false);
+
+    const [secondsLeft, setSecondsLeft] = useState(
+        initialRemainingTime ? toSeconds(initialRemainingTime) : 0
+    );
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
     const {
         register,
         handleSubmit,
@@ -31,15 +49,42 @@ export const Step1Verification = ({
     const { mutate: verifyCode, isPending: isVerifying } = useVerify(onSuccess);
     const { mutate: resendCode, isPending: isResending } = useResendCode();
 
+
+    const startCountdown = (seconds: number) => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setSecondsLeft(seconds);
+        intervalRef.current = setInterval(() => {
+            setSecondsLeft((prev) => {
+                if (prev <= 1) {
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    useEffect(() => {
+        if (initialRemainingTime) {
+            startCountdown(toSeconds(initialRemainingTime));
+        }
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
+    }, []);
+
     const onSubmit = (data: ValidateCode) => {
         verifyCode({ phone, code: data.code });
     }
 
     const handleResendCode = () => {
-        resendCode({ phone });
-        setIsResend(true);
-        setTimeout(() => setIsResend(false), 1000 * 60 * 10);
+        resendCode(
+            { phone },
+            {onSuccess: (data: any) => startCountdown(toSeconds(data.remainingTime)) }
+        );
     };
+
+    const isResendDisabled = isResending || secondsLeft > 0;
 
     return (
         <form
@@ -78,10 +123,16 @@ export const Step1Verification = ({
                 <button
                     type="button"
                     onClick={handleResendCode}
-                    disabled={isResending || isResend}
+                    disabled={isResendDisabled}
                     className="btn-secondary flex-[2] disabled:opacity-30"
                 >
-                    {isResending ? <Spinner size="sm" color="current" /> : (isResend ? "Wait..." : "Resend Code")}
+                    {isResending ? (
+                        <Spinner size="sm" color="current" />
+                    ) : secondsLeft > 0 ? (
+                        `Resend in ${formatSeconds(secondsLeft)}`
+                    ) : (
+                        "Resend Code"
+                    )}
                 </button>
             </div>
         </form>

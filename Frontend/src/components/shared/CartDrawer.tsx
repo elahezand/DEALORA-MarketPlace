@@ -75,16 +75,20 @@ export default function CartDrawer({ setIsOpen }: CartDrawerProps) {
                         <div key={item._id ?? `${getOfferId(item)}-${item.variantId}`} className="flex gap-4 p-2 group">
                             <div className="w-20 h-20 bg-slate-50 border border-[var(--border)] rounded-[var(--radius)] flex-shrink-0 overflow-hidden">
                                 {item.product?.images?.[0] && (
-                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img src={item.product.images[0]} alt={item.product?.title || ""} className="w-full h-full object-cover" />
                                 )}
                             </div>
                             <div className="flex flex-col gap-2 flex-1">
                                 <h3 className="font-medium text-sm text-[var(--primary-900)] leading-tight line-clamp-2">{item.product?.title}</h3>
-                                
+                                {item.variantSnapshot?.attributes && (
+                                    <p className="text-[11px] text-[var(--foreground-muted)] -mt-1">
+                                        {Object.entries(item.variantSnapshot.attributes)
+                                            .map(([key, value]) => `${key}: ${value}`)
+                                            .join(" · ")}
+                                    </p>
+                                )}
                                 <div className="flex items-center justify-between mt-1">
                                     <div className="flex items-center border border-[var(--border)] rounded-lg overflow-hidden h-8">
-                                        {/* دکمه منفی: اگر ۱ بود حذف کن، اگر بیشتر بود کم کن */}
                                         <button 
                                             onClick={() => handleQuantityChange(item, item.quantity - 1)} 
                                             className="px-2 h-full hover:bg-slate-100 transition-colors"
@@ -100,7 +104,7 @@ export default function CartDrawer({ setIsOpen }: CartDrawerProps) {
                                             <Plus className="w-3 h-3" />
                                         </button>
                                     </div>
-                                    <p className="text-sm font-bold text-[var(--primary-600)]">${item.price}</p>
+                                    <p className="text-sm font-bold text-[var(--primary-600)]">${((item.priceSnapshot ?? 0) * item.quantity).toFixed(2)}</p>
                                 </div>
                             </div>
                             <button onClick={() => handleRemove(item)} className="self-start text-slate-300 hover:text-[var(--destructive)] transition-colors">
@@ -114,14 +118,14 @@ export default function CartDrawer({ setIsOpen }: CartDrawerProps) {
             {items.length > 0 && (
                 <div className="flex-none p-5 border-t border-[var(--border)] bg-white shadow-[0_-5px_15px_rgba(0,0,0,0.03)]">
                     <div className="space-y-3 mb-5 text-sm">
-                        <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>${pricing.subtotal}</span></div>
-                        <div className="flex justify-between text-slate-500"><span className="flex items-center gap-1.5"><Truck className="w-4 h-4"/> Shipping</span><span>{pricing.shippingCost === 0 ? "Free" : `$${pricing.shippingCost}`}</span></div>
+                        <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>${pricing.subtotal.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-slate-500"><span className="flex items-center gap-1.5"><Truck className="w-4 h-4"/> Shipping</span><span>{pricing.shippingCost === 0 ? "Free" : `$${pricing.shippingCost.toFixed(2)}`}</span></div>
                         {pricing.discount > 0 && (
-                            <div className="flex justify-between text-[var(--destructive)] font-bold"><span className="flex items-center gap-1.5"><Tag className="w-4 h-4"/> Discount</span><span>-${pricing.discount}</span></div>
+                            <div className="flex justify-between text-[var(--destructive)] font-bold"><span className="flex items-center gap-1.5"><Tag className="w-4 h-4"/> Discount</span><span>-${pricing.discount.toFixed(2)}</span></div>
                         )}
                         <div className="h-[1px] bg-[var(--border)]" />
                         <div className="flex justify-between items-center text-[var(--primary-900)] font-black text-xl">
-                            <span>Order Total</span><span>${pricing.total}</span>
+                            <span>Order Total</span><span>${pricing.total.toFixed(2)}</span>
                         </div>
                     </div>
                     <Link

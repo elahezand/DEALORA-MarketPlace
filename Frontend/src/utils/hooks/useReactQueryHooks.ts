@@ -38,9 +38,9 @@ const resolveUrl = <D>(url: UrlPath<D>, data: D): string => {
 type UseMutationOptionsWithFallback<T, D> =
   UseMutationOptions<T, ApiError, D> & WithErrorFallback;
 
-/* =========================================================
+/* 
    ERROR HANDLER
-   ========================================================= */
+    */
 
 const showErrorToast = (error: unknown, fallback: string) => {
   const err = error as any;
@@ -103,9 +103,9 @@ const showErrorToast = (error: unknown, fallback: string) => {
   toast.error(message);
 };
 
-/* =========================================================
+/* 
    GET
-   ========================================================= */
+    */
 
 export const useGet = <T>(
   url: string,
@@ -153,9 +153,9 @@ export const useGet = <T>(
   });
 };
 
-/* =========================================================
+/* 
    INFINITE GET
-   ========================================================= */
+    */
 
 export const useInfiniteGet = <
   T extends {
@@ -220,9 +220,9 @@ export const useInfiniteGet = <
   });
 };
 
-/* =========================================================
+/* 
    POST
-   ========================================================= */
+    */
 
 export const usePost = <T, D = unknown>(
   url: UrlPath<D>,
@@ -256,9 +256,9 @@ export const usePost = <T, D = unknown>(
   });
 };
 
-/* =========================================================
+/* 
    PATCH
-   ========================================================= */
+    */
 
 export const usePatch = <T, D = unknown>(
   url: UrlPath<D>,
@@ -292,9 +292,9 @@ export const usePatch = <T, D = unknown>(
   });
 };
 
-/* =========================================================
+/* 
    PUT
-   ========================================================= */
+    */
 
 export const usePut = <T, D = unknown>(
   url: UrlPath<D>,
@@ -328,9 +328,7 @@ export const usePut = <T, D = unknown>(
   });
 };
 
-/* =========================================================
-   DELETE
-   ========================================================= */
+/*DELETE */
 
 export const useDelete = <T, D = unknown>(
   url: UrlPath<D>,

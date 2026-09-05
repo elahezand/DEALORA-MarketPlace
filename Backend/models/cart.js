@@ -6,13 +6,16 @@ const cartItemSchema = new Schema(
     offer: { type: Types.ObjectId, ref: "OfferSeller", required: false, default: null },
     store: { type: Types.ObjectId, ref: "Store", default: null },
     product: { type: Types.ObjectId, ref: "Listing", required: true },
-    variantId: { type: Types.ObjectId, required: true },
+    variantId: { type: Types.ObjectId, default: null },
+    variantSnapshot: {
+      attributes: { type: Map, of: String, default: null },
+      sku: { type: String, default: null },
+    },
     quantity: { type: Number, required: true, min: 1, default: 1 },
     priceSnapshot: { type: Number, required: true, min: 0 },
   },
   { _id: false }
 );
-
 const couponSchema = new Schema(
   {
     couponRef: { type: Types.ObjectId, ref: "Coupon", default: null },

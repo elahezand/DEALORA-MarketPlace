@@ -14,7 +14,8 @@ import SectionHeading from "./SectionHeading";
 import MapSection from "./MapSection";
 import BreadCrumbs from "./BreadCrumbs";
 import { useGetProfile } from "@/services/Profile/getProfile";
-import { ListingProps } from "@/types/Listings";
+import { ListingProps, ListingVariant } from "@/types/Listings";
+import { Offer } from "@/types/Offer";
 import { useAddToCart } from "@/services/Cart/cart";
 import { useToggleFavorite, useIsFavorited } from "@/services/Favorites/favorites";
 import { toast } from "sonner";
@@ -58,7 +59,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
     const [cartError, setCartError] = useState<string | null>(null);
 
     const { user } = useGetProfile();
-    const [selectedVariant, setSelectedVariant] = useState<any>(data?.variants?.[0] || null);
+    const [selectedVariant, setSelectedVariant] = useState<ListingVariant | null>(data?.variants?.[0] || null);
 
     const isStoreProduct = data?.listingType === "store_product";
 
@@ -82,8 +83,8 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
             return data.specs as Record<string, string | number | boolean>;
         }
         const obj: Record<string, string | number | boolean> = {};
-        data.specs.forEach((item: any) => {
-            if (item && item.key) obj[item.key] = item.value;
+        data.specs.forEach((item: { key?: string; value?: string }) => {
+            if (item && item.key) obj[item.key] = item.value ?? "";
         });
         return obj;
     }, [data?.specs]);
@@ -153,7 +154,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
             typeof offerId === "string" ? offerId : undefined;
 
         const selectedOffer = validOfferId
-            ? data?.offers?.find((offer: any) => offer._id === validOfferId)
+            ? data?.offers?.find((offer: Offer) => offer._id === validOfferId)
             : data?.offers?.[0];
 
         const targetVariant =
@@ -295,7 +296,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                 <div className="space-y-2.5 pt-4 border-t border-[var(--border)]">
                                     <span className="text-xs font-bold text-[var(--foreground-muted)]">Select Options:</span>
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        {data.variants.map((v: any, index: number) => {
+                                        {data.variants.map((v: ListingVariant, index: number) => {
                                             const attrLabel = v.attributes ? Object.values(v.attributes).join(" - ") : `Option ${index + 1}`;
                                             const isSelected = selectedVariant?._id === v._id;
                                             return (
@@ -408,16 +409,19 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                     <div className="card p-6 space-y-4 w-full">
                         <SectionHeading icon={<StoreIcon size={16} className="text-[var(--primary-500)] dark:text-[var(--accent-400)]" />} title="Other Sellers & Offers" />
                         <div className="divide-y divide-[var(--border)]">
-                            {data.offers.map((offer: any) => (
+                            {data.offers.map((offer: Offer) => {
+                                const storeName = typeof offer.store === "object" ? offer.store?.name : undefined;
+                                const displayPrice = offer.finalPrice ?? offer.price;
+                                return (
                                 <div key={offer._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-[var(--foreground)]">{offer.store?.name || "Vendor"}</span>
+                                        <span className="text-sm font-bold text-[var(--foreground)]">{storeName || "Vendor"}</span>
                                         <span className="text-xs text-[var(--foreground-subtle)]">Condition: {offer.condition}</span>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <div className="text-right">
-                                            <span className="block text-base font-extrabold text-[var(--foreground)]">${offer.price.toLocaleString()}</span>
-                                            {offer.discount > 0 && (
+                                            <span className="block text-base font-extrabold text-[var(--foreground)]">${displayPrice.toLocaleString()}</span>
+                                            {!!offer.discount && offer.discount > 0 && (
                                                 <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
                                                     {offer.discount}% OFF
                                                 </span>
@@ -433,7 +437,8 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                         </button>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         {cartError && (
                             <p className="text-xs font-medium text-[var(--destructive)]">{cartError}</p>

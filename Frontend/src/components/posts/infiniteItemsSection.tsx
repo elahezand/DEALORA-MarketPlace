@@ -4,11 +4,19 @@ import dynamic from "next/dynamic";
 import { HiChevronRight } from 'react-icons/hi';
 import qs from 'qs';
 import { useInfiniteGet } from '@/utils/hooks/useReactQueryHooks';
+import { ListingProps } from '@/types/Listings';
+import { IPagination } from '@/types/common';
+import { QueryParams } from '@/types/api/ErrorTypes';
 const ItemsList = dynamic(() => import("@/components/posts/itemsList"));
 
+interface ListingsQueryResponse {
+    data: ListingProps[];
+    pagination?: IPagination;
+}
+
 interface InfiniteItemsSectionProps {
-    initialData: any[];
-    initialPagination: any;
+    initialData: ListingProps[];
+    initialPagination: IPagination | null;
     queryString: string;
 }
 
@@ -17,21 +25,21 @@ export default function InfiniteItemsSection({
     initialPagination,
     queryString
 }: InfiniteItemsSectionProps) {
-    const parsedParams = qs.parse(queryString);
+    const parsedParams = qs.parse(queryString) as QueryParams;
 
     const {
         data,
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage
-    } = useInfiniteGet<any>('/listings', parsedParams, {
+    } = useInfiniteGet<ListingsQueryResponse>('/listings', parsedParams, {
         initialData: {
-            pages: [{ data: initialData, pagination: initialPagination }],
+            pages: [{ data: initialData, pagination: initialPagination ?? undefined }],
             pageParams: [null],
         }
     });
 
-    const allItems = data?.pages.flatMap((page) => page.data) || [];
+    const allItems = data?.pages.flatMap((page: ListingsQueryResponse) => page.data) || [];
 
     return (
         <div className="w-full flex flex-col items-center bg-transparent">

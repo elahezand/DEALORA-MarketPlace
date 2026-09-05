@@ -1,8 +1,9 @@
 import Link from "next/link";
 import ListingsCarousel from "./ListingCarousel";
+import { ListingProps } from "@/types/Listings";
 
 // Uses the real `metrics.sold` field from the Listing schema — no backend change needed.
-export default function BestSellers({ listings }: { listings: any[] }) {
+export default function BestSellers({ listings }: { listings: ListingProps[] }) {
   const sorted = [...(listings || [])]
     .sort((a, b) => (b?.metrics?.sold || 0) - (a?.metrics?.sold || 0))
     .slice(0, 12);

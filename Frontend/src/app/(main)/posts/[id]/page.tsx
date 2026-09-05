@@ -3,13 +3,15 @@ import ListingDetailsClient from "@/components/posts/listingDetail/listingDetail
 import Comments from "@/components/posts/listingDetail/Comments";
 import SimilarListing from "@/components/posts/listingDetail/SimilarListing";
 import { useServerData } from "@/utils/hooks/useServerData"; 
+import { ListingTypeResponse, PublicListingsResponse } from "@/types/Listings";
+import { CommentsResponse } from "@/types/CommetTypes";
 
 export const revalidate = 60;
 
 export default async function PostsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
 
-    const listingRes = await useServerData<any>(`/listings/${id}`, `listing-${id}`, revalidate);
+    const listingRes = await useServerData<ListingTypeResponse>(`/listings/${id}`, `listing-${id}`, revalidate);
     const listingData = listingRes?.data || null;    
 
     if (!listingData) {
@@ -21,20 +23,19 @@ export default async function PostsPage({ params }: { params: Promise<{ id: stri
 
     const [commentsRes, similarRes] = await Promise.all([
         isStoreProduct 
-            ? useServerData<any>(`/comments/listing/${id}?page=1`, `comments-${id}`, revalidate)
+            ? useServerData<CommentsResponse>(`/comments/listing/${id}?page=1`, `comments-${id}`, revalidate)
             : Promise.resolve(null),
         tags 
-            ? useServerData<any>(`/listings?tags=${tags}&limit=5`, `similar-${id}`, revalidate) 
+            ? useServerData<PublicListingsResponse>(`/listings?tags=${tags}&limit=5`, `similar-${id}`, revalidate) 
             : Promise.resolve(null)
     ]);
 
-    const initialComments = commentsRes?.data?.data ?? commentsRes?.data ?? commentsRes ?? [];
-    const initialPagination = commentsRes?.pagination ?? commentsRes?.data?.pagination ?? null;
+    const initialComments = commentsRes?.data ?? [];
+    const initialPagination = commentsRes?.pagination ?? undefined;
 
-    const rawSimilar = similarRes?.data?.data ?? similarRes?.data ?? similarRes ?? [];
-    const similarListings = Array.isArray(rawSimilar) 
-        ? rawSimilar.filter((item: any) => (item._id || item.id) !== id).slice(0, 4)
-        : [];
+    const similarListings = (similarRes?.data ?? [])
+        .filter((item) => item._id !== id)
+        .slice(0, 4);
 
     return (
         <main className="max-w-7xl w-full p-4 md:p-6 antialiased overflow-x-hidden mx-auto space-y-6">

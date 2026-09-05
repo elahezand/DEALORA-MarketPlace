@@ -50,7 +50,7 @@ const PAYMENT_TONE: Record<
 
 interface TransactionDetailProps {
   orderId: string;
-  initialData?: any;
+  initialData?: AdminOrderResponse;
 }
 
 export default function TransactionDetail({

@@ -1,3 +1,5 @@
+import { IPagination } from "./common";
+
 export type ReportTargetType = "listing" | "store" | "comment" | "user";
 
 export type ReportReason =
@@ -36,14 +38,18 @@ export interface IReport {
   updatedAt: string;
 }
 
-export interface IPagination {
-  limit: number;
-  nextCursor: string | null;
-  hasMore: boolean;
-}
-
 export interface ReportsResponse {
   success: boolean;
   data: IReport[];
   pagination: IPagination;
+}
+
+export interface AdminReportRow extends Omit<IReport, "reporter"> {
+  reporter: { _id: string; username?: string; phone?: string } | string;
+}
+
+export interface AdminReportsResponse {
+  success: boolean;
+  data: AdminReportRow[];
+  pagination?: IPagination;
 }

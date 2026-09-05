@@ -3,12 +3,19 @@ import React from 'react';
 import dynamic from "next/dynamic";
 import { HiChevronRight } from 'react-icons/hi';
 import { useInfiniteGet } from '@/utils/hooks/useReactQueryHooks';
+import { ListingProps } from '@/types/Listings';
+import { IPagination } from '@/types/common';
 const ProductsGrid = dynamic(() => import("@/components/stores/[slug]/productsGrid"));
+
+interface StoreProductsResponse {
+    data: ListingProps[];
+    pagination?: IPagination;
+}
 
 interface StoreProductsSectionProps {
     slug: string;
-    initialData: any[];
-    initialPagination: any;
+    initialData: ListingProps[];
+    initialPagination: IPagination | null;
 }
 
 export default function StoreProductsSection({
@@ -21,14 +28,14 @@ export default function StoreProductsSection({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage
-    } = useInfiniteGet<any>(`/stores/slug/${slug}`, undefined, {
+    } = useInfiniteGet<StoreProductsResponse>(`/stores/slug/${slug}`, undefined, {
         initialData: {
             pages: [{ data: initialData, pagination: initialPagination }],
             pageParams: [null],
         }
     });
 
-    const allProducts = data?.pages.flatMap((page) => page.data) || [];
+    const allProducts = data?.pages.flatMap((page: StoreProductsResponse) => page.data) || [];
 
     return (
         <div className="w-full flex flex-col items-center bg-transparent">

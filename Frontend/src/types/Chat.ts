@@ -1,3 +1,5 @@
+import { IPagination } from "./common";
+
 export interface IChatParticipant {
   _id: string;
   username?: string;
@@ -37,12 +39,6 @@ export interface IMessage {
   deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface IPagination {
-  limit: number;
-  nextCursor: string | null;
-  hasMore: boolean;
 }
 
 export interface ConversationsResponse {

@@ -3,9 +3,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MapPinned } from "lucide-react";
 import { getUrl } from "@/utils/helper"
+import { ListingProps } from "@/types/Listings";
 
 interface SimilarListingProps {
-    listings: any[];
+    listings: ListingProps[];
 }
 
 export default function SimilarListing({ listings }: SimilarListingProps) {
@@ -18,9 +19,9 @@ export default function SimilarListing({ listings }: SimilarListingProps) {
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 min-w-0">
-                {listings.map((item: any) => {
-                    const itemId = item._id || item.id;
-                    const imageUrl = item.images?.[0] || item.image;
+                {listings.map((item) => {
+                    const itemId = item._id;
+                    const imageUrl = item.images?.[0];
                     const src = getUrl(imageUrl)
 
                     return (
@@ -29,8 +30,7 @@ export default function SimilarListing({ listings }: SimilarListingProps) {
                             href={`/posts/${itemId}`}
                             className="card cursor-pointer overflow-hidden min-w-0 flex flex-col group transition-all duration-200 hover:shadow-md"
                         >
-                            
-                            \                            <div className="aspect-[4/3] bg-[var(--background-soft)] border-b border-[var(--border)] relative flex items-center justify-center overflow-hidden">
+                            <div className="aspect-[4/3] bg-[var(--background-soft)] border-b border-[var(--border)] relative flex items-center justify-center overflow-hidden">
                                 {imageUrl ? (
                                     <Image
                                         src={src || ""}
@@ -58,10 +58,10 @@ export default function SimilarListing({ listings }: SimilarListingProps) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    {item.city && (
+                                    {item.location?.city && (
                                         <div className="flex items-center gap-1 text-[10px] text-[var(--foreground-subtle)] font-medium">
                                             <MapPinned size={11} className="text-[var(--foreground-subtle)]" />
-                                            <span>{item.city}</span>
+                                            <span>{item.location.city}</span>
                                         </div>
                                     )}
 

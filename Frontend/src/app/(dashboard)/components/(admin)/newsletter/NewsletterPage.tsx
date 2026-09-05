@@ -2,21 +2,17 @@
 
 import { HiOutlineEnvelope } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th } from "../../shared/table/TableParts";
-
-interface Subscriber {
-  _id: string;
-  email: string;
-  createdAt: string;
-}
+import { NewsletterSubscriber, NewsletterSubscribersResponse } from "@/types/Newsletter";
 
 const ENDPOINT = "/newsletters";
 
 interface NewsletterClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<NewsletterSubscribersResponse>;
 }
 
 export default function NewsletterClient({ initialData }: NewsletterClientProps) {
@@ -27,10 +23,10 @@ export default function NewsletterClient({ initialData }: NewsletterClientProps)
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(ENDPOINT, { limit: 30 }, { initialData });
+  } = useInfiniteGet<NewsletterSubscribersResponse>(ENDPOINT, { limit: 30 }, { initialData });
 
-  const subscribers: Subscriber[] = (
-    data?.pages?.flatMap((page: any) => page?.data ?? []) || []
+  const subscribers: NewsletterSubscriber[] = (
+    data?.pages?.flatMap((page: NewsletterSubscribersResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const total = subscribers.length;

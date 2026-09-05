@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HiOutlineLifebuoy } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
@@ -11,11 +12,11 @@ import { Th, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, textareaClass } from "../shared/AdminFormModal";
 import { useAnswerSupportMessage } from "@/services/Support/useAnswerSupportMessage";
 import { useDeleteSupportMessage } from "@/services/Support/useDeleteSupportMessage";
-import { ContactMessage } from "@/types/Contact";
+import { ContactMessage, ContactsResponse } from "@/types/Contact";
 const ENDPOINT = "/contacts";
 
 interface SupportClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<ContactsResponse>;
 }
 
 export default function SupportClient({ initialData }: SupportClientProps) {
@@ -31,20 +32,14 @@ export default function SupportClient({ initialData }: SupportClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(
+  } = useInfiniteGet<ContactsResponse>(
     ENDPOINT,
     { limit: 20 },
-    {
-      initialData,
-      getNextPageParam: (lastPage: any) =>
-        lastPage?.data?.pagination?.hasMore
-          ? lastPage.data.pagination.nextCursor
-          : undefined,
-    }
+    { initialData }
   );
 
   const allMessages: ContactMessage[] = (
-    data?.pages?.flatMap((page: any) => page?.data?.data ?? []) || []
+    data?.pages?.flatMap((page: ContactsResponse) => page?.data?.data ?? []) || []
   ).filter(Boolean);
 
   const messages =

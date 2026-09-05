@@ -1,6 +1,6 @@
 export interface StateCities {
   state: string;
-  cities: [];
+  cities: string[];
 }
 
 export interface LocationsPayload {

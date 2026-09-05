@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useCallback } from "react";
-import { Formik, Form, FormikErrors, FormikTouched, getIn } from "formik";
+import { Formik, Form, FormikErrors, FormikTouched, FormikHelpers, getIn } from "formik";
 import { GiConfirmed } from "react-icons/gi";
 import {
   HiOutlineBuildingStorefront,
@@ -84,8 +84,17 @@ export default function CreateShop() {
       const formatted: FormikErrors<StoreFormValues> = {};
       if (err instanceof ZodError) {
         err.issues.forEach((issue) => {
-          const path = issue.path.join(".");
-          (formatted as any)[path] = issue.message;
+          const keys = issue.path.map(String);
+          if (keys.length === 0) return;
+
+          let current: Record<string, unknown> = formatted;
+          for (let i = 0; i < keys.length - 1; i++) {
+            if (!current[keys[i]] || typeof current[keys[i]] !== "object") {
+              current[keys[i]] = {};
+            }
+            current = current[keys[i]] as Record<string, unknown>;
+          }
+          current[keys[keys.length - 1]] = issue.message;
         });
       }
       return formatted;
@@ -102,10 +111,10 @@ export default function CreateShop() {
 
     fieldsToTouch.forEach((path) => {
       const keys = path.split(".");
-      let current: any = updatedTouched;
+      let current: Record<string, unknown> = updatedTouched;
       for (let i = 0; i < keys.length - 1; i++) {
-        if (!current[keys[i]]) current[keys[i]] = {};
-        current = current[keys[i]];
+        if (!current[keys[i]] || typeof current[keys[i]] !== "object") current[keys[i]] = {};
+        current = current[keys[i]] as Record<string, unknown>;
       }
       current[keys[keys.length - 1]] = true;
     });
@@ -124,7 +133,7 @@ export default function CreateShop() {
   };
 
   const handleLogoUpload = useCallback(
-    (file: File, setFieldValue: (field: string, value: any) => void, setFieldTouched: (field: string, touched?: boolean) => void) => {
+    (file: File, setFieldValue: FormikHelpers<StoreFormValues>["setFieldValue"], setFieldTouched: (field: string, touched?: boolean) => void) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         setFieldValue("logo", ev.target?.result as string);
@@ -136,7 +145,7 @@ export default function CreateShop() {
   );
 
   const handleUseCurrentLocation = useCallback(
-    (setFieldValue: (field: string, value: any) => void) => {
+    (setFieldValue: FormikHelpers<StoreFormValues>["setFieldValue"]) => {
       if (!navigator.geolocation) return;
       setIsLocating(true);
       navigator.geolocation.getCurrentPosition(
@@ -224,13 +233,12 @@ export default function CreateShop() {
           };
 
           mutate(payload, {
-            onSuccess: (createdStore: any) => {
+            onSuccess: (createdStore) => {
               setSubmitting(false);
-              const slug =
-                createdStore?.data?.data?.slug ?? createdStore?.slug;
+              const slug = createdStore?.seller?.slug;
               router.push(slug ? `/dashboard/store/${slug}` : "/dashboard");
             },
-            onError: (error: any) => {
+            onError: (error) => {
               setSubmitting(false);
               setSubmitError(
                 error?.response?.data?.message ||

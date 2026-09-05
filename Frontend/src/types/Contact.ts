@@ -8,3 +8,15 @@ export interface ContactMessage {
   answer?: string | null;
   createdAt: string;
 }
+
+export interface ContactsResponse {
+  success: boolean;
+  data: {
+    data: ContactMessage[];
+    pagination?: {
+      hasMore: boolean;
+      limit: number;
+      nextCursor: string | null;
+    };
+  };
+}

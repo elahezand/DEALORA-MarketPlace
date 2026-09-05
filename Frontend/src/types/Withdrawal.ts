@@ -21,3 +21,13 @@ export interface ProcessWithdrawalPayload {
   trackingCode?: string;
   rejectReason?: string;
 }
+
+export interface WithdrawalsResponse {
+  success: boolean;
+  data: Withdrawal[];
+  pagination?: {
+    hasMore: boolean;
+    limit: number;
+    nextCursor: string | null;
+  };
+}

@@ -5,9 +5,10 @@ import { Field, useFormikContext } from "formik";
 import { useLocation } from "@/services/Location/getLocations";
 import Location from "./Location";
 import { getCoords } from "@/utils/getCoords";
+import { FormValues } from "@/types/listingFormValue";
 
 export default function StepChooseState() {
-  const { setFieldValue, values } = useFormikContext<any>();
+  const { setFieldValue, values } = useFormikContext<FormValues>();
   const { data } = useLocation();
   let active = true;
 
@@ -18,7 +19,7 @@ export default function StepChooseState() {
     if (!selectedState) return [];
 
     const stateData = states.find(
-      (s: any) => s.state === selectedState
+      (s) => s.state === selectedState
     );
     return stateData?.cities ?? [];
   }, [states, selectedState]);
@@ -35,7 +36,7 @@ export default function StepChooseState() {
   const hasErrorState = !selectedState;
   const hasErrorCity = selectedState && !values.location?.city;
 
-  const handleCityChange = async (e: any) => {
+  const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const cityName = e.target.value;
     setFieldValue("location.city", cityName);
 
@@ -80,7 +81,7 @@ export default function StepChooseState() {
               className="h-11 w-full pl-4 pr-10 rounded-xl border border-[var(--border)] bg-[var(--input-bg)] text-sm font-medium text-[var(--foreground)] outline-none transition appearance-none cursor-pointer focus:border-[var(--ring)] focus:bg-[var(--background)] focus:ring-4 focus:ring-[var(--focus-ring-shadow)]"
             >
               <option value="" className="text-[var(--foreground-subtle)] bg-[var(--background)]">Select State</option>
-              {states.map((s: any) => (
+              {states.map((s) => (
                 <option key={s.state} value={s.state} className="text-[var(--foreground)] bg-[var(--background)]">
                   {s.state}
                 </option>
@@ -119,7 +120,7 @@ export default function StepChooseState() {
               <option value="" className="text-[var(--foreground-subtle)] bg-[var(--background)]">
                 {selectedState ? "Select City" : "Select state first..."}
               </option>
-              {citiesForState.map((c: any, index: number) => (
+              {citiesForState.map((c: string, index: number) => (
                 <option key={index} value={c} className="text-[var(--foreground)] bg-[var(--background)]">
                   {c}
                 </option>

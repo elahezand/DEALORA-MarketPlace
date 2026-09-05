@@ -1,14 +1,16 @@
-
 import { api } from "@/services/interceptor";
-import type { AxiosRequestConfig } from "axios";
+import type { AxiosRequestConfig, AxiosError } from "axios";
 import {
   useQuery,
   useInfiniteQuery,
   useMutation,
   UseQueryOptions,
   UseMutationOptions,
+  UseInfiniteQueryOptions,
+  InfiniteData,
+  QueryKey,
 } from "@tanstack/react-query";
-import { ApiError } from "@/types/api/ErrorTypes";
+import { ApiError, ApiErrorResponse, QueryParams } from "@/types/api/ErrorTypes";
 import { toast } from "sonner";
 
 type ExtraAxiosConfig = AxiosRequestConfig & {
@@ -43,20 +45,20 @@ type UseMutationOptionsWithFallback<T, D> =
     */
 
 const showErrorToast = (error: unknown, fallback: string) => {
-  const err = error as any;
+  const err = error as AxiosError<ApiErrorResponse> & {
+    _authToastShown?: boolean;
+  };
 
   if (err?._authToastShown) return;
 
   const responseData = err?.response?.data;
 
-  // 🔴 نمایش کامل اطلاعات خطا در Console
   console.group("🔴 API ERROR");
 
   console.log("Status:", err?.response?.status);
   console.log("Method:", err?.config?.method);
   console.log("URL:", err?.config?.url);
 
-  // چیزی که Frontend فرستاده
   let requestData = err?.config?.data;
 
   try {
@@ -64,24 +66,20 @@ const showErrorToast = (error: unknown, fallback: string) => {
       requestData = JSON.parse(requestData);
     }
   } catch {
-    // اگر JSON نبود همان مقدار اصلی را نگه می‌داریم
   }
 
   console.log("📤 Request Data:", requestData);
-
-  // چیزی که Backend برگردانده
   console.log("📥 Response Data:", responseData);
 
-  // اگر Backend validation errors داشته باشد
   if (Array.isArray(responseData?.errors)) {
     console.log("❌ Validation Errors:");
 
-    responseData.errors.forEach((item: any, index: number) => {
+    responseData.errors.forEach((item, index: number) => {
       console.log(`Error ${index + 1}:`, {
-        path: item?.path,
         field: item?.field,
         message: item?.message,
-        value: item?.value,
+        expected: item?.expected,
+        received: item?.received,
       });
     });
   }
@@ -96,8 +94,6 @@ const showErrorToast = (error: unknown, fallback: string) => {
 
   if (typeof responseData?.message === "string") {
     message = responseData.message;
-  } else if (typeof responseData?.error === "string") {
-    message = responseData.error;
   }
 
   toast.error(message);
@@ -109,7 +105,7 @@ const showErrorToast = (error: unknown, fallback: string) => {
 
 export const useGet = <T>(
   url: string,
-  params?: any,
+  params?: QueryParams,
   options?: UseGetOptions<T>
 ) => {
   const {
@@ -157,15 +153,30 @@ export const useGet = <T>(
    INFINITE GET
     */
 
-export const useInfiniteGet = <
-  T extends {
-    data: any[];
-    pagination: any;
+type UseInfiniteGetOptions<T> = Omit<
+  UseInfiniteQueryOptions<T, ApiError, InfiniteData<T, unknown>, QueryKey, unknown>,
+  "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"
+> & {
+  silentError?: boolean;
+} & WithErrorFallback;
+
+type PaginationInfo = { hasMore: boolean; nextCursor: string | null } | null | undefined;
+
+const extractPagination = (page: unknown): PaginationInfo => {
+  if (!page || typeof page !== "object") return undefined;
+  const direct = (page as { pagination?: PaginationInfo }).pagination;
+  if (direct) return direct;
+  const nestedData = (page as { data?: { pagination?: PaginationInfo } }).data;
+  if (nestedData && typeof nestedData === "object" && !Array.isArray(nestedData)) {
+    return nestedData.pagination;
   }
->(
+  return undefined;
+};
+
+export const useInfiniteGet = <T extends { data: unknown }>(
   url: string,
-  params?: any,
-  options?: any
+  params?: QueryParams,
+  options?: UseInfiniteGetOptions<T>
 ) => {
   const {
     silentError,
@@ -173,7 +184,7 @@ export const useInfiniteGet = <
     ...restOptions
   } = options || {};
 
-  return useInfiniteQuery<T, any>({
+  return useInfiniteQuery<T, ApiError, InfiniteData<T, unknown>, QueryKey, unknown>({
     queryKey: [url, params],
 
     queryFn: async ({ pageParam = null }) => {
@@ -209,9 +220,8 @@ export const useInfiniteGet = <
     initialPageParam: null,
 
     getNextPageParam: (lastPage) => {
-      return lastPage.pagination?.hasMore
-        ? lastPage.pagination.nextCursor
-        : undefined;
+      const pagination = extractPagination(lastPage);
+      return pagination?.hasMore ? pagination.nextCursor : undefined;
     },
 
     staleTime: 5 * 60 * 1000,

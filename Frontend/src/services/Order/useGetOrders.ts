@@ -1,11 +1,5 @@
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-export interface IOrder {
-  _id: string;
-  user: string;
-  totalPrice: number;
-  status: string;
-  createdAt: string;
-}
+import { IOrder } from "@/types/Order";
 
 interface PaginateResult<T> {
   data: T[];

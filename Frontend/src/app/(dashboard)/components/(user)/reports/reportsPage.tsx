@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 import { HiOutlineFlag, HiChevronDown, HiChevronRight } from "react-icons/hi2";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { IReport, ReportsResponse } from "@/types/Report";
+import { IPagination } from "@/types/common";
 import TableCard from "../../shared/table/TableCard";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { timeAgo } from "@/utils/timeAgo";
@@ -43,8 +44,10 @@ const filterOptions = [
 
 interface ReportsPageProps {
   initialData?: IReport[];
-  initialPagination?: any;
+  initialPagination?: IPagination | null;
 }
+
+const EMPTY_PAGINATION: IPagination = { limit: 20, nextCursor: null, hasMore: false };
 
 export default function ReportsPage({
   initialData = [],
@@ -65,14 +68,14 @@ export default function ReportsPage({
     {},
     {
       initialData: {
-        pages: [{ success: true, data: initialData, pagination: initialPagination }],
+        pages: [{ success: true, data: initialData, pagination: initialPagination ?? EMPTY_PAGINATION }],
         pageParams: [null],
       },
     }
   );
 
   const allReports = (
-    data?.pages.flatMap((page) => page?.data ?? []) || []
+    data?.pages.flatMap((page: ReportsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const selectedFilterConfig = filterOptions.find((f) => f.id === selectedFilter);

@@ -1,9 +1,18 @@
 import { notFound } from "next/navigation";
 import { useServerData } from "@/utils/hooks/useServerData";
 import StoreProductsSection from "@/components/stores/[slug]/storesProductsSection";
+import { IStore } from "@/types/User";
+import { ListingProps } from "@/types/Listings";
+import { IPagination } from "@/types/common";
 
 interface StoreDetailPageProps {
   params: Promise<{ slug: string }>;
+}
+
+interface StoreDetailServerResponse {
+  store: IStore;
+  data: ListingProps[];
+  pagination?: IPagination;
 }
 
 export default async function StoreDetailPage({
@@ -11,7 +20,7 @@ export default async function StoreDetailPage({
 }: StoreDetailPageProps) {
   const { slug } = await params;
 
-  const result = await useServerData<any>(
+  const result = await useServerData<StoreDetailServerResponse>(
     `/stores/slug/${slug}?limit=20`,
     `store-${slug}`,
     60

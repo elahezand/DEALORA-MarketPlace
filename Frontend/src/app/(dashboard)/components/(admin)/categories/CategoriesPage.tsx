@@ -19,8 +19,7 @@ const getParentId = (parent: AdminCategory["parent"]): string => {
   return typeof parent === "string" ? parent : parent._id ?? "";
 };
 
-const getChildren = (cat: AdminCategory): AdminCategory[] =>
-  (cat as any).subCategories ?? cat.children ?? [];
+const getChildren = (cat: AdminCategory): AdminCategory[] => cat.subCategories ?? [];
 
 interface CategoriesPageProps {
   initialData?: CategoriesTypeResponse;

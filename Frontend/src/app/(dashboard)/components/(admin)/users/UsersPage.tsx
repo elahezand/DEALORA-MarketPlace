@@ -4,9 +4,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HiOutlineUsers } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData, MutateOptions } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useGetProfile } from "@/services/Profile/getProfile";
-import { IUser } from "@/types/User";
+import { IUser, AdminUsersResponse } from "@/types/User";
+import { ApiError } from "@/types/api/ErrorTypes";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
@@ -18,7 +20,7 @@ import { useDeleteUser } from "@/services/User/useDeleteUser";
 const ENDPOINT = "/users";
 
 interface UsersClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<AdminUsersResponse>;
 }
 export default function UsersClient({ initialData }: UsersClientProps) {
   const { user: me } = useGetProfile();
@@ -31,19 +33,19 @@ export default function UsersClient({ initialData }: UsersClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(ENDPOINT, { limit: 20 }, { initialData });
+  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, { limit: 20 }, { initialData });
 
   const users: IUser[] = (
-    data?.pages?.flatMap((page: any) => page?.users?.data ?? []) || []
+    data?.pages?.flatMap((page: AdminUsersResponse) => page?.users?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: toggleBan } = useToggleBanUser();
   const { mutate: toggleRole } = useToggleUserRole();
   const { mutate: removeUser } = useDeleteUser();
 
-  const handleAction = (
+  const handleAction = <T,>(
     id: string,
-    actionFn: (payload: { id: string }, options: any) => void
+    actionFn: (payload: { id: string }, options?: MutateOptions<T, ApiError, { id: string }>) => void
   ) => {
     setActioningId(id);
     actionFn({ id }, { onSettled: () => setActioningId(null) });

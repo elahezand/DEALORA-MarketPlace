@@ -17,9 +17,9 @@ export const useGetSummary = () => {
     data: summary,
     isLoading,
     isError,
-  } = useGet<Summary>("/dashboard/summary", {
-    queryKey: ["summary"] as string[],
-  } as any);
+  } = useGet<Summary>("/dashboard/summary", undefined, {
+    queryKey: ["summary"],
+  });
 
   return { summary, isLoading, isError };
 };

@@ -10,14 +10,15 @@ import {
 import { useMessages } from "@/services/Chat/useMessages";
 import { useSendMessage } from "@/services/Chat/useSendMessage";
 import { useGetProfile } from "@/services/Profile/getProfile";
-import { IConversation, IMessage } from "@/types/Chat";
+import { IConversation, IMessage, MessagesResponse } from "@/types/Chat";
+import { IPagination } from "@/types/common";
 import { timeAgo } from "@/utils/timeAgo";
 
 interface ConversationThreadProps {
   conversationId: string;
   initialConversation: IConversation | null;
   initialMessages?: IMessage[];
-  initialPagination?: any;
+  initialPagination?: IPagination | null;
 }
 
 const getMediaUrl = (path?: string | null) => {
@@ -52,7 +53,7 @@ export default function ConversationThread({
   const { mutate: sendMessage, isPending } = useSendMessage(conversationId);
 
   const messages = (
-    data?.pages.flatMap((page) => page?.data ?? []) || []
+    data?.pages.flatMap((page: MessagesResponse) => page?.data ?? []) || []
   )
     .filter(Boolean)
     .slice()

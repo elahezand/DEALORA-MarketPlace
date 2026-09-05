@@ -1,7 +1,9 @@
 import { useAuthServerData } from "@/utils/hooks/useServerData";
 import OffersClient from "@/app/(dashboard)/components/(admin)/offers/OffersPage";
+import { OffersResponse } from "@/types/Offer";
+
 export default async function AdminOffersPage() {
-  const initialOffers = await useAuthServerData<any>(
+  const initialOffers = await useAuthServerData<OffersResponse>(
     "/offers?limit=20&status=pending",
     "admin-offers-pending",
     60 * 5

@@ -2,6 +2,7 @@
 import React from 'react';
 import { useState } from 'react';
 import { useGetMyCart, useRemoveFromCart, useUpdateCart, useApplyCoupon } from "@/services/Cart/cart";
+import { CartItem } from "@/types/Cart";
 import { Trash2, ShoppingBag, Truck, Plus, Minus, AlertCircle, ArrowLeft, ShieldCheck, Tag } from "lucide-react";
 import { Skeleton } from '@heroui/react';
 import Link from 'next/link';
@@ -13,8 +14,10 @@ const MetaItem = ({ label, value }: { label: string; value: string }) => (
 );
 
 
-const getOfferId = (item: any): string | null => item?.offer?._id ?? item?.offer ?? null;
-const getProductId = (item: any): string | null => item?.product?._id ?? item?.product ?? null;
+const getOfferId = (item: CartItem): string | null =>
+  (typeof item?.offer === "object" ? item.offer?._id : item?.offer) ?? null;
+const getProductId = (item: CartItem): string | null =>
+  (typeof item?.product === "object" ? item.product?._id : item?.product) ?? null;
 
 export default function CartPage() {
   const { data: cart, isLoading } = useGetMyCart();  
@@ -27,7 +30,7 @@ export default function CartPage() {
   const items = cart?.data?.items || [];
   const pricing = cart?.data?.pricing || { subtotal: 0, discount: 0, shippingCost: 0, total: 0 };
 
-  const toPayloadItem = (i: any) => ({
+  const toPayloadItem = (i: CartItem) => ({
     offer: getOfferId(i),
     product: getProductId(i),
     variantId: i.variantId,
@@ -35,12 +38,12 @@ export default function CartPage() {
     priceSnapshot: i.priceSnapshot,
   });
 
-  const handleRemove = (item: any) => {
+  const handleRemove = (item: CartItem) => {
     const offerId = getOfferId(item);
-    removeItem({ offerId: offerId ?? item.variantId });
+    removeItem({ offerId: offerId ?? String(item.variantId ?? "") });
   };
 
-  const handleQuantityChange = (item: any, newQuantity: number) => {
+  const handleQuantityChange = (item: CartItem, newQuantity: number) => {
     if (newQuantity < 1) {
       handleRemove(item);
       return;
@@ -48,7 +51,7 @@ export default function CartPage() {
 
     const targetOfferId = getOfferId(item);
 
-    const updatedItems = items.map((i: any) => {
+    const updatedItems = items.map((i: CartItem) => {
       const isTarget =
         String(getOfferId(i)) === String(targetOfferId) &&
         String(i.variantId) === String(item.variantId);
@@ -100,17 +103,21 @@ export default function CartPage() {
 
           {/* Items List Container */}
           <div className="space-y-4 lg:col-span-1">
-            {items.map((item: any, index: number) => (
+            {items.map((item: CartItem, index: number) => {
+              const product = typeof item.product === "object" ? item.product : null;
+              const offer = typeof item.offer === "object" ? item.offer : null;
+              const offerStoreName = typeof offer?.store === "object" ? offer.store?.name : undefined;
+              return (
               <div
                 key={`${getOfferId(item)}-${item.variantId}-${index}`}
                 className="card p-5 flex flex-col sm:flex-row gap-5 items-start sm:items-center relative group"
               >
                 {/* Product Image */}
                 <div className="w-24 h-24 bg-[var(--input-bg)] rounded-2xl flex-shrink-0 border border-[var(--border)] overflow-hidden flex items-center justify-center">
-                  {item.product?.images?.[0] ? (
+                  {product?.images?.[0] ? (
                     <img
-                      src={item.product.images[0]}
-                      alt={item.product?.title}
+                      src={product.images[0]}
+                      alt={product?.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
@@ -123,7 +130,7 @@ export default function CartPage() {
                 <div className="flex-1 w-full space-y-4">
                   <div className="pr-8">
                     <h3 className="font-bold text-base text-[var(--foreground)] leading-snug line-clamp-2">
-                      {item.product?.title}
+                      {product?.title}
                     </h3>
 
                     {item.variantSnapshot?.attributes && (
@@ -135,11 +142,11 @@ export default function CartPage() {
                     )}
 
                     <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2">
-                      {item.offer?.store && (
-                        <MetaItem label="Sold by" value={item.offer.store?.name || "Store"} />
+                      {offer?.store && (
+                        <MetaItem label="Sold by" value={offerStoreName || "Store"} />
                       )}
-                      {item.offer?.condition && (
-                        <MetaItem label="Condition" value={item.offer.condition} />
+                      {offer?.condition && (
+                        <MetaItem label="Condition" value={offer.condition} />
                       )}
                     </div>
                   </div>
@@ -176,7 +183,6 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Remove Button */}
                 <button
                   onClick={() => handleRemove(item)}
                   className="p-2 text-[var(--foreground-subtle)] hover:text-[var(--destructive)] transition-colors absolute top-4 right-4 sm:top-5 sm:right-5 bg-transparent"
@@ -185,7 +191,8 @@ export default function CartPage() {
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Order Summary Sidebar */}

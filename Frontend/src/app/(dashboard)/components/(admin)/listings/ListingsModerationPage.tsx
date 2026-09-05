@@ -3,8 +3,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { ListingProps } from "@/types/Listings";
+import { ListingProps, PublicListingsResponse } from "@/types/Listings";
+import { QueryParams } from "@/types/api/ErrorTypes";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
@@ -36,7 +38,7 @@ const STATUS_TONE: Record<
 };
 
 interface ListingsModerationClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<PublicListingsResponse>;
 }
 
 export default function ListingsModerationClient({
@@ -46,7 +48,7 @@ export default function ListingsModerationClient({
   const [actioningId, setActioningId] = useState<string | null>(null);
 
   const endpoint = "/listings/admin";
-  const params = { status, limit: 20 };
+  const params: QueryParams = { status, limit: 20 };
 
   const {
     data,
@@ -55,10 +57,10 @@ export default function ListingsModerationClient({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(endpoint, params, { initialData });
+  } = useInfiniteGet<PublicListingsResponse>(endpoint, params, { initialData });
 
   const listings: ListingProps[] = (
-    data?.pages?.flatMap((page: any) => page?.data ?? []) || []
+    data?.pages?.flatMap((page: PublicListingsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   //change status

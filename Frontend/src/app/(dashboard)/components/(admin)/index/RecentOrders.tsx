@@ -5,7 +5,7 @@ import { useGetOrdersAdmin } from "@/services/Order/useGetOrders";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, ViewAction, Badge } from "../../shared/table/TableParts";
-import { OrderStatus } from "@/types/Order";
+import { IOrder, OrderStatus } from "@/types/Order";
 
 const STATUS_TONE: Record<OrderStatus, "success" | "warning" | "destructive" | "info" | "neutral"> = {
   created: "neutral",
@@ -45,7 +45,7 @@ export default function RecentOrders() {
         </tr>
       </thead>
       <tbody>
-        {orders.map((order: any) => {
+        {orders.map((order: IOrder) => {
           const status = (order?.status as OrderStatus) ?? "created";
           const tone = STATUS_TONE[status] ?? "neutral";
           const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : "—";

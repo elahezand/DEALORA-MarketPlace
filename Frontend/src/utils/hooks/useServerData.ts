@@ -28,8 +28,9 @@ export const useServerData = async <T>(
     });
     if (!res.ok) throw new Error(`Fetch failed with status ${res.status}`);
     return res.json();
-  } catch (error: any) {
-    console.error("SSR fetch error:", error?.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("SSR fetch error:", message);
     throw new Error("Data fetch failed");
   }
 };
@@ -80,8 +81,9 @@ export const useAuthServerData = async <T>(
     }
 
     return (await res.json()) as T;
-  } catch (error: any) {
-    console.error(`[useAuthServerData] SSR Auth fetch error:`, error?.message || error);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : error;
+    console.error(`[useAuthServerData] SSR Auth fetch error:`, message);
     return null;
   }
 };

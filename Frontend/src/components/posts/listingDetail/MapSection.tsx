@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MapPin } from "lucide-react";
+import type { Map as LeafletMap } from "leaflet";
 
 import "leaflet/dist/leaflet.css";
 
@@ -14,7 +15,7 @@ interface MapSectionProps {
 
 export default function MapSection({ lat, lng, city, state }: MapSectionProps) {
     const mapRef = useRef<HTMLDivElement>(null);
-    const mapInstanceRef = useRef<any>(null);
+    const mapInstanceRef = useRef<LeafletMap | null>(null);
     const [mounted, setMounted] = useState(false);
 
     const displayLocation = [city, state].filter(Boolean).join(", ");

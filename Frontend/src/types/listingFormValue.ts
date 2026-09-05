@@ -3,12 +3,14 @@ export interface FormValues {
         title: string;
         description: string;
         images: File[];
-        specs: Record<string, any>;
+        specs: Record<string, string | boolean>;
         categoryPath: string[];
     };
     location: {
         state: string;
         city: string;
+        lat?: number | null;
+        lng?: number | null;
     };
     price: number;
     shipping: {

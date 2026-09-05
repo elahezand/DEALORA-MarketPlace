@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { HiOutlineCreditCard } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { IOrder, OrderStatus } from "@/types/Order";
+import { IOrder, OrderStatus, AdminOrdersResponse } from "@/types/Order";
+import { QueryParams } from "@/types/api/ErrorTypes";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, ViewAction, Badge } from "../../shared/table/TableParts";
@@ -42,7 +44,7 @@ const PAYMENT_TONE: Record<
 const ENDPOINT = "/orders/admin";
 
 interface TransactionsClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<AdminOrdersResponse>;
 }
 
 export default function TransactionsClient({
@@ -50,7 +52,7 @@ export default function TransactionsClient({
 }: TransactionsClientProps) {
   const [status, setStatus] = useState<OrderStatus | "all">("all");
 
-  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
 
   const {
     data,
@@ -59,10 +61,10 @@ export default function TransactionsClient({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<AdminOrdersResponse>(ENDPOINT, params, { initialData });
 
   const allOrders: IOrder[] = (
-    data?.pages?.flatMap((page: any) => page?.data?.data ?? []) || []
+    data?.pages?.flatMap((page: AdminOrdersResponse) => page?.data?.data ?? []) || []
   ).filter(Boolean);
 
   const orders =

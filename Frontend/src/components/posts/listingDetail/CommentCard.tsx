@@ -18,7 +18,7 @@ function StarRow({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export default function CommentCard({ comment }: { comment: CommentItemType }) {    
-  const getUserName = (user: any) => {
+  const getUserName = (user: CommentItemType["user"]) => {
     if (!user) return "User";
     if (typeof user === "string") return "User";
     return user.username || "User";
@@ -57,7 +57,7 @@ export default function CommentCard({ comment }: { comment: CommentItemType }) {
       {/* REPLIES SECTION */}
       {Array.isArray(comment.replies) && comment.replies.length > 0 && (
         <div className="pl-4 border-l-2 border-[var(--border)] space-y-3 mt-2">
-          {comment.replies.map((reply: any) => {
+          {comment.replies.map((reply: CommentItemType) => {
             const replyUserName = getUserName(reply.user);
             return (
               <div key={reply._id}>

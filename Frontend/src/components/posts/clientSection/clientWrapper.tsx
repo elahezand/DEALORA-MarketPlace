@@ -7,7 +7,7 @@ import { useState, useMemo, useEffect } from "react";
 import qs from "qs";
 import SectionHeader from "./sectionHeader";
 import CategorySection from "./categorySection";
-import Options from "./options/options";
+import Options, { FilterValue } from "./options/options";
 
 export default function ClientWrapper() {
     const router = useRouter();
@@ -51,7 +51,7 @@ export default function ClientWrapper() {
         setPriceMaxInput(priceMax);
     }, [priceMin, priceMax]);
 
-    const handleFilterChange = (newFilterParams: Record<string, any> = {}) => {
+    const handleFilterChange = (newFilterParams: Record<string, string | number> = {}) => {
         const updatedFilters = { ...currentFilters, ...newFilterParams, page: 1 };
 
         const cleanParams = Object.fromEntries(
@@ -72,8 +72,8 @@ export default function ClientWrapper() {
         handleFilterChange({ price: priceValue });
     };
 
-    const appendToFilter = (field: string, val: any) => {
-        let current: Record<string, any> = {};
+    const appendToFilter = (field: string, val: FilterValue) => {
+        let current: Record<string, FilterValue> = {};
         if (currentFilters?.filter) {
             try {
                 current = JSON.parse(String(currentFilters.filter)) || {};
@@ -91,7 +91,7 @@ export default function ClientWrapper() {
         handleFilterChange({ filter: Object.keys(current).length ? JSON.stringify(current) : "" });
     };
 
-    const activeFilters = useMemo(() => {
+    const activeFilters = useMemo((): Record<string, FilterValue> => {
         try {
             return currentFilters.filter ? JSON.parse(currentFilters.filter) : {};
         } catch {

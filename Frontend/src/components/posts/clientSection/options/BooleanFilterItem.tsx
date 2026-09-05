@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ICategoryFilter } from "@/types/Category";
 
 interface BooleanFilterItemProps {
-    filter: any;
+    filter: ICategoryFilter;
     filterKey: string;
     urlChecked: boolean;
     appendToFilter: (key: string, value: boolean) => void;

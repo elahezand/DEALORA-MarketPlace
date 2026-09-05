@@ -1,10 +1,13 @@
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { MessagesResponse } from "@/types/Chat";
+import { IPagination } from "@/types/common";
 
 interface UseMessagesOptions {
   initialData?: MessagesResponse["data"];
-  initialPagination?: MessagesResponse["pagination"] | null;
+  initialPagination?: IPagination | null;
 }
+
+const EMPTY_PAGINATION: IPagination = { limit: 20, nextCursor: null, hasMore: false };
 
 export const useMessages = (
   conversationId: string,
@@ -18,7 +21,7 @@ export const useMessages = (
       initialData: conversationId
         ? {
             pages: [
-              { success: true, data: initialData, pagination: initialPagination as any },
+              { success: true, data: initialData, pagination: initialPagination ?? EMPTY_PAGINATION },
             ],
             pageParams: [null],
           }

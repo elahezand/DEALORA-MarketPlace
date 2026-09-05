@@ -1,13 +1,14 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
+import { ApiError } from "@/types/api/ErrorTypes";
 
 export const useSubscribeNewsletter = (onSubscribed?: () => void) => {
-  return usePost<any, { email: string }>("/newsletters", {
+  return usePost<{ message: string }, { email: string }>("/newsletters", {
     onSuccess: () => {
       toast.success("Subscribed successfully! Welcome aboard.");
       onSubscribed?.();
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       // Kept as a full onError (not just errorFallback) because 409 needs
       // genuinely different handling (info, not an error) — not just a
       // different fallback string.

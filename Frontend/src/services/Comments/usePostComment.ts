@@ -1,6 +1,7 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CommentItemType } from "@/types/CommetTypes";
 
 export interface NewCommentPayload {
   listing: string;
@@ -13,10 +14,15 @@ export interface NewCommentPayload {
   parentId?: string;
 }
 
+export interface NewCommentResponse {
+  message: string;
+  data: CommentItemType;
+}
+
 export function usePostComment(listingId: string) {
   const queryClient = useQueryClient();
 
-  const { mutate, isPending } = usePost<any, NewCommentPayload>("/comments", {
+  const { mutate, isPending } = usePost<NewCommentResponse, NewCommentPayload>("/comments", {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments",listingId ] });
       toast.success("Your review was submitted and is awaiting approval.");

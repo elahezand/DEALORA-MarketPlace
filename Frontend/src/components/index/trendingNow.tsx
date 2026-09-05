@@ -1,7 +1,8 @@
 import Link from "next/link";
 import ListingsCarousel from "./ListingCarousel";
+import { ListingProps } from "@/types/Listings";
 
-export default function TrendingNow({ listings }: { listings: any[] }) {
+export default function TrendingNow({ listings }: { listings: ListingProps[] }) {
   const sorted = [...(listings || [])]
     .sort((a, b) => (b?.metrics?.views || 0) - (a?.metrics?.views || 0))
     .slice(0, 12);

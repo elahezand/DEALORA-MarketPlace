@@ -175,7 +175,7 @@ export default function LocationsModal({ isOpen, setIsOpen }: Props) {
                                     No cities found
                                 </li>
                             )}
-                            {citiesForState.map((city: any, i: number) => (
+                            {citiesForState.map((city: string, i: number) => (
                                 <li
                                     key={`${selectedState}-${i}`}
                                     className="p-3.5 rounded-xl bg-[var(--background-soft)] hover:bg-[var(--border)] border border-[var(--border)] flex items-center justify-between transition-colors"

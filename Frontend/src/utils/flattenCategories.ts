@@ -8,12 +8,9 @@ export function flattenCategories(
   depth = 0
 ): FlatCategory[] {
   return tree.flatMap((cat) => {
-    const rawChildren =
-      (cat as any).subCategories ?? cat.children ?? [];
+    const { subCategories, ...rest } = cat;
+    const node: FlatCategory = { ...rest, depth };
 
-    const { subCategories, children, ...rest } = cat as any;
-    const node: FlatCategory = { ...(rest as AdminCategory), depth };
-
-    return [node, ...flattenCategories(rawChildren, depth + 1)];
+    return [node, ...flattenCategories(subCategories ?? [], depth + 1)];
   });
 }

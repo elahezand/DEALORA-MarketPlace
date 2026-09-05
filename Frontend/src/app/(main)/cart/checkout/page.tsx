@@ -8,6 +8,8 @@ import { checkoutSchema } from '@/validations/cartSchrma';
 import { Button } from "@heroui/react";
 import { ShieldCheck } from "lucide-react";
 import { useGetProfile } from '@/services/Profile/getProfile';
+import { IAddress } from '@/types/User';
+import { CartItem } from '@/types/Cart';
 import { AddressCard } from '@/components/cart/AddressCart';
 import AddNewAddress from '@/components/cart/AddNewAddress';
 
@@ -56,7 +58,7 @@ export default function CheckoutPage() {
                 </Button>
             </div>
             <div className="space-y-3">
-                {user?.addresses?.map((addr: any) => (
+                {user?.addresses?.map((addr: IAddress) => (
                     <AddressCard
                         key={addr._id}
                         addr={addr}
@@ -77,13 +79,16 @@ export default function CheckoutPage() {
                 <div className="bg-[var(--card)] backdrop-blur-[20px] p-6 md:p-8 rounded-[var(--radius)] border border-[var(--border)] shadow-sm transition-colors duration-250">
                     <h2 className="text-lg md:text-xl font-semibold text-[var(--foreground)] mb-6 tracking-tight">Order Summary</h2>
                     <div className="space-y-4 mb-6 max-h-[240px] overflow-y-auto pr-2 border-b border-[var(--border)] pb-6">
-                        {cart?.data?.items?.map((item: any, index: number) => (
+                        {cart?.data?.items?.map((item: CartItem, index: number) => {
+                            const product = typeof item.product === "object" ? item.product : null;
+                            const offerId = typeof item.offer === "object" ? item.offer?._id : item.offer;
+                            return (
                             <div
-                                key={`${item.offer?._id ?? item.offer ?? "direct"}-${item.variantId ?? "novariant"}-${index}`}
+                                key={`${offerId ?? "direct"}-${item.variantId ?? "novariant"}-${index}`}
                                 className="flex justify-between items-center text-sm"
                             >
                                 <span className="text-[var(--foreground-muted)] font-medium">
-                                    {item.product?.title}
+                                    {product?.title}
                                     {item.variantSnapshot?.attributes && (
                                         <span className="block text-[var(--foreground-subtle)] text-xs">
                                             {Object.entries(item.variantSnapshot.attributes)
@@ -93,9 +98,10 @@ export default function CheckoutPage() {
                                     )}
                                     <span className="text-[var(--foreground-subtle)] text-xs"> x{item.quantity}</span>
                                 </span>
-                                <span className="font-semibold text-[var(--foreground)]">${((item.priceSnapshot ?? item.price ?? 0) * item.quantity).toFixed(2)}</span>
+                                <span className="font-semibold text-[var(--foreground)]">${(item.priceSnapshot * item.quantity).toFixed(2)}</span>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <div className="space-y-4 mb-6 max-h-[240px] overflow-y-auto pr-2 border-b border-[var(--border)] pb-6">
                         <h3 className='mb-4 tracking-tigh font-bold'>Payment Method</h3>

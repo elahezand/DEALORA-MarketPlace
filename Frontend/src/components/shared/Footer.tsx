@@ -4,7 +4,14 @@ import Logo from "./Logo";
 import Link from "next/link";
 import { useSubscribeNewsletter } from "@/services/Newsletter/useSubscribeNewsletter";
 
-export function NewsletterBanner({ email, setEmail, handleSubscribe, isPending }: any) {
+interface NewsletterBannerProps {
+  email: string;
+  setEmail: (email: string) => void;
+  handleSubscribe: (e: React.FormEvent) => void;
+  isPending: boolean;
+}
+
+export function NewsletterBanner({ email, setEmail, handleSubscribe, isPending }: NewsletterBannerProps) {
   return (
     <div className="absolute left-1/2 -top-28 w-full max-w-6xl -translate-x-1/2 px-4 z-30">
       <div className="page-card relative overflow-hidden p-8 sm:p-10">

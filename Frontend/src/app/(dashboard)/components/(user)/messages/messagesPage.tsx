@@ -4,12 +4,13 @@ import Link from "next/link";
 import { HiOutlineChatBubbleLeftRight, HiChevronRight } from "react-icons/hi2";
 import { useConversations } from "@/services/Chat/useConversations";
 import { useGetProfile } from "@/services/Profile/getProfile";
-import { IConversation } from "@/types/Chat";
+import { IConversation, ConversationsResponse } from "@/types/Chat";
+import { IPagination } from "@/types/common";
 import { timeAgo } from "@/utils/timeAgo";
 
 interface MessagesPageProps {
   initialData?: IConversation[];
-  initialPagination?: any;
+  initialPagination?: IPagination | null;
 }
 
 const getMediaUrl = (path?: string | null) => {
@@ -35,7 +36,7 @@ export default function MessagesPage({
   } = useConversations({ initialData, initialPagination });
 
   const conversations = (
-    data?.pages.flatMap((page) => page?.data ?? []) || []
+    data?.pages.flatMap((page: ConversationsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   return (

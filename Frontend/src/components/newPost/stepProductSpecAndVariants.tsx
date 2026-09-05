@@ -3,14 +3,15 @@ import React from "react";
 import { useFormikContext } from "formik";
 import { Skeleton } from "@heroui/react";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-import { ISingleCategoryResponse } from "@/types/Category";
+import { ISingleCategoryResponse, ICategoryFilter, ICategoryFilterOption } from "@/types/Category";
+import { FormValues } from "@/types/listingFormValue";
 
 export default function StepProductSpecAndVariants({
   categoryId,
 }: {
   categoryId: string;
 }) {
-  const { values, setFieldValue } = useFormikContext<any>();
+  const { values, setFieldValue } = useFormikContext<FormValues>();
   const { data: res, isLoading } = useGet<ISingleCategoryResponse>(
     `/categories/${categoryId}`,
     undefined,
@@ -18,17 +19,17 @@ export default function StepProductSpecAndVariants({
   );
 
   const category = res?.data;
-  const filters = (category?.filters ?? [])
+  const filters: ICategoryFilter[] = category?.filters ?? [];
   const specs = values?.snapshot?.specs ?? {};
 
-  const updateSpec = (key: string, value: any) => {
+  const updateSpec = (key: string, value: string | boolean) => {
     setFieldValue("snapshot.specs", {
       ...specs,
       [key]: value,
     });
   };
 
-  const isSpecEmpty = filters.length > 0 && filters.every((f: any) => !specs?.[f.slug]);
+  const isSpecEmpty = filters.length > 0 && filters.every((f) => !specs?.[f.slug]);
 
   if (isLoading)
     return (
@@ -70,7 +71,7 @@ export default function StepProductSpecAndVariants({
 
       {/* GRID FIELDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filters.map((field: any) => {
+        {filters.map((field) => {
           const value = specs?.[field.slug];
           return (
             <div
@@ -98,7 +99,7 @@ export default function StepProductSpecAndVariants({
                     <option value="" style={{ color: "var(--foreground-subtle)" }}>
                       Select {field.name}
                     </option>
-                    {field.options?.map((opt: any) => (
+                    {field.options?.map((opt: ICategoryFilterOption) => (
                       <option
                         key={opt.value}
                         value={opt.value}
@@ -122,7 +123,7 @@ export default function StepProductSpecAndVariants({
               {/* 2. RADIO FIELD */}
               {field.type === "radio" && (
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {field.options?.map((opt: any) => {
+                  {field.options?.map((opt: ICategoryFilterOption) => {
                     const isSelected = value === opt.value;
                     return (
                       <label

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { HiChevronRight } from "react-icons/hi";
 import { HiOutlineEye } from "react-icons/hi2";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { IOrder } from "@/types/Order";
+import { IOrder, OrdersResponse } from "@/types/Order";
+import { IPagination } from "@/types/common";
 import TableCard from "../../shared/table/TableCard";
 import { Th, Badge } from "../../shared/table/TableParts";
 
@@ -43,12 +44,12 @@ const filterOptions = [
 
 interface OrdersPageProps {
   initialData?: IOrder[];
-  initialPagination?: any;
+  initialPagination?: IPagination;
 }
 
 export default function OrdersPage({
   initialData = [],
-  initialPagination = null,
+  initialPagination,
 }: OrdersPageProps) {
   const [selectedFilter, setSelectedFilter] = useState("all");
 
@@ -59,19 +60,19 @@ export default function OrdersPage({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(
+  } = useInfiniteGet<OrdersResponse>(
     "/orders/my",
     {},
     {
       initialData: {
-        pages: [{ data: initialData, pagination: initialPagination }],
+        pages: [{ data: { data: initialData, pagination: initialPagination } }],
         pageParams: [null],
       },
     }
   );
 
   const allOrders = (
-    data?.pages.flatMap((page: any) => page?.data ?? []) || []
+    data?.pages.flatMap((page: OrdersResponse) => page?.data?.data ?? []) || []
   ).filter(Boolean);
 
   const selectedFilterConfig = filterOptions.find(

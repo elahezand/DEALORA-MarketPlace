@@ -9,13 +9,18 @@ import qs from "qs";
 import { getUrl } from "@/utils/helper"
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useRemoveFavorite } from "@/services/Favorites/favorites";
+import FavoritesTypeResponse from "@/types/favorites";
+import { IPagination } from "@/types/common";
+import { QueryParams } from "@/types/api/ErrorTypes";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge, ViewAction } from "../../shared/table/TableParts";
 
+type FavoriteItem = FavoritesTypeResponse["data"][number];
+
 interface InfiniteFavoritesSectionProps {
-  initialData: any[];
-  initialPagination: any;
+  initialData: FavoriteItem[];
+  initialPagination?: IPagination | null;
   queryString?: string;
 }
 
@@ -31,7 +36,7 @@ export default function InfiniteFavoritesSection({
   initialPagination,
   queryString = "",
 }: InfiniteFavoritesSectionProps) {
-  const parsedParams = qs.parse(queryString);
+  const parsedParams = qs.parse(queryString) as QueryParams;
   const {
     data,
     fetchNextPage,
@@ -39,9 +44,9 @@ export default function InfiniteFavoritesSection({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>("/wishList/my", parsedParams, {
+  } = useInfiniteGet<FavoritesTypeResponse>("/wishList/my", parsedParams, {
     initialData: {
-      pages: [{ data: initialData, pagination: initialPagination }],
+      pages: [{ data: initialData, pagination: initialPagination ?? undefined }],
       pageParams: [null],
     },
   });
@@ -49,7 +54,7 @@ export default function InfiniteFavoritesSection({
   const { mutate: deleteFavorite } = useRemoveFavorite();
 
   const favorites = (
-    data?.pages.flatMap((page: any) => page?.data ?? []) || []
+    data?.pages.flatMap((page: FavoritesTypeResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const handleRemove = (productId: string) => {
@@ -94,11 +99,11 @@ export default function InfiniteFavoritesSection({
           </tr>
         </thead>
         <tbody>
-          {favorites.map((favorite: any) => {
+          {favorites.map((favorite: FavoriteItem) => {
             if (!favorite) return null;
-            const src = getUrl(favorite.images?.[0])
-            const product = favorite.product || {};
-            const statusKey = product.status?.toLowerCase() || "inactive";
+            const src = getUrl(favorite.product?.images?.[0])
+            const product = favorite.product;
+            const statusKey = product?.status?.toLowerCase() || "inactive";
             const tone = STATUS_TONE[statusKey] ?? "destructive";
             const label =
               statusKey.charAt(0).toUpperCase() + statusKey.slice(1);

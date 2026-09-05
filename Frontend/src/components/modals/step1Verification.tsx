@@ -80,7 +80,7 @@ export const Step1Verification = ({
     const handleResendCode = () => {
         resendCode(
             { phone },
-            {onSuccess: (data: any) => startCountdown(toSeconds(data.remainingTime)) }
+            {onSuccess: (data) => startCountdown(toSeconds(data.remainingTime)) }
         );
     };
 

@@ -1,8 +1,15 @@
 import { AxiosError } from "axios";
 
+export interface ApiValidationError {
+  field: string;
+  message: string;
+  expected?: string;
+  received?: unknown;
+}
+
 export interface ApiErrorResponse {
   message: string;
-  errors?: Record<string, string[]>;
+  errors?: ApiValidationError[];
   statusCode?: number;
 }
 

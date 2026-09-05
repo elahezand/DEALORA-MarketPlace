@@ -12,8 +12,15 @@ import StepMedia from "@/components/newPost/stepMedia";
 import StepProductSpecAndVariants from "./stepProductSpecAndVariants";
 import { useRouter } from "next/navigation";
 import { MotionDiv } from "@/utils/providers/MotionWrapper";
+import { CategoriesTypeResponse } from "@/types/Category";
 
 import { ZodError } from "zod";
+
+// The custom `validate` function below builds a flat, dotted-key error
+// object (e.g. "snapshot.title") rather than Formik's usual nested shape,
+// so we type it explicitly instead of indexing FormikErrors<FormValues>
+// with strings it doesn't actually support.
+type FlatFormErrors = Record<string, string>;
 function FilePreviewImg({
     file,
     alt,
@@ -62,29 +69,34 @@ const initialValues: FormValues = {
 
 const steps = ["Category", "Details", "Specs", "Pricing", "Location", "Media", "Review"];
 
-export default function NewPost({ data, isLoading }: any) {
+interface NewPostProps {
+    data?: CategoriesTypeResponse;
+    isLoading: boolean;
+}
+
+export default function NewPost({ data, isLoading }: NewPostProps) {
     const { mutate, isPending } = useCreatePost();
     const [step, setStep] = useState(0);
     const router = useRouter()
 
-    const validateStep = (values: FormValues) => {
+    const validateStep = (values: FormValues): FlatFormErrors => {
         try {
             stepSchemas[step].parse(values)
             return {};
         } catch (err) {
-            const formatted: FormikErrors<FormValues> = {};
+            const formatted: FlatFormErrors = {};
             if (err instanceof ZodError) {
                 err.issues.forEach((issue) => {
                     const path = issue.path.join(".");
-                    (formatted as any)[path] = issue.message;
+                    formatted[path] = issue.message;
                 });
             }
             return formatted;
         }
     };
 
-    const next = (validateForm: any) => {
-        validateForm().then((errors: any) => {
+    const next = (validateForm: () => Promise<FormikErrors<FormValues>>) => {
+        validateForm().then((errors) => {
             if (Object.keys(errors).length === 0) {
                 setStep((s) => Math.min(s + 1, steps.length - 1));
             }
@@ -154,7 +166,9 @@ export default function NewPost({ data, isLoading }: any) {
                     router.push("/posts")
                 }}
             >
-                {({ values, setFieldValue, validateForm, submitForm, errors }) => (
+                {({ values, setFieldValue, validateForm, submitForm, errors }) => {
+                  const flatErrors = errors as FlatFormErrors;
+                  return (
                     <Form className="flex flex-col gap-8 relative z-10 text-left">
 
                         {/* STEP 0: CATEGORIES */}
@@ -176,9 +190,9 @@ export default function NewPost({ data, isLoading }: any) {
                                         className="h-12 px-4 rounded-xl transition duration-200 w-full"
                                         onChange={(e) => setFieldValue("snapshot.title", e.target.value)}
                                     />
-                                    {(errors as any)["snapshot.title"] && (
+                                    {flatErrors["snapshot.title"] && (
                                         <p className="text-xs font-medium text-[var(--destructive)] mt-0.5 flex items-center gap-1 ml-1 animate-in fade-in slide-in-from-top-1">
-                                            ⚠️ {(errors as any)["snapshot.title"]}
+                                            ⚠️ {flatErrors["snapshot.title"]}
                                         </p>
                                     )}
                                 </div>
@@ -192,9 +206,9 @@ export default function NewPost({ data, isLoading }: any) {
                                         className="p-4 rounded-xl transition duration-200 resize-none w-full"
                                         onChange={(e) => setFieldValue("snapshot.description", e.target.value)}
                                     />
-                                    {(errors as any)["snapshot.description"] && (
+                                    {flatErrors["snapshot.description"] && (
                                         <p className="text-xs font-medium text-[var(--destructive)] mt-0.5 flex items-center gap-1 ml-1 animate-in fade-in slide-in-from-top-1">
-                                            ⚠️ {(errors as any)["snapshot.description"]}
+                                            ⚠️ {flatErrors["snapshot.description"]}
                                         </p>
                                     )}
                                 </div>
@@ -429,7 +443,8 @@ export default function NewPost({ data, isLoading }: any) {
                             )}
                         </div>
                     </Form>
-                )}
+                  );
+                }}
             </Formik>
         </div>
     );

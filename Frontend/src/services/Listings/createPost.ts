@@ -1,17 +1,18 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
+import { ListingProps } from "@/types/Listings";
 
-function isFileLike(value: any): value is File {
+function isFileLike(value: unknown): value is File {
   return (
     !!value &&
     typeof value === "object" &&
-    typeof value.name === "string" &&
-    typeof value.size === "number" &&
-    typeof value.arrayBuffer === "function"
+    typeof (value as File).name === "string" &&
+    typeof (value as File).size === "number" &&
+    typeof (value as File).arrayBuffer === "function"
   );
 }
 
-function toFormData(payload: Record<string, any>): FormData {
+function toFormData(payload: Record<string, unknown>): FormData {
   const formData = new FormData();
 
   for (const [key, value] of Object.entries(payload)) {
@@ -19,7 +20,7 @@ function toFormData(payload: Record<string, any>): FormData {
 
     // Files
     if (Array.isArray(value) && value.some(isFileLike)) {
-      value.forEach((file: any) => {
+      value.forEach((file: unknown) => {
         if (isFileLike(file)) {
           formData.append("pics", file);
         }
@@ -69,14 +70,14 @@ function toFormData(payload: Record<string, any>): FormData {
 }
 
 export const useCreatePost = () => {
-  const { mutate: rawMutate, isPending } = usePost<any, FormData>(
+  const { mutate: rawMutate, isPending } = usePost<{ message: string; data: ListingProps }, FormData>(
     "/listings",
     {
       onSuccess: () => {
         toast.success("Post Created Successfully :)");
       },
 
-      onError: (error: any) => {
+      onError: (error) => {
         console.log(
           "VALIDATION ERRORS:",
           error?.response?.data?.errors
@@ -89,7 +90,7 @@ export const useCreatePost = () => {
     }
   );
 
-  const mutate = (payload: Record<string, any>) => {
+  const mutate = (payload: Record<string, unknown>) => {
     rawMutate(toFormData(payload));
   };
 

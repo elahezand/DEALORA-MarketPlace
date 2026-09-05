@@ -8,7 +8,7 @@ const getCoupons = async (query = {}) => {
   if (query.type) filter.type = query.type;
 
   const limit = Math.min(Math.max(Number(query.limit) || 15, 1), 100);
-  return paginate(Coupon, { ...query, limit }, filter);
+  return paginate(Coupon, { limit, cursor: query.cursor, filters: filter });
 };
 
 const getCouponById = async (id) => {

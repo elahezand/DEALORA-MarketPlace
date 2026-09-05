@@ -150,7 +150,17 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     filters["location.state"] = { $regex: new RegExp(escapeRegex(query.state), "i") };
   }
 
-  if (query.city) {
+  if (query.cities) {
+    const citiesArray = String(query.cities)
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (citiesArray.length > 0) {
+      filters["location.city"] = {
+        $in: citiesArray.map((c) => new RegExp(`^${escapeRegex(c)}$`, "i")),
+      };
+    }
+  } else if (query.city) {
     filters["location.city"] = { $regex: new RegExp(escapeRegex(query.city), "i") };
   }
 

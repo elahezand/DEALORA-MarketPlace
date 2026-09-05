@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Listing = require("../models/listing");
 const Comment = require("../models/comment");
+const OfferSeller = require("../models/offerSeller");
 const { paginate, buildListingFilters } = require("../utils/helper");
 const invalidateCache = require("../utils/cache");
 const AppError = require("../utils/AppError");
@@ -50,6 +51,14 @@ async function getListingById(id, query = {}) {
   if (!listingData) throw new AppError(404, "Listing not found");
 
   if (listingData.listingType === "store_product") {
+    const offers = await OfferSeller.find({
+      listing: id,
+      status: "accepted",
+      stock: { $gt: 0 },
+    })
+      .populate("store", "_id name")
+      .lean({ virtuals: true });
+
     const [aggregatedData] = await Listing.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
       {
@@ -83,6 +92,8 @@ async function getListingById(id, query = {}) {
         user: listingData.user,
       };
     }
+
+    listingData.offers = offers;
 
     const commentQuery = typeof query === "string" ? new URLSearchParams(query) : query;
     const comments = await paginate(Comment, {

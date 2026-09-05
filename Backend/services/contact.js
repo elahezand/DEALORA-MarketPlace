@@ -6,7 +6,7 @@ const AppError = require("../utils/AppError");
 async function getContacts(query = {}) {
   const limit = Math.min(Number(query.limit) || 15, 100);
 
-  return paginate(Contact, { ...query, limit }, {}, null);
+  return paginate(Contact, { limit, cursor: query.cursor });
 }
 
 async function getContactById(id) {

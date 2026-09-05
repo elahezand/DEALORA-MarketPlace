@@ -1,20 +1,19 @@
 const Note = require("../models/note");
 const mongoose = require("mongoose");
 const AppError = require("../utils/AppError");
+  const { paginate } = require("../utils/helper");
 
 // helper
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // GET ALL (user notes)
 exports.getAll = async (userId, searchParams) => {
-  const { paginate } = require("../utils/helper");
-
-  return paginate(
-    Note,
-    searchParams,
-    { user: userId },
-    "product"
-  );
+  return paginate(Note, {
+    limit: searchParams.get ? searchParams.get("limit") : searchParams.limit,
+    cursor: searchParams.get ? searchParams.get("cursor") : searchParams.cursor,
+    filters: { user: userId },
+    populate: "product",
+  });
 };
 
 // GET ONE

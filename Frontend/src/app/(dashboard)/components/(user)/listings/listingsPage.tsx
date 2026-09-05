@@ -14,6 +14,8 @@ import {
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useDeleteListing } from "@/services/Listings/useDeleteListing";
 import { ListingProps } from "@/types/Listings";
+import type MyListingsResponse from "@/types/Listings";
+import { IPagination } from "@/types/common";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
@@ -39,8 +41,10 @@ const filterOptions = [
 
 interface InfiniteListingsSectionProps {
   initialData: ListingProps[];
-  initialPagination: any;
+  initialPagination?: IPagination;
 }
+
+const EMPTY_PAGINATION: IPagination = { limit: 20, nextCursor: null, hasMore: false };
 
 export default function ListingsPage({
   initialData,
@@ -55,9 +59,9 @@ export default function ListingsPage({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>("/listings/my", {}, {
+  } = useInfiniteGet<MyListingsResponse>("/listings/my", {}, {
     initialData: {
-      pages: [{ data: initialData, pagination: initialPagination }],
+      pages: [{ success: true, data: { data: initialData, pagination: initialPagination ?? EMPTY_PAGINATION } }],
       pageParams: [null],
     },
   });
@@ -79,7 +83,7 @@ const handleDelete = (id: string) => {
 };
 
   const allListings = (
-    data?.pages.flatMap((page: any) => page?.data ?? []) || []
+    data?.pages.flatMap((page: MyListingsResponse) => page?.data?.data ?? []) || []
   ).filter(Boolean);
 
   const selectedFilterConfig = filterOptions.find(
@@ -160,7 +164,7 @@ const handleDelete = (id: string) => {
           </tr>
         </thead>
         <tbody>
-          {listings.map((listing: any, index: number) => {
+          {listings.map((listing: ListingProps, index: number) => {
             if (!listing) return null;
             const statusKey = listing.status?.toLowerCase() || "inactive";
             const tone = STATUS_TONE[statusKey] ?? "warning";

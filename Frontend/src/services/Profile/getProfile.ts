@@ -1,6 +1,5 @@
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-import { UserType, IStore, IUser } from "@/types/User";
-import { AxiosError } from "axios";
+import { UserType, IStore } from "@/types/User";
 
 export const useGetProfile = () => {
   const { data, error, isError, isLoading } = useGet<UserType>(
@@ -15,6 +14,6 @@ export const useGetProfile = () => {
     hasStore: !!data?.user?.store,
     isLoading,
     isError,
-    error: isError ? (error as AxiosError<any>) : null,
+    error: isError ? error : null,
   };
 };

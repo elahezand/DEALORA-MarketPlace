@@ -1,13 +1,13 @@
 import React from 'react'
 import { Slider } from '@heroui/react';
 interface RangeFilterItemProps {
-    value: any;
+    value: [number, number];
     step: number
     min: number,
     max: number,
     currency: string,
     filterKey: string;
-    appendToFilter: (key: string, value: any) => void;
+    appendToFilter: (key: string, value: [number, number]) => void;
 }
 
 export default function RangeFilterItem({
@@ -27,7 +27,7 @@ export default function RangeFilterItem({
                 minValue={min}
                 maxValue={max}
                 value={value}
-                onChangeEnd={(val) => appendToFilter(filterKey, val)}
+                onChangeEnd={(val) => appendToFilter(filterKey, Array.isArray(val) ? [val[0], val[1]] : [val, val])}
                 formatOptions={{ style: "currency", currency: currency }}
                 className="max-w-full"
                 size="sm"

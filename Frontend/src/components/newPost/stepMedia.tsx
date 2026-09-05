@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { GrGallery } from "react-icons/gr";
 import { FaPlus as FaPlusIcon } from "react-icons/fa";
 import { useFormikContext } from "formik";
+import { FormValues } from "@/types/listingFormValue";
 
 const MAX_IMAGES = 4;
 
@@ -34,7 +35,7 @@ function ImagePreview({
 }
 
 export default function StepMedia() {
-    const { values, setFieldValue, setFieldTouched } = useFormikContext<any>();
+    const { values, setFieldValue, setFieldTouched } = useFormikContext<FormValues>();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const images: File[] = values?.snapshot?.images || [];

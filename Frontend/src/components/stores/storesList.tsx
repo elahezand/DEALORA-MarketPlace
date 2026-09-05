@@ -1,15 +1,7 @@
 import Link from "next/link";
+import { IStore } from "@/types/User";
 
-interface VerifiedStore {
-  _id: string;
-  name: string;
-  slug: string;
-  logo: string | null;
-  address?: { city?: string | null };
-  meta?: { ratings?: number; reviewsCount?: number };
-}
-
-export default function StoresList({ data }: { data: VerifiedStore[] }) {
+export default function StoresList({ data }: { data: IStore[] }) {
   if (!data || data.length === 0) {
     return (
       <p className="text-center text-sm text-[var(--foreground-muted)] py-16">
@@ -23,7 +15,7 @@ export default function StoresList({ data }: { data: VerifiedStore[] }) {
       {data.map((store) => (
         <Link
           key={store._id}
-          href={`/stores/${store.slug}`}
+          href={`/stores/${store.slug || store._id}`}
           className="
             group flex flex-col items-center text-center gap-3
             p-6 rounded-[var(--radius)]

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { useFormikContext } from "formik";
+import { useFormikContext, FormikHelpers } from "formik";
 import {
   MapContainer,
   TileLayer,
@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { FormValues } from "@/types/listingFormValue";
 
 const defaultPosition: [number, number] = [39.8283, -98.5795];
 
@@ -28,7 +29,7 @@ const icon = new L.DivIcon({
 });
 
 function MapSync() {
-  const { values } = useFormikContext<any>();
+  const { values } = useFormikContext<FormValues>();
   const map = useMap();
 
   const lat = values?.location?.lat;
@@ -45,7 +46,13 @@ function MapSync() {
   return null;
 }
 
-function MarkerLayer({ lat, lng, setFieldValue }: any) {
+interface MarkerLayerProps {
+  lat?: number | null;
+  lng?: number | null;
+  setFieldValue: FormikHelpers<FormValues>["setFieldValue"];
+}
+
+function MarkerLayer({ lat, lng, setFieldValue }: MarkerLayerProps) {
   const position = lat && lng ? ([lat, lng] as [number, number]) : null;
   if (!position) return null;
 
@@ -66,7 +73,7 @@ function MarkerLayer({ lat, lng, setFieldValue }: any) {
 }
 
 export default function Location() {
-  const { values, setFieldValue } = useFormikContext<any>();
+  const { values, setFieldValue } = useFormikContext<FormValues>();
 
   const center = useMemo(() => {
     if (values?.location?.lat && values?.location?.lng) {

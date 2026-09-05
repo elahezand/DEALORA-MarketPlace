@@ -5,9 +5,10 @@ import React, { useState } from "react";
 import { FaAngleDown } from "react-icons/fa";
 import { Skeleton } from "@heroui/react";
 import { FormValues } from "@/types/listingFormValue";
+import { CategoriesTypeResponse, ICategory } from "@/types/Category";
 
 type Props = {
-  data?: any;
+  data?: CategoriesTypeResponse;
   isLoading: boolean;
 };
 
@@ -27,10 +28,11 @@ export default function StepCategories({ data, isLoading }: Props) {
   const isOpen = (id: string) => openIds.includes(id);
   const hasError = !categoryPath || categoryPath.length === 0;
 
-  const renderTree = (categories: any[], level = 0, parents: string[] = []) => {
-    return categories.map((category: any) => {
+  const renderTree = (categories: ICategory[], level = 0, parents: string[] = []) => {
+    return categories.map((category) => {
       const id = String(category._id);
-      const hasChildren = category.subCategories?.length > 0;
+      const children = category.subCategories ?? [];
+      const hasChildren = children.length > 0;
       const currentPath = [...parents, id];
       const isSelected = categoryPath.includes(id);
 
@@ -97,7 +99,7 @@ export default function StepCategories({ data, isLoading }: Props) {
 
           {hasChildren && isOpen(id) && (
             <div className="mr-8 border-r-2 border-[var(--border)] pr-1 my-0.5 animate-in fade-in duration-200">
-              {renderTree(category.subCategories, level + 1, currentPath)}
+              {renderTree(children, level + 1, currentPath)}
             </div>
           )}
         </div>

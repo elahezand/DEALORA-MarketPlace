@@ -14,7 +14,44 @@ export interface Coupon {
 }
 
 
-export  interface FormState {
+export interface CouponsResponse {
+  success: boolean;
+  data: {
+    data: Coupon[];
+    pagination?: {
+      hasMore: boolean;
+      limit: number;
+      nextCursor: string | null;
+    };
+  };
+}
+
+export interface CreateCouponPayload {
+  code: string;
+  type: "fixed" | "percent";
+  amount: number;
+  maxDiscount?: number | null;
+  isActive?: boolean;
+  expiresAt?: string | null;
+  usageLimit?: number | null;
+}
+
+export interface UpdateCouponPayload {
+  _id: string;
+  type?: "fixed" | "percent";
+  amount?: number;
+  maxDiscount?: number | null;
+  isActive?: boolean;
+  expiresAt?: string | null;
+  usageLimit?: number | null;
+}
+
+export interface CouponMutationResponse {
+  success: boolean;
+  data: Coupon;
+}
+
+export interface FormState {
   _id?: string;
   code: string;
   type: "fixed" | "percent";

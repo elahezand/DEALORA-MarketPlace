@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 
 declare module "axios" {
@@ -6,6 +6,9 @@ declare module "axios" {
     skipRefresh?: boolean;
     silentAuth?: boolean;
     _retry?: boolean;
+  }
+  export interface AxiosError {
+    _authToastShown?: boolean;
   }
 }
 
@@ -16,8 +19,8 @@ const api = axios.create({
 
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig | undefined;
 
     if (!originalRequest) {
       return Promise.reject(error);
@@ -50,8 +53,8 @@ api.interceptors.response.use(
           toast.error("Please LogIn");
         }
 
-        if (refreshError && typeof refreshError === "object") {
-          (refreshError as any)._authToastShown = true;
+        if (refreshError instanceof Error) {
+          (refreshError as AxiosError)._authToastShown = true;
         }
 
         return Promise.reject(refreshError);

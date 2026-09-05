@@ -1,8 +1,15 @@
 import { useServerData } from "@/utils/hooks/useServerData";
 import InfiniteStoresSection from "@/components/stores/storesClient";
+import { IStore } from "@/types/User";
+import { IPagination } from "@/types/common";
+
+interface VerifiedStoresServerResponse {
+  data: IStore[];
+  pagination?: IPagination;
+}
 
 export default async function StoresPage() {
-  const result = await useServerData<any>(
+  const result = await useServerData<VerifiedStoresServerResponse>(
     "/stores/verified?limit=24",
     "verified-stores",
     60

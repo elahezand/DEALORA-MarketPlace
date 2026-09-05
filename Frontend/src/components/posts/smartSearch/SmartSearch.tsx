@@ -3,9 +3,10 @@
 import { useState, ChangeEvent } from "react";
 import { Input, Button } from "@heroui/react";
 import { PiOpenAiLogoBold } from "react-icons/pi";
+import { SmartSearchItem } from "@/types/Listings";
 
 interface SmartSearchProps {
-  onPostSelect?: (result: any) => void;
+  onPostSelect?: (result: SmartSearchItem) => void;
   onSearchSubmit?: (prompt: string, budget?: number) => void;
 }
 

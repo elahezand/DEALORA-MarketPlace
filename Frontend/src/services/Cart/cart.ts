@@ -1,9 +1,10 @@
 import { useGet, useDelete, usePost, usePatch } from "@/utils/hooks/useReactQueryHooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CartResponse, CheckoutResponse } from "@/types/Cart";
 
 export const useGetMyCart = () => 
-  useGet<any>('/cart/me', undefined, { staleTime: 0 });
+  useGet<CartResponse>('/cart/me', undefined, { staleTime: 0 });
 
 export const useAddToCart = () => {
   const queryClient = useQueryClient();
@@ -53,8 +54,8 @@ export const useApplyCoupon = () => {
 
 export const useCheckout = () => {
   const queryClient = useQueryClient();
-  return usePost('/orders/checkout', {
-    onSuccess: (data: any) => {
+  return usePost<CheckoutResponse>('/orders/checkout', {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/cart/me'] });
       if (data?.paymentUrl) {
         window.location.href = data.paymentUrl;

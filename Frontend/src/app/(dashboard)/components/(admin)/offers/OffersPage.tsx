@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { HiOutlineTag } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, textareaClass } from "../shared/AdminFormModal";
 import { useApproveOffer } from "@/services/Offer/useApproveOffer";
-import { OfferStatus,Offer } from "@/types/Offer";
+import { OfferStatus, Offer, OffersResponse } from "@/types/Offer";
+import { QueryParams } from "@/types/api/ErrorTypes";
 
 const STATUS_TABS: { value: OfferStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -30,7 +32,7 @@ const STATUS_TONE: Record<
 const ENDPOINT = "/offers";
 
 interface OffersClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<OffersResponse>;
 }
 
 export default function OffersClient({ initialData }: OffersClientProps) {
@@ -39,7 +41,7 @@ export default function OffersClient({ initialData }: OffersClientProps) {
   const [adminComment, setAdminComment] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
 
   const {
     data,
@@ -48,10 +50,10 @@ export default function OffersClient({ initialData }: OffersClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<OffersResponse>(ENDPOINT, params, { initialData });
 
   const offers: Offer[] = (
-    data?.pages?.flatMap((page: any) => page?.data ?? []) || []
+    data?.pages?.flatMap((page: OffersResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: approve } = useApproveOffer(() => {

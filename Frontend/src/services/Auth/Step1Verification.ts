@@ -11,10 +11,19 @@ interface ResendCodeValues {
   phone: string;
 }
 
+interface VerifyResponse {
+  message: string;
+}
+
+export interface ResendCodeResponse {
+  message: string;
+  remainingTime: string;
+}
+
 export const useVerify = (onSuccess: () => void) => {
   const queryClient = useQueryClient();
 
-  const { mutate, isPending } = usePost<VerifyPhoneValues>(
+  const { mutate, isPending } = usePost<VerifyResponse, VerifyPhoneValues>(
     "/auth/verify",
     {
       onSuccess: () => {
@@ -31,7 +40,7 @@ export const useVerify = (onSuccess: () => void) => {
 };
 
 export const useResendCode = () => {
-  const { mutate, isPending } = usePost<any, ResendCodeValues>(
+  const { mutate, isPending } = usePost<ResendCodeResponse, ResendCodeValues>(
     "/auth/send",
     {
       onSuccess: () => toast.success("CODE Sent Successfully:)"),

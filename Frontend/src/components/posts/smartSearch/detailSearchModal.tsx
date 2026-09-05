@@ -30,11 +30,6 @@ export default function DetailSearchModal({
 
   const postImages = Array.isArray(post.images) ? post.images : [];
 
-  const getImageUrl = (photo: any): string => {
-    if (typeof photo === "string") return photo;
-    return photo?.path || photo?.url || "";
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -95,8 +90,8 @@ export default function DetailSearchModal({
               speed={1000}
               pagination={{ clickable: true }}
             >
-              {postImages.map((photo: any, index: number) => {
-                const src = getImageUrl(photo);
+              {postImages.map((photo: string, index: number) => {
+                const src = photo;
                 if (!src) return null;
 
                 return (

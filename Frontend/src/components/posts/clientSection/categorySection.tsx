@@ -5,7 +5,7 @@ import { Skeleton } from '@heroui/react'
 import { useGet } from '@/utils/hooks/useReactQueryHooks'
 import { MdCategory } from "react-icons/md";
 import SectionHeader from './sectionHeader'
-import { CategoriesTypeResponse } from '@/types/Category'
+import { CategoriesTypeResponse, ICategory } from '@/types/Category'
 
 
 export default function CategorySection() {
@@ -37,7 +37,7 @@ export default function CategorySection() {
             </div>
             {/* TREE STRUCTURE LINES */}
             <ul className="relative flex flex-col gap-2 pl-1 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-200 dark:before:bg-slate-800/80 before:rounded">
-                {data?.data.map((item: any, index: number) => (
+                {data?.data.map((item: ICategory, index: number) => (
                     <li
                         key={item._id || index}
                         className="group/item relative pl-4 transition-all duration-300"

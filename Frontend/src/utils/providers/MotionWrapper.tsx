@@ -1,9 +1,10 @@
 "use client";
 import { motion } from "framer-motion";
+import type { ComponentPropsWithoutRef, ElementType } from "react";
 
 const createMotion =
-  (Tag: any) =>
-  ({ children, className, ...rest }: any) =>
+  <T extends ElementType>(Tag: T) =>
+  ({ children, className, ...rest }: ComponentPropsWithoutRef<T>) =>
     (
       <Tag className={className} {...rest}>
         {children}

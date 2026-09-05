@@ -9,11 +9,14 @@ import { GrFanOption } from 'react-icons/gr';
 import SectionHeader from '../sectionHeader';
 import { Skeleton } from '@heroui/react';
 import { HiChevronRight } from "react-icons/hi";
+import { ISingleCategoryResponse, ICategoryFilter, ICategoryFilterOption } from '@/types/Category';
+
+export type FilterValue = string | boolean | [number, number];
 
 interface OptionsProps {
     categoryId: string;
-    appendToFilter: (field: string, value: any) => void;
-    activeFilters?: Record<string, any>;
+    appendToFilter: (field: string, value: FilterValue) => void;
+    activeFilters?: Record<string, FilterValue>;
 }
 
 export default function Options({
@@ -22,7 +25,7 @@ export default function Options({
     activeFilters = {},
 }: OptionsProps) {
 
-    const { data, isLoading } = useGet<any>(`/categories/${categoryId}`);
+    const { data, isLoading } = useGet<ISingleCategoryResponse>(`/categories/${categoryId}`);
     if (isLoading)
         return (
             <div className="space-y-3 py-6">
@@ -32,18 +35,18 @@ export default function Options({
             </div>
         );
 
-    if (!data || data?.length === 0 || !data?.data?.filters)
+    if (!data || !data?.data?.filters)
         return (
             <div className="flex items-center justify-center h-full py-6">
                 <p className="text-gray-500 dark:text-slate-500 font-medium">Not FOUND</p>
             </div>
         );
 
-    const radioFilters = data.data.filters.filter((f: any) => f.type === 'radio' || f.isRadio);
-    const booleanFilters = data.data.filters.filter((f: any) => f.type === 'boolean');
-    const rangeFilters = data.data.filters.filter((f: any) => f.type === 'range');
+    const radioFilters = data.data.filters.filter((f) => f.type === 'radio' || f.isRadio);
+    const booleanFilters = data.data.filters.filter((f) => f.type === 'boolean');
+    const rangeFilters = data.data.filters.filter((f) => f.type === 'range');
 
-    const accordionFilters = data.data.filters.filter((f: any) =>
+    const accordionFilters = data.data.filters.filter((f) =>
         f.type !== 'radio' && !f.isRadio && f.type !== 'boolean' && f.type !== 'range'
     );
 
@@ -59,7 +62,7 @@ export default function Options({
             {/* 1. Range Filters (e.g., Price Range) */}
             {rangeFilters.length > 0 && (
                 <div className="flex flex-col gap-4 pl-1 pb-4">
-                    {rangeFilters.map((f: any, fIndex: number) => {
+                    {rangeFilters.map((f: ICategoryFilter, fIndex: number) => {
                         const filterKey = f.slug ?? f.name_en ?? f.name ?? String(fIndex);
 
                         const min = f.config?.min !== undefined ? Number(f.config.min) : 0;
@@ -68,8 +71,9 @@ export default function Options({
                         const currency = f.config?.currency ?? "USD";
 
                         let currentValue: [number, number] = [min, max];
-                        if (Array.isArray(activeFilters[filterKey]) && activeFilters[filterKey].length === 2) {
-                            currentValue = [Number(activeFilters[filterKey][0]), Number(activeFilters[filterKey][1])];
+                        const activeValue = activeFilters[filterKey];
+                        if (Array.isArray(activeValue) && activeValue.length === 2) {
+                            currentValue = [Number(activeValue[0]), Number(activeValue[1])];
                         }
 
                         return (
@@ -98,7 +102,7 @@ export default function Options({
             {/* 2. Radio Filters  */}
             {radioFilters.length > 0 && (
                 <div className="flex flex-col gap-4 pl-1">
-                    {radioFilters.map((f: any, fIndex: number) => {
+                    {radioFilters.map((f: ICategoryFilter, fIndex: number) => {
                         const filterKey = f.slug ?? f.name_en ?? f.name ?? String(fIndex);
                         return (
                             <div key={`radio-${fIndex}`} className="pb-4">
@@ -110,12 +114,9 @@ export default function Options({
                                     <div className="h-px flex-1 bg-[var(--border)]" />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    {Array.isArray(f.options) && f.options.map((op: any, oi: number) => {
-                                        const display = (op && typeof op === "object")
-                                            ? (op.label_en ?? op.label ?? String(op.value ?? ""))
-                                            : String(op);
-
-                                        const value = (op && typeof op === "object") ? (op.value ?? op) : op;
+                                    {Array.isArray(f.options) && f.options.map((op: ICategoryFilterOption, oi: number) => {
+                                        const display = op.label_en ?? op.label ?? String(op.value ?? "");
+                                        const value = op.value;
                                         const urlSelected = activeFilters[filterKey] === value;
 
                                         return (
@@ -139,7 +140,7 @@ export default function Options({
             {booleanFilters.length > 0 && (
                 <div className="flex flex-col gap-6 pl-1 mt-4">
                     <div className="flex flex-col gap-1">
-                        {booleanFilters.map((f: any, fIndex: number) => {
+                        {booleanFilters.map((f: ICategoryFilter, fIndex: number) => {
                             const filterKey = f.slug ?? f.name_en ?? f.name ?? String(fIndex);
                             const urlChecked = !!activeFilters[filterKey];
 
@@ -172,7 +173,7 @@ export default function Options({
                         }}
                         aria-label="Options accordion"
                     >
-                        {accordionFilters.map((f: any, fIndex: number) => {
+                        {accordionFilters.map((f: ICategoryFilter, fIndex: number) => {
                             const titleText = f.name_en ?? f.name ?? f.slug ?? "Option";
 
                             return (
@@ -188,13 +189,10 @@ export default function Options({
                                         </span>
                                     }
                                 >
-                                    {Array.isArray(f.options) && f.options.map((op: any, oi: number) => {
-                                        const display = (op && typeof op === "object")
-                                            ? (op.label_en ?? op.label ?? String(op.value ?? ""))
-                                            : String(op);
-
-                                        const value = (op && typeof op === "object") ? (op.value ?? op) : op;
-                                        const filterKey = f.slug ?? f.name_en ?? f.name ?? fIndex;
+                                    {Array.isArray(f.options) && f.options.map((op: ICategoryFilterOption, oi: number) => {
+                                        const display = op.label_en ?? op.label ?? String(op.value ?? "");
+                                        const value = op.value;
+                                        const filterKey = f.slug ?? f.name_en ?? f.name ?? String(fIndex);
 
                                         return (
                                             <button

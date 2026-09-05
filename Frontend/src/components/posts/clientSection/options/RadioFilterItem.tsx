@@ -4,10 +4,10 @@ import React, { useState, useEffect } from "react";
 
 interface RadioFilterItemProps {
     display: string;
-    value: any;
+    value: string;
     urlSelected: boolean;
     filterKey: string;
-    appendToFilter: (key: string, value: any) => void;
+    appendToFilter: (key: string, value: string) => void;
 }
 
 export default function RadioFilterItem({

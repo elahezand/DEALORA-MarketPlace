@@ -3,7 +3,7 @@ import qs from "qs";
 import { Suspense } from "react";
 import ClientWrapper from "@/components/posts/clientSection/clientWrapper";
 import SmartSearchWrapper from "@/components/posts/smartSearch/smartSearchWrapper";
-import ListingsTypeResponse  from "@/types/Listings";
+import { PublicListingsResponse } from "@/types/Listings";
 import InfiniteItemsSection from "@/components/posts/infiniteItemsSection";
 import ListingTypeTabs from "@/components/posts/listingTabs";
 
@@ -27,19 +27,13 @@ export default async function PostsPage({
   const endpoint = queryString ? `/listings?${queryString}` : "/listings";
   const cacheKey = `listings-${queryString}`;
 
-  const response = await useServerData<ListingsTypeResponse>(
+  const response = await useServerData<PublicListingsResponse>(
     endpoint,
     cacheKey,
     revalidate
   );
-  const rawData: any = response?.data;
-  const initialItems = Array.isArray(rawData?.data)
-    ? rawData.data
-    : Array.isArray(rawData)
-      ? rawData
-      : [];
-
-  const initialPagination = rawData?.pagination || response?.data?.pagination || null;
+  const initialItems = response?.data || [];
+  const initialPagination = response?.pagination || null;
 
   return (
     <div className="w-full mx-auto pr-6 relative">

@@ -11,12 +11,13 @@ import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, textareaClass } from "../shared/AdminFormModal";
 import { useModerateComment } from "@/services/Comments/useModerateComment";
 import { useDeleteComment } from "@/services/Comments/useDeleteComment";
-import { CommentStatus,AdminComment } from "@/types/CommetTypes";
+import { InfiniteData } from "@tanstack/react-query";
+import { CommentStatus, AdminComment, AdminCommentsResponse } from "@/types/CommetTypes";
 
 const ENDPOINT = "/comments/admin";
 
 interface CommentsClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<AdminCommentsResponse>;
 }
 export const STATUS_TABS: { value: CommentStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -49,10 +50,10 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<AdminCommentsResponse>(ENDPOINT, params, { initialData });
 
   const comments: AdminComment[] = (
-    data?.pages?.flatMap((page: any) => page?.data ?? []) || []
+    data?.pages?.flatMap((page: AdminCommentsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: moderate } = useModerateComment(() => {

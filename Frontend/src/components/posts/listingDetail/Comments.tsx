@@ -10,15 +10,15 @@ import SkeletonComments from "@/components/skeleton/SkeletonComments";
 import { usePostComment } from "@/services/Comments/usePostComment";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useGetProfile } from "@/services/Profile/getProfile";
-import { CommentItemType } from "@/types/CommetTypes";
+import { CommentItemType, CommentsResponse } from "@/types/CommetTypes";
 const AuthModal = dynamic(() => import("../../modals/AuthModal"), { ssr: false });
 
 type Recommendation = "recommended" | "not_recommended" | "no_idea";
 
 interface CommentsProps {
   listingId: string;
-  initialComments?: any;
-  initialPagination?: any;
+  initialComments?: CommentItemType[];
+  initialPagination?: CommentsResponse["pagination"];
 }
 
 // Small reusable "tag list" input for pros/cons -- type a value, hit
@@ -122,7 +122,7 @@ export default function Comments({ listingId, initialComments, initialPagination
     hasNextPage,
     isFetchingNextPage,
     isLoading
-  } = useInfiniteGet<any>(endpoint, { page: 1 }, {
+  } = useInfiniteGet<CommentsResponse>(endpoint, { page: 1 }, {
     initialData: initialComments ? {
       pages: [{ data: initialComments, pagination: initialPagination }],
       pageParams: [null],
@@ -141,11 +141,7 @@ export default function Comments({ listingId, initialComments, initialPagination
   const [recommendation, setRecommendation] = useState<Recommendation>("no_idea");
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  const rawList = data?.pages
-    ? data.pages.flatMap((page: any) => page?.data?.data ?? page?.data ?? page)
-    : [];
-
-  const comments: CommentItemType[] = Array.isArray(rawList) ? rawList : [];
+  const comments: CommentItemType[] = data?.pages.flatMap((page: CommentsResponse) => page.data) ?? [];
 
   const resetForm = () => {
     setBody("");
@@ -178,7 +174,7 @@ export default function Comments({ listingId, initialComments, initialPagination
         onSuccess: () => {
           resetForm();
         },
-      } as any
+      }
     );
   };
 
@@ -290,9 +286,9 @@ export default function Comments({ listingId, initialComments, initialPagination
         </p>
       ) : (
         <div className="space-y-4">
-          {comments.map((c: any, index: number) => (
+          {comments.map((c: CommentItemType, index: number) => (
             <CommentCard
-              key={c._id || c.id || `comment-${index}`}
+              key={c._id || `comment-${index}`}
               comment={c}
             />
           ))}

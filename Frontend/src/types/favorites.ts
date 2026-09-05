@@ -1,3 +1,5 @@
+import { IPagination } from "./common";
+
 export default interface FavoritesTypeResponse {
     data: {
       _id: string;
@@ -14,6 +16,6 @@ export default interface FavoritesTypeResponse {
       };
       productType: "user_ad" | "store_product";
     }[];
-    pagination?: any;
+    pagination?: IPagination;
   
 }

@@ -4,7 +4,7 @@ import Orders from "@/app/(dashboard)/components/(user)/index/RecentOrders";
 import Listings from "@/app/(dashboard)/components/(user)/index/RecentListings";
 import ProfileBanner from "@/app/(dashboard)/components/(user)/index/ProfileBanner";
 import { OrdersResponse } from "@/types/Order";
-import ListingsTypeResponse from "@/types/Listings";
+import MyListingsResponse from "@/types/Listings";
 import { useAuthServerData } from "@/utils/hooks/useServerData";
 
 interface FavoritesCountResponse {
@@ -14,7 +14,7 @@ interface FavoritesCountResponse {
 export default async function DashboardPage() {
   const [orders, listings, favoritesCount] = await Promise.all([
     useAuthServerData<OrdersResponse>("/orders/my"),
-    useAuthServerData<ListingsTypeResponse>("/listings/my"),
+    useAuthServerData<MyListingsResponse>("/listings/my"),
     useAuthServerData<FavoritesCountResponse>("/wishList/count"),
   ]);
 

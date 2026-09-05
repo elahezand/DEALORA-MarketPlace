@@ -3,13 +3,14 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import ListingsSection from "@/components/shared/listingSection";
+import { ListingProps } from "@/types/Listings";
 
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 interface ListingsCarouselProps {
-  listings: any[];
+  listings: ListingProps[];
 }
 
 export default function ListingsCarousel({ listings }: ListingsCarouselProps) {
@@ -37,7 +38,7 @@ export default function ListingsCarousel({ listings }: ListingsCarouselProps) {
         className="pb-12" 
       >
         {listings.map((item) => (
-          <SwiperSlide key={item.id || item._id}>
+          <SwiperSlide key={item._id}>
             <ListingsSection listings={[item]} />
           </SwiperSlide>
         ))}

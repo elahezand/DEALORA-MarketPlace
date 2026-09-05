@@ -2,9 +2,10 @@
 import { IoCartOutline } from 'react-icons/io5';
 import { useState } from 'react';
 import { useGet } from '@/utils/hooks/useReactQueryHooks';
+import { CartResponse } from '@/types/Cart';
 import { Link } from '@heroui/react';
 export default function CartIcon() {
-    const { data: cart } = useGet<any>('/cart/me', undefined, {
+    const { data: cart } = useGet<CartResponse>('/cart/me', undefined, {
         axiosConfig: { silentAuth: true },
     });
     const items = cart?.data?.items || [];

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import ListingsCarousel from "./ListingCarousel";
+import { ListingProps } from "@/types/Listings";
 
-export default function BrandNew({ listings }: { listings: any[] }) {
-  const filtered = (listings || []).filter((item: any) => item?.condition === "new");
+export default function BrandNew({ listings }: { listings: ListingProps[] }) {
+  const filtered = (listings || []).filter((item) => item?.condition === "new");
 
   if (filtered.length === 0) return null;
 

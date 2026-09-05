@@ -1,3 +1,6 @@
+import { IPagination } from "./common";
+import { Offer } from "./Offer";
+
 export interface CategoryPathItem {
   _id: string;
   title: string;
@@ -62,27 +65,30 @@ export interface ListingProps {
   shortIdentifier?: string;
   createdAt: string;
   updatedAt: string;
-  offers: any
+  offers: Offer[];
 }
 
 export interface ListingTypeResponse {
   data: ListingProps;
 }
 
-export default interface ListingsTypeResponse{
+// Shape returned by GET /listings (public browse) - flat, no success wrapper.
+export interface PublicListingsResponse {
+  data: ListingProps[];
+  pagination?: IPagination;
+}
+
+// Shape returned by GET /listings/my (dashboard "my listings") - nested under data.
+export default interface MyListingsResponse {
   success: boolean;
   data: {
     data: ListingProps[];
-    pagination?: {
-      hasMore: boolean;
-      limit: number;
-      nextCursor: string | null;
-    };
+    pagination?: IPagination;
   };
 }
 export interface InfiniteListingsSectionProps {
     initialData: ListingProps[];
-    initialPagination: any;
+    initialPagination: IPagination | null;
     selectedFilter: string;
     setSelectedFilter: (id: string) => void;
 }

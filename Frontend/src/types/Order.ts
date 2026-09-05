@@ -73,3 +73,15 @@ export interface OrdersResponse {
     };
   }
 }
+
+export interface AdminOrdersResponse {
+  success: boolean;
+  data: {
+    data: IOrder[];
+    pagination?: {
+      hasMore: boolean;
+      limit: number;
+      nextCursor: string | null;
+    };
+  };
+}

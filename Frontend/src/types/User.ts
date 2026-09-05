@@ -1,3 +1,5 @@
+import { IPagination } from "./common";
+
 export interface IStoreAddress {
     province?: string | null;
     city?: string | null;
@@ -31,11 +33,26 @@ export interface StoreResponse {
     };
 }
 
+export interface AdminStoreRow extends Omit<IStore, "owner"> {
+    owner: { _id: string; username?: string; phone?: string } | string;
+}
+
+export interface AdminStoresResponse {
+    stores: {
+        data: AdminStoreRow[];
+        pagination?: {
+            hasMore: boolean;
+            limit: number;
+            nextCursor: string | null;
+        };
+    };
+}
+
 export interface StoresResponse {
     data: {
         success: boolean;
         data: IStore[];
-        pagination?: any;
+        pagination?: IPagination;
     };
 }
 export interface IAddress {
@@ -62,15 +79,26 @@ export interface IUser {
     profilePicture?: string | null;
     favorites: string[];
     refreshToken?: string;
-    meta?: any;
+    meta?: Record<string, unknown>;
     createdAt: string;
     updatedAt: string;
-    listings?: any[];
-    orders?: any[];
-    reviews?: any[];
+    listings?: unknown[];
+    orders?: unknown[];
+    reviews?: unknown[];
 }
 
 export interface UserType {
     user: IUser;
+}
+
+export interface AdminUsersResponse {
+    users: {
+        data: IUser[];
+        pagination?: {
+            hasMore: boolean;
+            limit: number;
+            nextCursor: string | null;
+        };
+    };
 }
 

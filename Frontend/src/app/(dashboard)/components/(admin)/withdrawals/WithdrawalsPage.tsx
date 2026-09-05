@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { HiOutlineBanknotes } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
-import { Withdrawal,WithdrawalStatus } from "@/types/Withdrawal";
+import { Withdrawal, WithdrawalStatus, WithdrawalsResponse } from "@/types/Withdrawal";
+import { QueryParams } from "@/types/api/ErrorTypes";
 import {
   AdminFormModal,
   FormField,
@@ -37,7 +39,7 @@ const STATUS_TONE: Record<
 const ENDPOINT = "/withdrawals/admin";
 
 interface WithdrawalsClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<WithdrawalsResponse>;
 }
 
 export default function WithdrawalsClient({
@@ -51,7 +53,7 @@ export default function WithdrawalsClient({
   const [trackingCode, setTrackingCode] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
-  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
 
   const {
     data,
@@ -60,10 +62,10 @@ export default function WithdrawalsClient({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<WithdrawalsResponse>(ENDPOINT, params, { initialData });
 
   const withdrawals: Withdrawal[] = (
-    data?.pages?.flatMap((page: any) => page?.data ?? []) || []
+    data?.pages?.flatMap((page: WithdrawalsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const closeModal = () => setTarget(null);
@@ -256,7 +258,7 @@ export default function WithdrawalsClient({
               <select
                 className={inputClass}
                 value={action}
-                onChange={(e) => setAction(e.target.value as any)}
+                onChange={(e) => setAction(e.target.value as "processing" | "completed" | "rejected")}
               >
                 <option value="processing">Mark as processing</option>
                 <option value="completed">Mark as completed</option>

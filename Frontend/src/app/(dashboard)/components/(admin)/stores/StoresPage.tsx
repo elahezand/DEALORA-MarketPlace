@@ -3,21 +3,18 @@
 import { useState } from "react";
 import { HiOutlineBuildingStorefront } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { IStore } from "@/types/User";
+import { AdminStoreRow, AdminStoresResponse } from "@/types/User";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { useVerifyStore } from "@/services/Store/useVerifyStore";
 
-export interface AdminStoreRow extends Omit<IStore, "owner"> {
-  owner: { _id: string; username?: string; phone?: string } | string;
-}
-
 const ENDPOINT = "/stores";
 
 interface StoresClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<AdminStoresResponse>;
 }
 
 export default function StoresClient({ initialData }: StoresClientProps) {
@@ -30,10 +27,10 @@ export default function StoresClient({ initialData }: StoresClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(ENDPOINT, { limit: 20 }, { initialData });
+  } = useInfiniteGet<AdminStoresResponse>(ENDPOINT, { limit: 20 }, { initialData });
 
   const stores: AdminStoreRow[] = (
-    data?.pages?.flatMap((page: any) => page?.stores?.data ?? []) || []
+    data?.pages?.flatMap((page: AdminStoresResponse) => page?.stores?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: setVerified } = useVerifyStore();

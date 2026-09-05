@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { HiOutlineFlag } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { IReport, ReportStatus, ReportActionTaken } from "@/types/Report";
+import { ReportStatus, ReportActionTaken, AdminReportRow, AdminReportsResponse } from "@/types/Report";
+import { QueryParams } from "@/types/api/ErrorTypes";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
@@ -35,22 +37,18 @@ const ACTION_OPTIONS: { value: ReportActionTaken; label: string }[] = [
 
 const ENDPOINT = "/reports/admin";
 
-interface ReportRow extends Omit<IReport, "reporter"> {
-  reporter: { _id: string; username?: string; phone?: string } | string;
-}
-
 interface ReportsClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<AdminReportsResponse>;
 }
 
 export default function ReportsClient({ initialData }: ReportsClientProps) {
   const [status, setStatus] = useState<ReportStatus | "all">("all");
-  const [target, setTarget] = useState<ReportRow | null>(null);
+  const [target, setTarget] = useState<AdminReportRow | null>(null);
   const [resolveStatus, setResolveStatus] = useState<"reviewed" | "resolved" | "rejected">("resolved");
   const [actionTaken, setActionTaken] = useState<ReportActionTaken>("none");
   const [note, setNote] = useState("");
 
-  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
 
   const {
     data,
@@ -59,17 +57,17 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<AdminReportsResponse>(ENDPOINT, params, { initialData });
 
-  const reports: ReportRow[] = (
-    data?.pages?.flatMap((page: any) => page?.data ?? []) || []
+  const reports: AdminReportRow[] = (
+    data?.pages?.flatMap((page: AdminReportsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const closeModal = () => setTarget(null);
 
   const { mutate: resolve, isPending } = useResolveReport(closeModal);
 
-  function openResolve(report: ReportRow) {
+  function openResolve(report: AdminReportRow) {
     setTarget(report);
     setResolveStatus("resolved");
     setActionTaken("none");
@@ -246,7 +244,7 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
             <select
               className={inputClass}
               value={resolveStatus}
-              onChange={(e) => setResolveStatus(e.target.value as any)}
+              onChange={(e) => setResolveStatus(e.target.value as "reviewed" | "resolved" | "rejected")}
             >
               <option value="reviewed">Reviewed (no verdict yet)</option>
               <option value="resolved">Resolved</option>

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import ListingsCarousel from "./ListingCarousel";
+import { ListingProps } from "@/types/Listings";
 
-export default function FreeShipping({ listings }: { listings: any[] }) {
-  const filtered = (listings || []).filter((item: any) => item?.shipping?.type === "free");
+export default function FreeShipping({ listings }: { listings: ListingProps[] }) {
+  const filtered = (listings || []).filter((item) => item?.shipping?.type === "free");
 
   if (filtered.length === 0) return null;
 

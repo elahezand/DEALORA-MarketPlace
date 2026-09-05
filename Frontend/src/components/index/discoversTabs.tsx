@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ListingsCarousel from "./ListingCarousel";
 import SectionHeader from "./sectionHeader";
+import { ListingProps } from "@/types/Listings";
 
 type TabKey = "bestSellers" | "trending" | "freeShipping" | "brandNew";
 
@@ -20,7 +21,7 @@ const TAB_HREFS: Record<TabKey, string> = {
   brandNew: "/posts?condition=new",
 };
 
-export default function DiscoverTabs({ listings }: { listings: any[] }) {
+export default function DiscoverTabs({ listings }: { listings: ListingProps[] }) {
   const [active, setActive] = useState<TabKey>("bestSellers");
 
   const lists = useMemo(() => {
@@ -32,8 +33,8 @@ export default function DiscoverTabs({ listings }: { listings: any[] }) {
       trending: [...source]
         .sort((a, b) => (b?.metrics?.views || 0) - (a?.metrics?.views || 0))
         .slice(0, 12),
-      freeShipping: source.filter((item: any) => item?.shipping?.type === "free"),
-      brandNew: source.filter((item: any) => item?.condition === "new"),
+      freeShipping: source.filter((item) => item?.shipping?.type === "free"),
+      brandNew: source.filter((item) => item?.condition === "new"),
     };
   }, [listings]);
 

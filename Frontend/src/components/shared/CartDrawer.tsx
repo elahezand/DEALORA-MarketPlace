@@ -1,12 +1,15 @@
 'use client';
 import Link from "next/link";
 import { useGetMyCart, useRemoveFromCart, useUpdateCart } from "@/services/Cart/cart";
+import { CartItem } from "@/types/Cart";
 import { Loader2, Trash2, X, ShoppingBag, Truck, Tag, Plus, Minus, AlertCircle } from "lucide-react";
 
 type CartDrawerProps = { setIsOpen: (open: boolean) => void; };
 
-const getOfferId = (item: any): string | null => item?.offer?._id ?? item?.offer ?? null;
-const getProductId = (item: any): string | null => item?.product?._id ?? item?.product ?? null;
+const getOfferId = (item: CartItem): string | null =>
+    (typeof item?.offer === "object" ? item.offer?._id : item?.offer) ?? null;
+const getProductId = (item: CartItem): string | null =>
+    (typeof item?.product === "object" ? item.product?._id : item?.product) ?? null;
 
 export default function CartDrawer({ setIsOpen }: CartDrawerProps) {
     const { data: cart, isLoading } = useGetMyCart();
@@ -17,7 +20,7 @@ export default function CartDrawer({ setIsOpen }: CartDrawerProps) {
     const items = cart?.data?.items || [];
     const pricing = cart?.data?.pricing || { subtotal: 0, discount: 0, shippingCost: 0, total: 0 };
 
-    const toPayloadItem = (i: any) => ({
+    const toPayloadItem = (i: CartItem) => ({
         offer: getOfferId(i),
         product: getProductId(i),
         variantId: i.variantId,
@@ -25,12 +28,12 @@ export default function CartDrawer({ setIsOpen }: CartDrawerProps) {
         priceSnapshot: i.priceSnapshot,
     });
 
-    const handleRemove = (item: any) => {
+    const handleRemove = (item: CartItem) => {
         const offerId = getOfferId(item);
-        removeItem({ offerId: offerId ?? item.variantId });
+        removeItem({ offerId: offerId ?? String(item.variantId ?? "") });
     };
 
-    const handleQuantityChange = (item: any, newQuantity: number) => {
+    const handleQuantityChange = (item: CartItem, newQuantity: number) => {
         if (newQuantity < 1) {
             handleRemove(item);
             return;
@@ -38,7 +41,7 @@ export default function CartDrawer({ setIsOpen }: CartDrawerProps) {
 
         const targetOfferId = getOfferId(item);
 
-        const updatedItems = items.map((i: any) => {
+        const updatedItems = items.map((i: CartItem) => {
             const isTarget =
                 String(getOfferId(i)) === String(targetOfferId) &&
                 String(i.variantId) === String(item.variantId);
@@ -71,15 +74,15 @@ export default function CartDrawer({ setIsOpen }: CartDrawerProps) {
                         <p className="text-slate-400 text-sm">Your cart is empty</p>
                     </div>
                 ) : (
-                    items.map((item: any) => (
-                        <div key={item._id ?? `${getOfferId(item)}-${item.variantId}`} className="flex gap-4 p-2 group">
+                    items.map((item: CartItem) => (
+                        <div key={getOfferId(item) ? `${getOfferId(item)}-${item.variantId}` : `${getProductId(item)}-${item.variantId}`} className="flex gap-4 p-2 group">
                             <div className="w-20 h-20 bg-slate-50 border border-[var(--border)] rounded-[var(--radius)] flex-shrink-0 overflow-hidden">
-                                {item.product?.images?.[0] && (
+                                {typeof item.product === "object" && item.product?.images?.[0] && (
                                     <img src={item.product.images[0]} alt={item.product?.title || ""} className="w-full h-full object-cover" />
                                 )}
                             </div>
                             <div className="flex flex-col gap-2 flex-1">
-                                <h3 className="font-medium text-sm text-[var(--primary-900)] leading-tight line-clamp-2">{item.product?.title}</h3>
+                                <h3 className="font-medium text-sm text-[var(--primary-900)] leading-tight line-clamp-2">{typeof item.product === "object" ? item.product?.title : ""}</h3>
                                 {item.variantSnapshot?.attributes && (
                                     <p className="text-[11px] text-[var(--foreground-muted)] -mt-1">
                                         {Object.entries(item.variantSnapshot.attributes)

@@ -4,12 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HiOutlineTicket, HiOutlinePlus } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
+import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, inputClass } from "../shared/AdminFormModal";
-import { FormState,Coupon } from "@/types/Coupon";
+import { FormState, Coupon, CouponsResponse, CreateCouponPayload, UpdateCouponPayload } from "@/types/Coupon";
 import { useToggleActiveCoupon,} from "@/services/Coupon/useToggleActiveCoupon";
 import { useDeleteCoupon } from "@/services/Coupon/useDeleteCoupon";
 import { useCreateCoupon } from "@/services/Coupon/useCreateCoupon";
@@ -28,7 +29,7 @@ const EMPTY_FORM: FormState = {
 };
 
 interface CouponsClientProps {
-  initialData?: any;
+  initialData?: InfiniteData<CouponsResponse>;
 }
 
 export default function CouponsClient({ initialData }: CouponsClientProps) {
@@ -43,18 +44,14 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<any>(
+  } = useInfiniteGet<CouponsResponse>(
     ENDPOINT,
     { limit: 20 },
-    {
-      initialData,
-      getNextPageParam: (lastPage: any) =>
-        lastPage?.data?.pagination?.hasMore ? lastPage.data.pagination.nextCursor : undefined,
-    }
+    { initialData }
   );
 
   const coupons: Coupon[] = (
-    data?.pages?.flatMap((page: any) => page?.data?.data ?? []) || []
+    data?.pages?.flatMap((page: CouponsResponse) => page?.data?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: createCoupon, isPending: isCreating } = useCreateCoupon(closeModal);
@@ -90,7 +87,7 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
     e.preventDefault();
     if (!form.code.trim() || !form.amount) return;
 
-    const payload: any = {
+    const payload: Omit<CreateCouponPayload, "code"> = {
       type: form.type,
       amount: Number(form.amount),
       maxDiscount: form.maxDiscount ? Number(form.maxDiscount) : null,
@@ -100,7 +97,8 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
     };
 
     if (form._id) {
-      updateCoupon({ _id: form._id, ...payload });
+      const updatePayload: UpdateCouponPayload = { _id: form._id, ...payload };
+      updateCoupon(updatePayload);
     } else {
       createCoupon({ code: form.code.trim().toUpperCase(), ...payload });
     }
@@ -263,7 +261,7 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
           </FormField>
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Type">
-              <select className={inputClass} value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as any }))}>
+              <select className={inputClass} value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as FormState["type"] }))}>
                 <option value="percent">Percent (%)</option>
                 <option value="fixed">Fixed amount</option>
               </select>

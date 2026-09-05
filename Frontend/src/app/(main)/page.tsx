@@ -15,9 +15,10 @@ import Section from "@/components/index/section";
 import SectionHeader from "@/components/index/sectionHeader";
 import HeroLiveBadge from "@/components/index/heroLiveBadge";
 import VerifiedStores from "@/components/index/verifiedStores";
+import { PublicListingsResponse } from "@/types/Listings";
 
 export default async function Page() {
-  const data = await useServerData<any>(
+  const data = await useServerData<PublicListingsResponse>(
     "/listings?limit=20",
     "all-listings",
     60
@@ -25,8 +26,8 @@ export default async function Page() {
 
   const allListings = data?.data || [];
 
-  const storeProducts = allListings.filter((item: any) => item.listingType === "store_product");
-  const userAds = allListings.filter((item: any) => item.listingType === "user_ad");
+  const storeProducts = allListings.filter((item) => item.listingType === "store_product");
+  const userAds = allListings.filter((item) => item.listingType === "user_ad");
 
 
   return (

@@ -7,7 +7,7 @@ const ENDPOINT = "/coupon/admin";
 export const useDeleteCoupon = () => {
   const queryClient = useQueryClient();
 
-  return useDelete<any, { id: string }>((d) => `${ENDPOINT}/${d.id}`, {
+  return useDelete<{ success: boolean; message: string }, { id: string }>((d) => `${ENDPOINT}/${d.id}`, {
     onSuccess: () => {
       toast.success("Coupon deleted");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });

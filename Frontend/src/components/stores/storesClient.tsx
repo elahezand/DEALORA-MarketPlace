@@ -3,11 +3,18 @@ import React from 'react';
 import dynamic from "next/dynamic";
 import { HiChevronRight } from 'react-icons/hi';
 import { useInfiniteGet } from '@/utils/hooks/useReactQueryHooks';
+import { IStore } from '@/types/User';
+import { IPagination } from '@/types/common';
 const StoresList = dynamic(() => import("@/components/stores/storesList"));
 
+interface VerifiedStoresResponse {
+    data: IStore[];
+    pagination?: IPagination;
+}
+
 interface InfiniteStoresSectionProps {
-    initialData: any[];
-    initialPagination: any;
+    initialData: IStore[];
+    initialPagination: IPagination | null;
 }
 
 export default function InfiniteStoresSection({
@@ -19,15 +26,15 @@ export default function InfiniteStoresSection({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage
-    } = useInfiniteGet<any>('/stores/verified', "verified-stores",
+    } = useInfiniteGet<VerifiedStoresResponse>('/stores/verified', undefined,
         {
             initialData: {
-                pages: [{ data: initialData, pagination: initialPagination }],
+                pages: [{ data: initialData, pagination: initialPagination ?? undefined }],
                 pageParams: [null],
             }
         });
 
-    const allStores = data?.pages?.flatMap((page) => page.data) || [];
+    const allStores = data?.pages?.flatMap((page: VerifiedStoresResponse) => page.data) || [];
 
     return (
         <div className="w-full flex flex-col items-center bg-transparent">

@@ -7,7 +7,7 @@ const ENDPOINT = "/contacts";
 export const useDeleteSupportMessage = () => {
   const queryClient = useQueryClient();
 
-  return useDelete<any, { id: string }>((d) => `${ENDPOINT}/${d.id}`, {
+  return useDelete<{ success: boolean; message?: string }, { id: string }>((d) => `${ENDPOINT}/${d.id}`, {
     onSuccess: () => {
       toast.success("Message deleted");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });

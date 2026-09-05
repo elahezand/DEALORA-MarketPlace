@@ -8,7 +8,7 @@ const { mergeCartItems, calculateCartTotals,itemKey } = require("../utils/helper
 
 const getAdminCarts = async (query = {}) => {
   const limit = Math.min(Math.max(Number(query.limit) || 15, 1), 100);
-  return paginate(Cart, { ...query, limit }, {}, "user items.product");
+  return paginate(Cart, { limit, cursor: query.cursor, populate: "user items.product" });
 };
 
 const getCartById = async (id) => {
@@ -17,7 +17,8 @@ const getCartById = async (id) => {
     .populate("items.product", "title images")
     .populate({
       path: "items.offer",
-      select: "price discount stock store finalPrice",
+      select: "price discount stock store finalPrice condition",
+      populate: { path: "store", select: "name" },
     });
 
   if (!cart) throw new AppError(404, "Cart not found");
@@ -37,7 +38,8 @@ const getUserCart = async (userId) => {
     .populate("items.product", "title images")
     .populate({
       path: "items.offer",
-      select: "price discount stock store finalPrice",
+      select: "price discount stock store finalPrice condition",
+      populate: { path: "store", select: "name" },
     });
 
   if (!cart) {

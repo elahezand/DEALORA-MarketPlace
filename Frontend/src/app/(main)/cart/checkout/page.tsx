@@ -77,9 +77,22 @@ export default function CheckoutPage() {
                 <div className="bg-[var(--card)] backdrop-blur-[20px] p-6 md:p-8 rounded-[var(--radius)] border border-[var(--border)] shadow-sm transition-colors duration-250">
                     <h2 className="text-lg md:text-xl font-semibold text-[var(--foreground)] mb-6 tracking-tight">Order Summary</h2>
                     <div className="space-y-4 mb-6 max-h-[240px] overflow-y-auto pr-2 border-b border-[var(--border)] pb-6">
-                        {cart?.data?.items?.map((item: any) => (
-                            <div key={item._id} className="flex justify-between items-center text-sm">
-                                <span className="text-[var(--foreground-muted)] font-medium">{item.product?.title} <span className="text-[var(--foreground-subtle)] text-xs">x{item.quantity}</span></span>
+                        {cart?.data?.items?.map((item: any, index: number) => (
+                            <div
+                                key={`${item.offer?._id ?? item.offer ?? "direct"}-${item.variantId ?? "novariant"}-${index}`}
+                                className="flex justify-between items-center text-sm"
+                            >
+                                <span className="text-[var(--foreground-muted)] font-medium">
+                                    {item.product?.title}
+                                    {item.variantSnapshot?.attributes && (
+                                        <span className="block text-[var(--foreground-subtle)] text-xs">
+                                            {Object.entries(item.variantSnapshot.attributes)
+                                                .map(([key, value]) => `${key}: ${value}`)
+                                                .join(" · ")}
+                                        </span>
+                                    )}
+                                    <span className="text-[var(--foreground-subtle)] text-xs"> x{item.quantity}</span>
+                                </span>
                                 <span className="font-semibold text-[var(--foreground)]">${((item.priceSnapshot ?? item.price ?? 0) * item.quantity).toFixed(2)}</span>
                             </div>
                         ))}

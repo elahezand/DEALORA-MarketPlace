@@ -17,7 +17,7 @@ const getOfferId = (item: any): string | null => item?.offer?._id ?? item?.offer
 const getProductId = (item: any): string | null => item?.product?._id ?? item?.product ?? null;
 
 export default function CartPage() {
-  const { data: cart, isLoading } = useGetMyCart();
+  const { data: cart, isLoading } = useGetMyCart();  
   const [couponCode, setCouponCode] = useState("");
 
   const { mutate: applyCoupon, isPending: isApplying } = useApplyCoupon();
@@ -125,6 +125,14 @@ export default function CartPage() {
                     <h3 className="font-bold text-base text-[var(--foreground)] leading-snug line-clamp-2">
                       {item.product?.title}
                     </h3>
+
+                    {item.variantSnapshot?.attributes && (
+                      <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                        {Object.entries(item.variantSnapshot.attributes)
+                          .map(([key, value]) => `${key}: ${value}`)
+                          .join(" · ")}
+                      </p>
+                    )}
 
                     <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2">
                       {item.offer?.store && (

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useTransition } from "react";
-import { useLocation } from "@/services/Location/getLocations";
+import { useLocation } from "@/services/Location/useGetLocations";
 import { useRouter } from "next/navigation";
 
 export default function PopularCities() {

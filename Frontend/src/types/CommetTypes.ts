@@ -70,7 +70,7 @@ export interface CommentAuthor {
 export interface CommentItemType {
   _id: string;
   user: CommentAuthor | string;
-  productId: string;
+  listing: string;
   parentId: string | null;
   rating: number | null;
   title?: string;
@@ -104,12 +104,13 @@ export interface AdminComment {
 }
 
 export interface AdminCommentsResponse {
-  data: AdminComment[];
-  pagination?: {
-    hasMore: boolean;
-    limit: number;
-    nextCursor: string | null;
-  };
+    data: AdminComment[];
+    pagination?: {
+      hasMore: boolean;
+      limit: number;
+      nextCursor: string | null;
+    };
+  
 }
 
 

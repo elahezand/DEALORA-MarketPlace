@@ -10,19 +10,15 @@ interface PaginateResult<T> {
   };
 }
 
-interface GetUsersResponse {
-  users: PaginateResult<IUser>;
-}
-
 export const useGetUsers = (limit = 5) => {
-  const { data, isLoading, isError } = useGet<GetUsersResponse>(
+  const { data, isLoading, isError } = useGet<PaginateResult<IUser>>(
     `/users?limit=${limit}`
   );
 
   return {
-    users: data?.users?.data ?? [],
-    hasMore: data?.users?.pagination?.hasMore ?? false,
-    nextCursor: data?.users?.pagination?.nextCursor ?? null,
+    users: data?.data ?? [],
+    hasMore: data?.pagination?.hasMore ?? false,
+    nextCursor: data?.pagination?.nextCursor ?? null,
     isLoading,
     isError,
   };

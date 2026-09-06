@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import * as z from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGetMyCart, useCheckout } from "@/services/Cart/cart";
+import { useGetMyCart } from "@/services/Cart/useGetMyCart";
+import {useCheckout} from "@/services/Cart/useCheckout"
 import { checkoutSchema } from '@/validations/cartSchrma';
 import { Button } from "@heroui/react";
 import { ShieldCheck } from "lucide-react";
-import { useGetProfile } from '@/services/Profile/getProfile';
+import { useGetProfile } from '@/services/Profile/useGetProfile';
 import { IAddress } from '@/types/User';
 import { CartItem } from '@/types/Cart';
 import { AddressCard } from '@/components/cart/AddressCart';

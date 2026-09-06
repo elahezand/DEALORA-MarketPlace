@@ -3,8 +3,8 @@ const commentService = require("../services/comment");
 // GET PRODUCT COMMENTS
 exports.getByListing = async (req, res, next) => {
   try {
-    const result = await commentService.getByProduct(req.params.listing, req.query);
-    res.status(200).json(result);
+    const data = await commentService.getByProduct(req.params.listing, req.query);
+    res.status(200).json(data);
   } catch (err) {
     next(err);
   }

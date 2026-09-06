@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { useServerData } from "@/utils/hooks/useServerData";
 import StoreProductsSection from "@/components/stores/[slug]/storesProductsSection";
-import { IStore } from "@/types/User";
+import { IStore } from "@/types/Store";
 import { ListingProps } from "@/types/Listings";
 import { IPagination } from "@/types/common";
 

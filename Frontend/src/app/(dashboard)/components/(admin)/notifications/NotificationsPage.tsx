@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HiOutlineBell, HiOutlinePlus, HiOutlineTrash, HiOutlineCheckCircle } from "react-icons/hi2";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { AdminFormModal, FormField, textareaClass } from "../shared/AdminFormModal";
 import { useCreateNotification } from "@/services/Notifications/useCreateNotification";
 import { useMarkNotificationSeen } from "@/services/Notifications/useMarkNotificationSeen";

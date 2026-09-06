@@ -126,10 +126,5 @@ commentSchema.index({ listing: 1, status: 1, parentId: 1 });
 commentSchema.index({ user: 1, createdAt: -1 });
 commentSchema.index({ parentId: 1, createdAt: 1 });
 
-commentSchema.index(
-  { user: 1, listing: 1 },
-  { unique: true, partialFilterExpression: { parentId: null } }
-);
-
 const Comment = mongoose.models.Comment || mongoose.model("Comment", commentSchema);
 module.exports = Comment;

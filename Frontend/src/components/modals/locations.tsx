@@ -1,5 +1,5 @@
 "use client";
-import { useLocation } from "@/services/Location/getLocations";
+import { useLocation } from "@/services/Location/useGetLocations";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Skeleton } from "@heroui/react";

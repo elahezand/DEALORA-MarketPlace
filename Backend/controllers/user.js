@@ -11,8 +11,8 @@ exports.getAllUsers = async (req, res, next) => {
       return next(new AppError(400, "Limit must be <= 50"));
     }
 
-    const result = await paginate(User, { limit, cursor });
-    return res.status(200).json({ users: result });
+    const result = await paginate(User, { limit, cursor });    
+    return res.status(200).json( result );
   } catch (err) {
     next(err);
   }
@@ -105,7 +105,12 @@ exports.toggleRole = async (req, res, next) => {
       return next(new AppError(404, "User not found"));
     }
 
-    user.role = user.role.includes("ADMIN") ? ["USER"] : ["ADMIN"];
+    if (user.role.includes("ADMIN")) {
+      user.role = user.role.filter((r) => r !== "ADMIN");
+    } else {
+      user.role = [...user.role, "ADMIN"];
+    }
+
     await user.save();
 
     return res.status(200).json({ message: "Role updated successfully", role: user.role });

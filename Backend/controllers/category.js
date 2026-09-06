@@ -15,7 +15,7 @@ exports.getOne = async (req, res, next) => {
   try {
     const data = await service.getCategoryById(req.params.id);
     if (!data)
-      return next(new AppError(404, "Category not found"));    
+      return next(new AppError(404, "Category not found"));
     res.status(200).json({ success: true, data });
   } catch (e) {
     next(e);
@@ -31,7 +31,7 @@ exports.post = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: "Category created",
-      data: category,
+      category,
     });
   } catch (e) {
     next(e);
@@ -40,12 +40,12 @@ exports.post = async (req, res, next) => {
 
 exports.put = async (req, res, next) => {
   try {
-    const updated = await service.updateCategory(
+    const category = await service.updateCategory(
       req.params.id,
       req.parsed.data
     );
 
-    if (!updated) {
+    if (!category) {
       return next(new AppError(404, "Category not found"));
     }
     await invalidateCache("/api/categories*");
@@ -53,7 +53,7 @@ exports.put = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Updated successfully",
-      data: updated,
+      category,
     });
   } catch (e) {
     next(e);

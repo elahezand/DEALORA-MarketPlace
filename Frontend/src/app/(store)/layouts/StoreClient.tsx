@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react"
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import clsx from "clsx";
 
 export default function StoreClient({ children }: { children: React.ReactNode }) {

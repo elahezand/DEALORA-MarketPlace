@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HiOutlineArrowLeft } from "react-icons/hi2";
 import { useUpdateListing } from "@/services/Listings/useUpdateListing";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { ListingProps } from "@/types/Listings";
 
 interface EditListingProps {

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { IoSearch, IoLocationOutline, IoChevronDown, IoClose } from "react-icons/io5";
-import { useLocation } from "@/services/Location/getLocations";
+import { useLocation } from "@/services/Location/useGetLocations";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@heroui/react";
 

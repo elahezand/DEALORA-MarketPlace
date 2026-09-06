@@ -5,14 +5,7 @@ const citiesByState = require("../data/cities.json");
 const addressSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
     postalCode: { type: String, required: true },
-
-    location: {
-        lat: { type: Number, required: true },
-        lng: { type: Number, required: true },
-    },
-
     address: { type: String, required: true, trim: true },
-
     state: {
         type: String,
         required: true,

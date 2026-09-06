@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@heroui/react";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import AddNewAddress from "@/components/cart/AddNewAddress";
 import { AddressCard } from "@/components/cart/AddressCart";
 import { PersonalInfoForm } from "@/app/(dashboard)/components/shared/PersonalInfoForm";

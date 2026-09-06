@@ -4,17 +4,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button, Input } from "@heroui/react";
-import { useCreateAddress } from '@/services/Address/CreateAddress';
+import { useCreateAddress } from '@/services/Address/useCreateAddress';
 import { IAddress } from '@/types/User';
-import { useUpdateAddress } from '@/services/Address/UpdateAddress';
+import { useUpdateAddress } from '@/services/Address/useUpdateAddress';
 
 const addressSchema = z.object({
     name: z.string().min(1),
     postalCode: z.string().min(4).max(20),
-    location: z.object({
-        lat: z.number().min(-90).max(90),
-        lng: z.number().min(-180).max(180),
-    }),
     address: z.string().min(5),
     state: z.string().min(1),
     city: z.string().min(1).transform(s => String(s).toLowerCase()),
@@ -41,12 +37,6 @@ export default function AddNewAddress({
         formState: { errors },
     } = useForm<AddressFormValues>({
         resolver: zodResolver(addressSchema),
-        defaultValues: {
-            location: {
-                lat: 0,
-                lng: 0,
-            },
-        },
     });
 
     useEffect(() => {
@@ -57,10 +47,6 @@ export default function AddNewAddress({
                 city: editingAddress.city,
                 state: editingAddress.state,
                 postalCode: editingAddress.postalCode,
-                location: editingAddress.location ?? {
-                    lat: 0,
-                    lng: 0,
-                },
             });
         } else {
             reset({
@@ -69,10 +55,6 @@ export default function AddNewAddress({
                 city: "",
                 state: "",
                 postalCode: "",
-                location: {
-                    lat: 0,
-                    lng: 0,
-                },
             });
         }
     }, [editingAddress, reset]);

@@ -18,7 +18,6 @@ function toFormData(payload: Record<string, unknown>): FormData {
   for (const [key, value] of Object.entries(payload)) {
     if (value === undefined || value === null) continue;
 
-    // Files
     if (Array.isArray(value) && value.some(isFileLike)) {
       value.forEach((file: unknown) => {
         if (isFileLike(file)) {
@@ -33,60 +32,43 @@ function toFormData(payload: Record<string, unknown>): FormData {
       continue;
     }
 
-    // Arrays
     if (Array.isArray(value)) {
       value.forEach((item) => {
         formData.append(
           `${key}[]`,
-          typeof item === "object"
-            ? JSON.stringify(item)
-            : String(item)
+          typeof item === "object" ? JSON.stringify(item) : String(item)
         );
       });
       continue;
     }
 
-    // Objects
     if (typeof value === "object") {
       for (const [subKey, subValue] of Object.entries(value)) {
         if (subValue === undefined || subValue === null) continue;
 
         formData.append(
           `${key}[${subKey}]`,
-          typeof subValue === "object"
-            ? JSON.stringify(subValue)
-            : String(subValue)
+          typeof subValue === "object" ? JSON.stringify(subValue) : String(subValue)
         );
       }
-
       continue;
     }
 
-    // Primitive values
     formData.append(key, String(value));
   }
 
   return formData;
 }
 
-export const useCreatePost = () => {
+export const useCreatePost = (onSuccessCallback?: () => void) => {
   const { mutate: rawMutate, isPending } = usePost<{ message: string; data: ListingProps }, FormData>(
     "/listings",
     {
       onSuccess: () => {
         toast.success("Post Created Successfully :)");
+        onSuccessCallback?.();
       },
-
-      onError: (error) => {
-        console.log(
-          "VALIDATION ERRORS:",
-          error?.response?.data?.errors
-        );
-
-        toast.error(
-          error?.response?.data?.message || "Unknown Error"
-        );
-      },
+      errorFallback: "Failed to create listing.",
     }
   );
 

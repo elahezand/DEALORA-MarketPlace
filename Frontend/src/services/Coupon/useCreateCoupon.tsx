@@ -3,6 +3,7 @@ import { usePost} from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
 import { CouponMutationResponse, CreateCouponPayload } from "@/types/Coupon";
 
+
 const ENDPOINT = "/coupon/admin";
 
 export const useCreateCoupon = (onSuccessCallback?: () => void) => {

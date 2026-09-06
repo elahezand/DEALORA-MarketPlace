@@ -5,7 +5,7 @@ import { HiOutlineBuildingStorefront } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { AdminStoreRow, AdminStoresResponse } from "@/types/User";
+import { AdminStoreRow, AdminStoresResponse } from "@/types/Store";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
@@ -19,6 +19,7 @@ interface StoresClientProps {
 
 export default function StoresClient({ initialData }: StoresClientProps) {
   const [actioningId, setActioningId] = useState<string | null>(null);
+console.log(initialData);
 
   const {
     data,
@@ -27,10 +28,12 @@ export default function StoresClient({ initialData }: StoresClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminStoresResponse>(ENDPOINT, { limit: 20 }, { initialData });
+  } = useInfiniteGet<AdminStoresResponse>(ENDPOINT, { limit: 20 },  
+     { queryKey: ["admin-stores"], initialData }
+);
 
   const stores: AdminStoreRow[] = (
-    data?.pages?.flatMap((page: AdminStoresResponse) => page?.stores?.data ?? []) || []
+    data?.pages?.flatMap((page: AdminStoresResponse) => page?.data?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: setVerified } = useVerifyStore();

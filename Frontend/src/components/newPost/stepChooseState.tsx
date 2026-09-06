@@ -2,7 +2,7 @@
 
 import React, { useMemo, useEffect } from "react";
 import { Field, useFormikContext } from "formik";
-import { useLocation } from "@/services/Location/getLocations";
+import { useLocation } from "@/services/Location/useGetLocations";
 import Location from "./Location";
 import { getCoords } from "@/utils/getCoords";
 import { FormValues } from "@/types/listingFormValue";

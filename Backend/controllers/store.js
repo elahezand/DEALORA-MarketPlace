@@ -23,7 +23,7 @@ exports.getBySlug = async (req, res, next) => {
 exports.getAll = async (req, res, next) => {
   try {
     const result = await service.getAllStores(req.query);
-    res.status(200).json({ stores: result });
+    res.status(200).json({ data: result });
   } catch (err) {
     next(err);
   }

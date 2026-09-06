@@ -13,7 +13,7 @@ export const useToggleBanUser = () => {
   >((d) => `${ENDPOINT}/${d.id}/ban`, {
     onSuccess: (res) => {
       toast.success(res?.message || "Operation successful");
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     errorFallback: "Action failed",
   });

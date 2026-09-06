@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import {
     HiOutlineBuildingStorefront,
     HiOutlineStar,

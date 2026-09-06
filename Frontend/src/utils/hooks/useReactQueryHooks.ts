@@ -52,13 +52,6 @@ const showErrorToast = (error: unknown, fallback: string) => {
   if (err?._authToastShown) return;
 
   const responseData = err?.response?.data;
-
-  console.group("🔴 API ERROR");
-
-  console.log("Status:", err?.response?.status);
-  console.log("Method:", err?.config?.method);
-  console.log("URL:", err?.config?.url);
-
   let requestData = err?.config?.data;
 
   try {
@@ -67,36 +60,17 @@ const showErrorToast = (error: unknown, fallback: string) => {
     }
   } catch {
   }
-
-  console.log("📤 Request Data:", requestData);
-  console.log("📥 Response Data:", responseData);
+  let message = fallback
 
   if (Array.isArray(responseData?.errors)) {
-    console.log("❌ Validation Errors:");
-
-    responseData.errors.forEach((item, index: number) => {
-      console.log(`Error ${index + 1}:`, {
-        field: item?.field,
-        message: item?.message,
-        expected: item?.expected,
-        received: item?.received,
-      });
-    });
+    message = responseData.errors
+      .map((item) => item?.message)
+      .filter(Boolean)
+      .join(" | ");
   }
 
-  console.groupEnd();
+  toast.error(message)
 
-  /* =======================================================
-     TOAST MESSAGE
-     ======================================================= */
-
-  let message = fallback;
-
-  if (typeof responseData?.message === "string") {
-    message = responseData.message;
-  }
-
-  toast.error(message);
 };
 
 /* 
@@ -176,16 +150,17 @@ const extractPagination = (page: unknown): PaginationInfo => {
 export const useInfiniteGet = <T extends { data: unknown }>(
   url: string,
   params?: QueryParams,
-  options?: UseInfiniteGetOptions<T>
+  options?: UseInfiniteGetOptions<T> & { queryKey?: QueryKey }
 ) => {
   const {
     silentError,
     errorFallback,
+    queryKey,
     ...restOptions
   } = options || {};
 
   return useInfiniteQuery<T, ApiError, InfiniteData<T, unknown>, QueryKey, unknown>({
-    queryKey: [url, params],
+    queryKey: queryKey ?? [url, params],
 
     queryFn: async ({ pageParam = null }) => {
       try {
@@ -194,8 +169,8 @@ export const useInfiniteGet = <T extends { data: unknown }>(
             ...params,
             ...(pageParam
               ? {
-                  cursor: pageParam,
-                }
+                cursor: pageParam,
+              }
               : {}),
           },
 
@@ -229,7 +204,6 @@ export const useInfiniteGet = <T extends { data: unknown }>(
     ...restOptions,
   });
 };
-
 /* 
    POST
     */
@@ -256,6 +230,7 @@ export const usePost = <T, D = unknown>(
     },
 
     onError: (error) => {
+
       showErrorToast(
         error,
         errorFallback || "Something went wrong"

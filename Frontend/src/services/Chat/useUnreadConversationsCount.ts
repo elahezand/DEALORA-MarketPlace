@@ -1,5 +1,5 @@
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { ConversationsResponse } from "@/types/Chat";
 
 

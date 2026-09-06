@@ -7,9 +7,6 @@ export interface ICategoryFilterOption {
   metadata?: Record<string, unknown>;
 }
 
-// NOTE: the current backend filterSchema only defines "select" | "radio" | "boolean" | "text".
-// "range" plus the isRadio/config/name_en fields below are supported by the frontend filter UI
-// (see RangeFilterItem) but are not yet populated by any category in the current schema.
 export type CategoryFilterType = 'select' | 'radio' | 'boolean' | 'text' | 'range';
 
 export interface ICategoryFilterRangeConfig {
@@ -47,9 +44,6 @@ export interface ICategory {
   filters: ICategoryFilter[];
   isActive: boolean;
   metadata?: Record<string, unknown>;
-  // Built recursively by the backend's buildTree() helper (services/category.js) —
-  // not a mongoose virtual (a "children" virtual exists on the schema but is never
-  // actually populated by any endpoint).
   subCategories?: ICategory[];
   createdAt?: string;
   updatedAt?: string;
@@ -62,7 +56,7 @@ export interface CategoriesTypeResponse {
   data: ICategory[];
 }
 
-export interface ISingleCategoryResponse {
+export interface ICategoryResponse {
   success: boolean;
   data: ICategory;
 }

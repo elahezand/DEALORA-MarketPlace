@@ -10,7 +10,7 @@ import {
     HiOutlineMapPin,
     HiOutlineCheckCircle,
 } from "react-icons/hi2";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { useUpdateStore } from "@/services/Store/useUpdateStore";
 
 export default function EditStorePage() {

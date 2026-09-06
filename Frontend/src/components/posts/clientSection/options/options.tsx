@@ -9,7 +9,7 @@ import { GrFanOption } from 'react-icons/gr';
 import SectionHeader from '../sectionHeader';
 import { Skeleton } from '@heroui/react';
 import { HiChevronRight } from "react-icons/hi";
-import { ISingleCategoryResponse, ICategoryFilter, ICategoryFilterOption } from '@/types/Category';
+import { ICategoryResponse, ICategoryFilter, ICategoryFilterOption } from '@/types/Category';
 
 export type FilterValue = string | boolean | [number, number];
 
@@ -25,7 +25,7 @@ export default function Options({
     activeFilters = {},
 }: OptionsProps) {
 
-    const { data, isLoading } = useGet<ISingleCategoryResponse>(`/categories/${categoryId}`);
+    const { data, isLoading } = useGet<ICategoryResponse>(`/categories/${categoryId}`);
     if (isLoading)
         return (
             <div className="space-y-3 py-6">

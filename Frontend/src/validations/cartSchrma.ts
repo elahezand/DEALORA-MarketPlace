@@ -9,10 +9,6 @@ export const checkoutSchema = z.object({
         address: z.string().min(10, "Address is too short"),
         city: z.string().min(2, "City is required"),
         state: z.string().min(2, "State is required"),
-        location: z.object({
-            lat: z.number(),
-            lng: z.number(),
-        }),
     }),
     paymentMethod: z.enum(["cash", "zarinpal"]),
 });

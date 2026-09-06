@@ -15,7 +15,7 @@ export const useUpdateListingStatus = (onSettledCallback?: () => void) => {
    
     onSuccess: (res) => {
       toast.success(res?.message || "Status updated successfully");
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      queryClient.invalidateQueries({ queryKey: ["listings-moderation"] });
     },
     errorFallback: "Action failed",
     onSettled: () => {

@@ -4,7 +4,8 @@ import { Spinner } from "@heroui/react";
 import { Step1VerificationProps } from "@/types/Auth/AuthTypes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useVerify, useResendCode } from "@/services/Auth/Step1Verification";
+import { useVerify } from "@/services/Auth/useVerify";
+import { useResendCode } from "@/services/Auth/useResendCode";
 import z from 'zod';
 
 const validationCode = z.object({

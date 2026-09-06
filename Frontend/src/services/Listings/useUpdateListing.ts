@@ -1,23 +1,28 @@
 import { usePut } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
+import { ListingProps } from "@/types/Listings";
 
-export interface UpdateListingPayload {
-  listingType: string;
-  title: string;
-  description: string;
-  price: number;
-  condition: "new" | "used";
-  shipping: {
-    type: "standard" | "express" | "free";
-    cost: number;
-  };
+export type UpdateListingPayload = Pick<ListingProps,
+  "listingType" | "title" | "description" | "price" | "condition" | "shipping"
+>;
+
+export interface UpdateListingResponse {
+  message: string;
+  data: ListingProps;
 }
 
-export const useUpdateListing = (listingId: string) => {
-  return usePut<any, UpdateListingPayload>(`/listings/${listingId}`, {
-    onSuccess: () => {
-      toast.success("Listing updated successfully");
-    },
-    errorFallback: "Failed to update listing",
-  });
+export const useUpdateListing = (
+  listingId: string,
+  onSuccessCallback?: () => void
+) => {
+  return usePut<UpdateListingResponse, UpdateListingPayload>(
+    `/listings/${listingId}`,
+    {
+      onSuccess: () => {
+        toast.success("Listing updated successfully");
+        onSuccessCallback?.();
+      },
+      errorFallback: "Failed to update listing",
+    }
+  );
 };

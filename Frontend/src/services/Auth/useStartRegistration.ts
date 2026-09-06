@@ -1,6 +1,10 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
-import { StartRegistrationResponse } from "@/types/Auth/AuthTypes";
+
+export interface StartRegistrationResponse {
+  message: string;
+  remainingTime: string;
+}
 
 interface StartRegistrationValues {
   phone: string;

@@ -1,5 +1,6 @@
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-import { UserType, IStore } from "@/types/User";
+import { IStore } from "@/types/Store";
+import { UserType } from "@/types/User";
 
 export const useGetProfile = () => {
   const { data, error, isError, isLoading } = useGet<UserType>(

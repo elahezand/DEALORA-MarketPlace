@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { usePatch } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
-import { IStore } from "@/types/User";
+import { IStore } from "@/types/Store";
 
 export type UpdateStorePayload = Partial<
   Pick<IStore, "name" | "phone" | "logo" | "address">

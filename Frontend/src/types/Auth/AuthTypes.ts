@@ -13,11 +13,6 @@ export interface Step0PhoneProps {
   onSuccess: (remainingTime: string) => void;
 }
 
-export interface StartRegistrationResponse {
-  message: string;
-  remainingTime: string;
-}
-
 // Step1Verification
 
 export interface Step1VerificationProps {

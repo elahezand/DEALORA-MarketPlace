@@ -9,7 +9,7 @@ import {
 } from "react-icons/hi2";
 import { useMessages } from "@/services/Chat/useMessages";
 import { useSendMessage } from "@/services/Chat/useSendMessage";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { IConversation, IMessage, MessagesResponse } from "@/types/Chat";
 import { IPagination } from "@/types/common";
 import { timeAgo } from "@/utils/timeAgo";

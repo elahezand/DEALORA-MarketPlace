@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MotionDiv, MotionP } from "@/utils/providers/MotionWrapper";
+import { Variants } from "framer-motion";
 
 const aboutCards = [
   {
@@ -147,7 +148,8 @@ const containerVariants = {
   },
 };
 
-const cardVariants = {
+
+const cardVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
@@ -159,7 +161,6 @@ const cardVariants = {
     },
   },
 };
-
 export default function AboutPage() {
   return (
     <div className="w-full max-w-5xl mx-auto px-4 relative z-10 animate-in fade-in zoom-in-95 duration-500">

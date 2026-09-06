@@ -4,7 +4,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MotionDiv } from "@/utils/providers/MotionWrapper";
-import { useCreateContact } from "@/services/ContactUs/CreateContact";
+import { useCreateContact } from "@/services/ContactUs/useCreateContact";
 import z from 'zod';
 import { contactSchema } from "@/validations/contactUs";
 

@@ -10,7 +10,7 @@ import {
     HiOutlinePencilSquare,
     HiOutlineChatBubbleLeftRight,
 } from "react-icons/hi2";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 
 export default function MyStorePage() {
     const { store, hasStore, isLoading } = useGetProfile();

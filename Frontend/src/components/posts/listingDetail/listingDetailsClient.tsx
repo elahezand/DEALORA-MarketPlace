@@ -13,11 +13,13 @@ import StatBox from "./StateBox";
 import SectionHeading from "./SectionHeading";
 import MapSection from "./MapSection";
 import BreadCrumbs from "./BreadCrumbs";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { ListingProps, ListingVariant } from "@/types/Listings";
 import { Offer } from "@/types/Offer";
-import { useAddToCart } from "@/services/Cart/cart";
-import { useToggleFavorite, useIsFavorited } from "@/services/Favorites/favorites";
+import { useAddToCart } from "@/services/Cart/useAddToCart";
+import { useToggleFavorite } from "@/services/Favorites/useToggleFavorite";
+import { useIsFavorited } from "@/services/Favorites/useIsFavorited";
+
 import { toast } from "sonner";
 import {
     Eye,
@@ -115,7 +117,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
         addToCartMutation.isPending ||
         isOutOfStock
     // Report
-   
+
     const handleReportClick = () => {
         if (!user) {
             setIsAuthOpen(true);
@@ -413,30 +415,30 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                 const storeName = typeof offer.store === "object" ? offer.store?.name : undefined;
                                 const displayPrice = offer.finalPrice ?? offer.price;
                                 return (
-                                <div key={offer._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-[var(--foreground)]">{storeName || "Vendor"}</span>
-                                        <span className="text-xs text-[var(--foreground-subtle)]">Condition: {offer.condition}</span>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-right">
-                                            <span className="block text-base font-extrabold text-[var(--foreground)]">${displayPrice.toLocaleString()}</span>
-                                            {!!offer.discount && offer.discount > 0 && (
-                                                <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
-                                                    {offer.discount}% OFF
-                                                </span>
-                                            )}
+                                    <div key={offer._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-[var(--foreground)]">{storeName || "Vendor"}</span>
+                                            <span className="text-xs text-[var(--foreground-subtle)]">Condition: {offer.condition}</span>
                                         </div>
-                                        <button
-                                            onClick={() => handleAddToCart(offer._id)}
-                                            disabled={addToCartMutation.isPending || offer.stock === 0 || !(selectedVariant?._id || defaultVariant?._id)}
-                                            className="h-9 px-4 text-xs font-bold rounded-lg btn-secondary bg-[var(--background-soft)] border-[var(--border)] hover:bg-[var(--border)] flex items-center gap-1.5"
-                                        >
-                                            {addToCartMutation.isPending && <Loader2 size={12} className="animate-spin" />}
-                                            Buy Offer
-                                        </button>
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-right">
+                                                <span className="block text-base font-extrabold text-[var(--foreground)]">${displayPrice.toLocaleString()}</span>
+                                                {!!offer.discount && offer.discount > 0 && (
+                                                    <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
+                                                        {offer.discount}% OFF
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => handleAddToCart(offer._id)}
+                                                disabled={addToCartMutation.isPending || offer.stock === 0 || !(selectedVariant?._id || defaultVariant?._id)}
+                                                className="h-9 px-4 text-xs font-bold rounded-lg btn-secondary bg-[var(--background-soft)] border-[var(--border)] hover:bg-[var(--border)] flex items-center gap-1.5"
+                                            >
+                                                {addToCartMutation.isPending && <Loader2 size={12} className="animate-spin" />}
+                                                Buy Offer
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
                                 );
                             })}
                         </div>

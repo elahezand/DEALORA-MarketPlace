@@ -1,14 +1,6 @@
 export type OfferStatus = "pending" | "accepted" | "rejected";
-
-export interface OffersResponse {
-  data: Offer[];
-  pagination?: {
-    hasMore: boolean;
-    limit: number;
-    nextCursor: string | null;
-  };
-}
-  _id: string;
+export interface  Offer {
+    _id: string;
   price: number;
   discount?: number;
   finalPrice?: number;
@@ -21,4 +13,14 @@ export interface OffersResponse {
   product?: { _id: string; title?: string; images?: string[] } | string;
   listing?: { _id: string; title?: string; images?: string[] } | string;
   store?: { _id: string; name?: string } | string;
+}
+
+
+export interface OffersResponse {
+  data: Offer[];
+  pagination?: {
+    hasMore: boolean;
+    limit: number;
+    nextCursor: string | null;
+  };
 }

@@ -1,7 +1,6 @@
-const AppError = require("../utils/AppError");
-
 const validate = (schema) => (req, res, next) => {
   const parsed = schema.safeParse(req.body);
+  const AppError = require("../utils/AppError");
 
   if (!parsed.success) {
     const errors = parsed.error.issues.map((err) => ({
@@ -10,7 +9,6 @@ const validate = (schema) => (req, res, next) => {
       expected: err.expected,
       received: err.received,
     }));
-
     return next(new AppError(422, "Invalid data", { errors }));
   }
 

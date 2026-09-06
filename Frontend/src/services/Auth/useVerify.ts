@@ -6,18 +6,8 @@ interface VerifyPhoneValues {
   phone: string,
   code: string
 }
-
-interface ResendCodeValues {
-  phone: string;
-}
-
 interface VerifyResponse {
   message: string;
-}
-
-export interface ResendCodeResponse {
-  message: string;
-  remainingTime: string;
 }
 
 export const useVerify = (onSuccess: () => void) => {
@@ -33,17 +23,6 @@ export const useVerify = (onSuccess: () => void) => {
         onSuccess();
       },
       errorFallback: "Code Not Valid",
-    }
-  );
-
-  return { mutate, isPending };
-};
-
-export const useResendCode = () => {
-  const { mutate, isPending } = usePost<ResendCodeResponse, ResendCodeValues>(
-    "/auth/send",
-    {
-      onSuccess: () => toast.success("CODE Sent Successfully:)"),
     }
   );
 

@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { IoLocationSharp } from "react-icons/io5";
 import Logo from "./Logo";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { useQueryClient } from "@tanstack/react-query";
 
 const AuthModal = dynamic(() => import("../modals/AuthModal"), { ssr: false });

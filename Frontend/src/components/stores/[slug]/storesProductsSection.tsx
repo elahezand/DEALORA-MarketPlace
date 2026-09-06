@@ -3,20 +3,10 @@ import React from 'react';
 import dynamic from "next/dynamic";
 import { HiChevronRight } from 'react-icons/hi';
 import { useInfiniteGet } from '@/utils/hooks/useReactQueryHooks';
-import { ListingProps } from '@/types/Listings';
-import { IPagination } from '@/types/common';
+import { StoreProductsResponse, StoreProductsSectionProps } from '@/types/Store';
 const ProductsGrid = dynamic(() => import("@/components/stores/[slug]/productsGrid"));
 
-interface StoreProductsResponse {
-    data: ListingProps[];
-    pagination?: IPagination;
-}
 
-interface StoreProductsSectionProps {
-    slug: string;
-    initialData: ListingProps[];
-    initialPagination: IPagination | null;
-}
 
 export default function StoreProductsSection({
     slug,
@@ -30,7 +20,7 @@ export default function StoreProductsSection({
         isFetchingNextPage
     } = useInfiniteGet<StoreProductsResponse>(`/stores/slug/${slug}`, undefined, {
         initialData: {
-            pages: [{ data: initialData, pagination: initialPagination }],
+            pages: [{ data: initialData, pagination: initialPagination ?? undefined }],
             pageParams: [null],
         }
     });

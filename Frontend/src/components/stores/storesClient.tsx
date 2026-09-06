@@ -3,7 +3,7 @@ import React from 'react';
 import dynamic from "next/dynamic";
 import { HiChevronRight } from 'react-icons/hi';
 import { useInfiniteGet } from '@/utils/hooks/useReactQueryHooks';
-import { IStore } from '@/types/User';
+import { IStore } from '@/types/Store';
 import { IPagination } from '@/types/common';
 const StoresList = dynamic(() => import("@/components/stores/storesList"));
 
@@ -27,7 +27,8 @@ export default function InfiniteStoresSection({
         hasNextPage,
         isFetchingNextPage
     } = useInfiniteGet<VerifiedStoresResponse>('/stores/verified', undefined,
-        {
+        {        
+            queryKey: ["verified-stores"],
             initialData: {
                 pages: [{ data: initialData, pagination: initialPagination ?? undefined }],
                 pageParams: [null],

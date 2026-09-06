@@ -12,7 +12,7 @@ export const useDeleteUser = () => {
     {
       onSuccess: (res) => {
         toast.success(res?.message || "User deleted");
-        queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+        queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       },
       errorFallback: "Action failed",
     }

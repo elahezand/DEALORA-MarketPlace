@@ -20,3 +20,10 @@ export interface ContactsResponse {
     };
   };
 }
+
+export interface ContactFormValues {
+  name: string;
+  email: string;
+  phone: string;
+  body: string;
+}

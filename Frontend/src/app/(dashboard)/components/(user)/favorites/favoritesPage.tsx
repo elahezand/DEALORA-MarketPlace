@@ -8,7 +8,7 @@ import { HiOutlineHeart, HiOutlineEye, HiOutlineTrash } from "react-icons/hi2";
 import qs from "qs";
 import { getUrl } from "@/utils/helper"
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { useRemoveFavorite } from "@/services/Favorites/favorites";
+import { useRemoveFavorite } from "@/services/Favorites/useRemoveFavorite";
 import FavoritesTypeResponse from "@/types/favorites";
 import { IPagination } from "@/types/common";
 import { QueryParams } from "@/types/api/ErrorTypes";
@@ -99,7 +99,7 @@ export default function InfiniteFavoritesSection({
           </tr>
         </thead>
         <tbody>
-          {favorites.map((favorite: FavoriteItem) => {
+          {favorites.map((favorite: FavoriteItem) => {            
             if (!favorite) return null;
             const src = getUrl(favorite.product?.images?.[0])
             const product = favorite.product;

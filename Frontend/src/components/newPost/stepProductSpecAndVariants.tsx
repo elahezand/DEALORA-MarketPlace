@@ -3,7 +3,7 @@ import React from "react";
 import { useFormikContext } from "formik";
 import { Skeleton } from "@heroui/react";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-import { ISingleCategoryResponse, ICategoryFilter, ICategoryFilterOption } from "@/types/Category";
+import { ICategoryResponse, ICategoryFilter, ICategoryFilterOption } from "@/types/Category";
 import { FormValues } from "@/types/listingFormValue";
 
 export default function StepProductSpecAndVariants({
@@ -12,7 +12,7 @@ export default function StepProductSpecAndVariants({
   categoryId: string;
 }) {
   const { values, setFieldValue } = useFormikContext<FormValues>();
-  const { data: res, isLoading } = useGet<ISingleCategoryResponse>(
+  const { data: res, isLoading } = useGet<ICategoryResponse>(
     `/categories/${categoryId}`,
     undefined,
     { enabled: !!categoryId }
@@ -86,7 +86,7 @@ export default function StepProductSpecAndVariants({
               {field.type === "select" && (
                 <div className="relative">
                   <select
-                    value={value ?? ""}
+                    value={typeof value === "string" ? value : ""}
                     onChange={(e) => updateSpec(field.slug, e.target.value)}
                     className="h-11 w-full px-4 rounded-xl text-sm font-medium outline-none transition cursor-pointer appearance-none focus:ring-2"
                     style={{

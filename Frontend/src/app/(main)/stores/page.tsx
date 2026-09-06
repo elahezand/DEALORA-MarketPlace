@@ -1,6 +1,6 @@
 import { useServerData } from "@/utils/hooks/useServerData";
 import InfiniteStoresSection from "@/components/stores/storesClient";
-import { IStore } from "@/types/User";
+import { IStore } from "@/types/Store";
 import { IPagination } from "@/types/common";
 
 interface VerifiedStoresServerResponse {

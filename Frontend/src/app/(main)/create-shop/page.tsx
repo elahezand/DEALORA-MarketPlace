@@ -8,7 +8,7 @@ import {
   HiOutlineExclamationTriangle,
 } from "react-icons/hi2";
 import { useCreateStore } from "@/services/Store/useCreateStore";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { StoreFormValues } from "@/types/storeFormValues";
 import { storeStepSchemas } from "@/validations/storeSchema";
 import { MotionDiv } from "@/utils/providers/MotionWrapper";
@@ -218,7 +218,7 @@ export default function CreateShop() {
           const payload = {
             name: values.name,
             phone: values.phone,
-            logo: values.logo || null,
+            logo: values.logo ,
             address: {
               province: values.address.province,
               city: values.address.city,

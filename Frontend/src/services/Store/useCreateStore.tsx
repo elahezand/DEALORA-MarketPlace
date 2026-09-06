@@ -1,17 +1,15 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
-import { storeSchema } from "@/validations/storeSchema";
-import { IStore } from "@/types/User";
-import z from 'zod';
+import { IStore } from "@/types/Store";
 
-type CreateStorePayload = z.infer<typeof storeSchema>;
+export type CreateStorePayload = Omit<IStore, "_id">;
 
 export interface CreateStoreResponse {
   message: string;
   seller: IStore;
 }
 
-export const useCreateStore = () => {  
+export const useCreateStore = () => {
   const { mutate, isPending } = usePost<CreateStoreResponse, CreateStorePayload>(`/stores`, {
     onSuccess: () => {
       toast.success("Store Created Successfully :)");
@@ -20,7 +18,7 @@ export const useCreateStore = () => {
   });
 
   return {
-     mutate,
+    mutate,
     isPending,
   };
 };

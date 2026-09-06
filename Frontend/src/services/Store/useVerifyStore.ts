@@ -40,7 +40,7 @@ export const useVerifyStore = () => {
     {
       onSuccess: (res) => {
         toast.success(res?.message || "Store updated");
-        queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+        queryClient.invalidateQueries({ queryKey: ["admin-stores"] });
       },
       errorFallback: "Action failed",
     }

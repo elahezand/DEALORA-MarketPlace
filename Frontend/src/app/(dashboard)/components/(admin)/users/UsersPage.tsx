@@ -6,7 +6,7 @@ import { HiOutlineUsers } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData, MutateOptions } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { IUser, AdminUsersResponse } from "@/types/User";
 import { ApiError } from "@/types/api/ErrorTypes";
 import TableCard from "../../shared/table/TableCard";
@@ -33,10 +33,10 @@ export default function UsersClient({ initialData }: UsersClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, { limit: 20 }, { initialData });
+  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, { limit: 20 }, { queryKey: ["admin-users"], initialData });
 
   const users: IUser[] = (
-    data?.pages?.flatMap((page: AdminUsersResponse) => page?.users?.data ?? []) || []
+    data?.pages?.flatMap((page: AdminUsersResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: toggleBan } = useToggleBanUser();
@@ -101,7 +101,11 @@ export default function UsersClient({ initialData }: UsersClientProps) {
             const src = getUrl(user.profilePicture)
             const isSelf = user._id === me?._id;
             const isAdmin = user.role.includes("ADMIN");
+            const isSeller = user.role.includes("SELLER");
             const busy = actioningId === user._id;
+
+            const roleLabel = isAdmin ? "ADMIN" : isSeller ? "SELLER" : "USER";
+            const roleTone = isAdmin ? "info" : isSeller ? "warning" : "neutral";
 
             return (
               <tr
@@ -134,8 +138,8 @@ export default function UsersClient({ initialData }: UsersClientProps) {
                 </td>
                 <td className="px-6 py-4">
                   <Badge
-                    tone={isAdmin ? "info" : "neutral"}
-                    label={user.role.join(", ")}
+                    tone={roleTone}
+                    label={roleLabel}
                   />
                 </td>
                 <td className="px-6 py-4">

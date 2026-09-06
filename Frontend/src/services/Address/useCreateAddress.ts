@@ -1,21 +1,24 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
-import { IAddress } from "@/types/User";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { IAddress } from "@/types/User";
 
-export type CreateAddressPayload = Omit<IAddress, "_id" | "id">;
-
-interface ICreateAddressResponse {
+export interface ICreateAddressResponse {
   message: string;
   addresses: IAddress[];
 }
-
+export type CreateAddressPayload = Omit<IAddress, "_id">;
 export const useCreateAddress = () => {
+  const queryClient = useQueryClient();
+
   const { mutate, ...rest } = usePost<ICreateAddressResponse, CreateAddressPayload>(
-    "/users/me/addresses", 
+    "/users/me/addresses",
     {
       onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/auth/me"] });
         toast.success("Address created successfully!");
       },
+      errorFallback: "Failed to create address.",
     }
   );
 

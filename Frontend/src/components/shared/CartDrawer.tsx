@@ -1,6 +1,9 @@
 'use client';
 import Link from "next/link";
-import { useGetMyCart, useRemoveFromCart, useUpdateCart } from "@/services/Cart/cart";
+import { useGetMyCart } from "@/services/Cart/useGetMyCart";
+import { useRemoveFromCart, } from "@/services/Cart/useRemoveFromCart";
+import { useUpdateCart } from "@/services/Cart/useUpdateCart";
+
 import { CartItem } from "@/types/Cart";
 import { Loader2, Trash2, X, ShoppingBag, Truck, Tag, Plus, Minus, AlertCircle } from "lucide-react";
 

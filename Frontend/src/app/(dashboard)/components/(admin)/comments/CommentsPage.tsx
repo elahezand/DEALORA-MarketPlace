@@ -13,6 +13,7 @@ import { useModerateComment } from "@/services/Comments/useModerateComment";
 import { useDeleteComment } from "@/services/Comments/useDeleteComment";
 import { InfiniteData } from "@tanstack/react-query";
 import { CommentStatus, AdminComment, AdminCommentsResponse } from "@/types/CommetTypes";
+import { log } from "util";
 
 const ENDPOINT = "/comments/admin";
 
@@ -35,7 +36,7 @@ export const STATUS_TONE: Record<CommentStatus, "success" | "warning" | "destruc
   deleted: "neutral",
 };
 
-export default function CommentsClient({ initialData }: CommentsClientProps) {
+export default function CommentsClient({ initialData }: CommentsClientProps) {  
   const [status, setStatus] = useState<CommentStatus | "all">("pending");
   const [rejectTarget, setRejectTarget] = useState<AdminComment | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -50,7 +51,9 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminCommentsResponse>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<AdminCommentsResponse>(ENDPOINT, params,
+    { queryKey: ["admin-comments-pending"], initialData }
+  );
 
   const comments: AdminComment[] = (
     data?.pages?.flatMap((page: AdminCommentsResponse) => page?.data ?? []) || []
@@ -64,7 +67,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
 
   const { mutate: removeComment } = useDeleteComment();
 
-  function handleApprove(c: AdminComment) {
+  function handleApprove(c: AdminComment) {    
     setActioningId(c._id);
     moderate({ id: c._id, status: "approved" });
   }
@@ -98,7 +101,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
       },
       cancel: {
         label: "Cancel",
-        onClick: () => {},
+        onClick: () => { },
       },
     });
   }
@@ -116,11 +119,10 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
             key={tab.value}
             type="button"
             onClick={() => setStatus(tab.value)}
-            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${
-              status === tab.value
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
                 ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
                 : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
-            }`}
+              }`}
           >
             {tab.label}
           </button>

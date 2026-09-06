@@ -9,9 +9,6 @@ export const useSubscribeNewsletter = (onSubscribed?: () => void) => {
       onSubscribed?.();
     },
     onError: (error: ApiError) => {
-      // Kept as a full onError (not just errorFallback) because 409 needs
-      // genuinely different handling (info, not an error) — not just a
-      // different fallback string.
       const status = error?.response?.status;
       const message = error?.response?.data?.message;
 
@@ -23,5 +20,6 @@ export const useSubscribeNewsletter = (onSubscribed?: () => void) => {
 
       toast.error(message || "Something went wrong, please try again.");
     },
+    errorFallback: "Something went wrong, please try again.",
   });
 };

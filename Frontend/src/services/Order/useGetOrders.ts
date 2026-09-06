@@ -1,22 +1,8 @@
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-import { IOrder } from "@/types/Order";
-
-interface PaginateResult<T> {
-  data: T[];
-  pagination: {
-    limit: number;
-    nextCursor: string | null;
-    hasMore: boolean;
-  };
-}
-
-interface GetOrdersAdminResponse {
-  success: boolean;
-  data: PaginateResult<IOrder>;
-}
+import { AdminOrdersResponse } from "@/types/Order";
 
 export const useGetOrdersAdmin = (limit = 5) => {
-  const { data, isLoading, isError } = useGet<GetOrdersAdminResponse>(
+  const { data, isLoading, isError } = useGet<AdminOrdersResponse>(
     `/orders/admin?limit=${limit}`
   );
   return {

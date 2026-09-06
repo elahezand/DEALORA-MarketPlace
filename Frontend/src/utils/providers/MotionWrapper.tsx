@@ -2,14 +2,17 @@
 import { motion } from "framer-motion";
 import type { ComponentPropsWithoutRef, ElementType } from "react";
 
-const createMotion =
-  <T extends ElementType>(Tag: T) =>
-  ({ children, className, ...rest }: ComponentPropsWithoutRef<T>) =>
-    (
-      <Tag className={className} {...rest}>
+const createMotion = <T extends ElementType>(Tag: T) => {
+  const Component = ({ children, className, ...rest }: ComponentPropsWithoutRef<T>) => {
+    const MotionTag = Tag as ElementType;
+    return (
+      <MotionTag className={className} {...rest}>
         {children}
-      </Tag>
+      </MotionTag>
     );
+  };
+  return Component;
+};
 
 export const MotionDiv = createMotion(motion.div);
 export const MotionButton = createMotion(motion.button);

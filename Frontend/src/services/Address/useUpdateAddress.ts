@@ -3,14 +3,13 @@ import { usePatch } from "@/utils/hooks/useReactQueryHooks";
 import { IAddress } from "@/types/User";
 import { toast } from "sonner";
 
+export interface IUpdateAddressResponse {
+    message: string;
+    address: IAddress;
+}
 export type UpdateAddressPayload = Partial<IAddress> & {
   id: string;
 };
-
-interface IUpdateAddressResponse {
-  message: string;
-  address: IAddress;
-}
 
 export const useUpdateAddress = () => {
   const queryClient = useQueryClient();

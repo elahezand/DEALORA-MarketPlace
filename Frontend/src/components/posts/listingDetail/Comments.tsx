@@ -9,7 +9,7 @@ import CommentCard from "./CommentCard";
 import SkeletonComments from "@/components/skeleton/SkeletonComments";
 import { usePostComment } from "@/services/Comments/usePostComment";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { CommentItemType, CommentsResponse } from "@/types/CommetTypes";
 const AuthModal = dynamic(() => import("../../modals/AuthModal"), { ssr: false });
 
@@ -21,8 +21,6 @@ interface CommentsProps {
   initialPagination?: CommentsResponse["pagination"];
 }
 
-// Small reusable "tag list" input for pros/cons -- type a value, hit
-// Enter or the + button to add it as a chip, click the x to remove it.
 function TagListInput({
   label,
   placeholder,
@@ -113,7 +111,6 @@ const RECOMMENDATION_OPTIONS: { value: Recommendation; label: string }[] = [
 ];
 
 export default function Comments({ listingId, initialComments, initialPagination }: CommentsProps) {
-  // Fixed: was /comments/product/:id, backend route is now /comments/listing/:id
   const endpoint = `/comments/listing/${listingId}`;
 
   const {

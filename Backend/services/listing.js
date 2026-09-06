@@ -136,7 +136,7 @@ async function updateListing(id, userId, data, files = []) {
   const listing = await Listing.findById(id);
   if (!listing) throw new AppError(404, "Listing not found");
 
-  if (listing.listingType === "user_ad" && String(listing.user) !== String(userId)) {
+  if (listing.listingType === "user_ad" && String(listing.owner) !== String(userId)) {
     throw new AppError(403, "Unauthorized action");
   }
 
@@ -159,7 +159,7 @@ async function deleteListing(id, userId) {
   const listing = await Listing.findById(id);
   if (!listing) throw new AppError(404, "Listing not found");
 
-  if (listing.listingType === "user_ad" && String(listing.user) !== String(userId)) {
+  if (listing.listingType === "user_ad" && String(listing.owner) !== String(userId)) {
     throw new AppError(403, "Unauthorized action");
   }
 

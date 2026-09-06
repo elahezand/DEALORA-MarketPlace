@@ -7,7 +7,7 @@ export default async function AdminUsersPage() {
     "/users?limit=20",
     "admin-users",
     60 * 5
-  );
+  );  
 
   return (
     <UsersClient

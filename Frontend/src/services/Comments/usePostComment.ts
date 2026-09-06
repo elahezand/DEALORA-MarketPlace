@@ -1,20 +1,13 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+
 import { CommentItemType } from "@/types/CommetTypes";
 
-export interface NewCommentPayload {
-  listing: string;
-  rating: number;
-  body: string;
-  title?: string;
-  pros?: string[];
-  cons?: string[];
-  recommendation?: "recommended" | "not_recommended" | "no_idea";
-  parentId?: string;
-}
-
-export interface NewCommentResponse {
+export type NewCommentPayload = Pick<
+  CommentItemType,
+  "listing" | "rating" | "title" | "body" | "pros" | "cons" | "recommendation"
+>; export interface NewCommentResponse {
   message: string;
   data: CommentItemType;
 }
@@ -24,7 +17,7 @@ export function usePostComment(listingId: string) {
 
   const { mutate, isPending } = usePost<NewCommentResponse, NewCommentPayload>("/comments", {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments",listingId ] });
+      queryClient.invalidateQueries({ queryKey: ["comments", listingId] });
       toast.success("Your review was submitted and is awaiting approval.");
     },
     errorFallback: "Something went wrong, please try again.",

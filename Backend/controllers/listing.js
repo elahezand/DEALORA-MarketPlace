@@ -73,7 +73,7 @@ exports.createListing = async (req, res, next) => {
 };
 
 exports.updateListing = async (req, res, next) => {
-  try {
+  try {    
     const listing = await listingService.updateListing(
       req.params.id,
       req.user._id,

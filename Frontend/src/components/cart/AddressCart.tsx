@@ -1,7 +1,7 @@
 import { IAddress } from "@/types/User";
 import { useState } from "react";
 import { Trash2, Pencil } from "lucide-react";
-import { useDeleteAddress } from "@/services/Address/DeleteAddress";
+import { useDeleteAddress } from "@/services/Address/useDeleteAddress";
 import AddNewAddress from "./AddNewAddress";
 
 export const AddressCard = ({

@@ -1,12 +1,9 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
-import z from 'zod';
-import { contactSchema } from "@/validations/contactUs";
-
-type ContactFormData = z.infer<typeof contactSchema>;
+import { ContactFormValues } from "@/types/Contact"
 
 export const useCreateContact = (onSuccessCallback?: () => void) => {
-  const { mutate, isPending, ...rest } = usePost<ContactFormData>("/contacts", {
+  const { mutate, isPending, ...rest } = usePost<ContactFormValues>("/contacts", {
     onSuccess: () => {
       toast.success("Your message was sent successfully!");
       if (onSuccessCallback) onSuccessCallback();

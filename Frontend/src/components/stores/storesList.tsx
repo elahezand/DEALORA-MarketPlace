@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { IStore } from "@/types/User";
+import { IStore } from "@/types/Store";
 
 export default function StoresList({ data }: { data: IStore[] }) {
   if (!data || data.length === 0) {

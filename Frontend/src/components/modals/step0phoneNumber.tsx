@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import { Step0PhoneProps } from '@/types/Auth/AuthTypes';
-import { useStartRegistration } from '@/services/Auth/Step0PhoneNumber';
+import { useStartRegistration } from '@/services/Auth/useStartRegistration';
 import { Spinner } from '@heroui/react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";

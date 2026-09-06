@@ -1,7 +1,11 @@
 'use client';
 import React from 'react';
 import { useState } from 'react';
-import { useGetMyCart, useRemoveFromCart, useUpdateCart, useApplyCoupon } from "@/services/Cart/cart";
+import { useGetMyCart } from "@/services/Cart/useGetMyCart";
+import { useRemoveFromCart } from "@/services/Cart/useRemoveFromCart";
+import { useUpdateCart, } from "@/services/Cart/useUpdateCart";
+import { useApplyCoupon } from "@/services/Cart/useApplyCoupon";
+
 import { CartItem } from "@/types/Cart";
 import { Trash2, ShoppingBag, Truck, Plus, Minus, AlertCircle, ArrowLeft, ShieldCheck, Tag } from "lucide-react";
 import { Skeleton } from '@heroui/react';
@@ -20,7 +24,7 @@ const getProductId = (item: CartItem): string | null =>
   (typeof item?.product === "object" ? item.product?._id : item?.product) ?? null;
 
 export default function CartPage() {
-  const { data: cart, isLoading } = useGetMyCart();  
+  const { data: cart, isLoading } = useGetMyCart();
   const [couponCode, setCouponCode] = useState("");
 
   const { mutate: applyCoupon, isPending: isApplying } = useApplyCoupon();
@@ -108,89 +112,89 @@ export default function CartPage() {
               const offer = typeof item.offer === "object" ? item.offer : null;
               const offerStoreName = typeof offer?.store === "object" ? offer.store?.name : undefined;
               return (
-              <div
-                key={`${getOfferId(item)}-${item.variantId}-${index}`}
-                className="card p-5 flex flex-col sm:flex-row gap-5 items-start sm:items-center relative group"
-              >
-                {/* Product Image */}
-                <div className="w-24 h-24 bg-[var(--input-bg)] rounded-2xl flex-shrink-0 border border-[var(--border)] overflow-hidden flex items-center justify-center">
-                  {product?.images?.[0] ? (
-                    <img
-                      src={product.images[0]}
-                      alt={product?.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <ShoppingBag className="w-8 h-8 text-[var(--foreground-subtle)] opacity-40" />
-                  )
-                  }
-                </div>
-
-                {/* Product Info & Controls */}
-                <div className="flex-1 w-full space-y-4">
-                  <div className="pr-8">
-                    <h3 className="font-bold text-base text-[var(--foreground)] leading-snug line-clamp-2">
-                      {product?.title}
-                    </h3>
-
-                    {item.variantSnapshot?.attributes && (
-                      <p className="text-xs text-[var(--foreground-muted)] mt-1">
-                        {Object.entries(item.variantSnapshot.attributes)
-                          .map(([key, value]) => `${key}: ${value}`)
-                          .join(" · ")}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2">
-                      {offer?.store && (
-                        <MetaItem label="Sold by" value={offerStoreName || "Store"} />
-                      )}
-                      {offer?.condition && (
-                        <MetaItem label="Condition" value={offer.condition} />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Footer of Card: Quantity and Price */}
-                  <div className="flex items-center justify-between gap-4 pt-3 border-t border-[var(--border)] border-dashed">
-                    {/* Quantity Selector */}
-                    <div className="flex items-center border border-[var(--input-border)] bg-[var(--input-bg)] rounded-xl h-9 overflow-hidden">
-                      <button
-                        onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                        className="px-3 h-full flex items-center justify-center hover:bg-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-
-                      <span className="text-sm font-bold text-[var(--foreground)] w-8 text-center select-none">
-                        {item.quantity}
-                      </span>
-
-                      <button
-                        onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                        className="px-3 h-full flex items-center justify-center hover:bg-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Price */}
-                    <p className="font-bold text-lg text-[var(--foreground)] dark:text-[var(--accent-400)]">
-                      ${(item.priceSnapshot * item.quantity).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleRemove(item)}
-                  className="p-2 text-[var(--foreground-subtle)] hover:text-[var(--destructive)] transition-colors absolute top-4 right-4 sm:top-5 sm:right-5 bg-transparent"
-                  aria-label="Remove item"
+                <div
+                  key={`${getOfferId(item)}-${item.variantId}-${index}`}
+                  className="card p-5 flex flex-col sm:flex-row gap-5 items-start sm:items-center relative group"
                 >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
+                  {/* Product Image */}
+                  <div className="w-24 h-24 bg-[var(--input-bg)] rounded-2xl flex-shrink-0 border border-[var(--border)] overflow-hidden flex items-center justify-center">
+                    {product?.images?.[0] ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product?.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <ShoppingBag className="w-8 h-8 text-[var(--foreground-subtle)] opacity-40" />
+                    )
+                    }
+                  </div>
+
+                  {/* Product Info & Controls */}
+                  <div className="flex-1 w-full space-y-4">
+                    <div className="pr-8">
+                      <h3 className="font-bold text-base text-[var(--foreground)] leading-snug line-clamp-2">
+                        {product?.title}
+                      </h3>
+
+                      {item.variantSnapshot?.attributes && (
+                        <p className="text-xs text-[var(--foreground-muted)] mt-1">
+                          {Object.entries(item.variantSnapshot.attributes)
+                            .map(([key, value]) => `${key}: ${value}`)
+                            .join(" · ")}
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2">
+                        {offer?.store && (
+                          <MetaItem label="Sold by" value={offerStoreName || "Store"} />
+                        )}
+                        {offer?.condition && (
+                          <MetaItem label="Condition" value={offer.condition} />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer of Card: Quantity and Price */}
+                    <div className="flex items-center justify-between gap-4 pt-3 border-t border-[var(--border)] border-dashed">
+                      {/* Quantity Selector */}
+                      <div className="flex items-center border border-[var(--input-border)] bg-[var(--input-bg)] rounded-xl h-9 overflow-hidden">
+                        <button
+                          onClick={() => handleQuantityChange(item, item.quantity - 1)}
+                          className="px-3 h-full flex items-center justify-center hover:bg-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+
+                        <span className="text-sm font-bold text-[var(--foreground)] w-8 text-center select-none">
+                          {item.quantity}
+                        </span>
+
+                        <button
+                          onClick={() => handleQuantityChange(item, item.quantity + 1)}
+                          className="px-3 h-full flex items-center justify-center hover:bg-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Price */}
+                      <p className="font-bold text-lg text-[var(--foreground)] dark:text-[var(--accent-400)]">
+                        ${(item.priceSnapshot * item.quantity).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleRemove(item)}
+                    className="p-2 text-[var(--foreground-subtle)] hover:text-[var(--destructive)] transition-colors absolute top-4 right-4 sm:top-5 sm:right-5 bg-transparent"
+                    aria-label="Remove item"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               );
             })}
           </div>

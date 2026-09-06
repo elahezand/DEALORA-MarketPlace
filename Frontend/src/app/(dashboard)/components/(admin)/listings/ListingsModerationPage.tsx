@@ -57,7 +57,7 @@ export default function ListingsModerationClient({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<PublicListingsResponse>(endpoint, params, { initialData });
+  } = useInfiniteGet<PublicListingsResponse>(endpoint, params,{ queryKey: ["listings-moderation"]});
 
   const listings: ListingProps[] = (
     data?.pages?.flatMap((page: PublicListingsResponse) => page?.data ?? []) || []

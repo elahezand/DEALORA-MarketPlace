@@ -9,7 +9,6 @@ import { getUrl } from "@/utils/helper"
 
 export default function RecentUsers() {
   const { users, isLoading, isError } = useGetUsers(5);
-
   return (
     <TableCard
       header={<WidgetHeader icon={HiOutlineUsers} title="Recent Users"
@@ -32,6 +31,10 @@ export default function RecentUsers() {
       <tbody>
         {users.map((user) => {
           const src = getUrl(user.profilePicture)
+          const isAdmin = user.role.includes("ADMIN");
+          const isSeller = user.role.includes("SELLER");
+          const roleLabel = isAdmin ? "ADMIN" : isSeller ? "SELLER" : "USER";
+
           return (
             <tr
               key={user._id}
@@ -55,7 +58,7 @@ export default function RecentUsers() {
               <td className="px-6 py-4">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--background-soft)]">
                   <span className="text-xs font-bold text-[var(--foreground-muted)]">
-                    {user.role.join(", ")}
+                    {roleLabel}
                   </span>
                 </div>
               </td>

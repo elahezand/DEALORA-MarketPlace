@@ -17,7 +17,6 @@ const {
 
 listingRouter.get("/", cacheMiddleware(120), controller.getAll);
 listingRouter.post("/smart-search", controller.handleSmartSearch);
-
 listingRouter.get("/my", authUser, controller.getMyListings);
 
 /* ADMIN — must come before*/

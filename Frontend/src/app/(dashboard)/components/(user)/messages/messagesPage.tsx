@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { HiOutlineChatBubbleLeftRight, HiChevronRight } from "react-icons/hi2";
 import { useConversations } from "@/services/Chat/useConversations";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { IConversation, ConversationsResponse } from "@/types/Chat";
 import { IPagination } from "@/types/common";
 import { timeAgo } from "@/utils/timeAgo";

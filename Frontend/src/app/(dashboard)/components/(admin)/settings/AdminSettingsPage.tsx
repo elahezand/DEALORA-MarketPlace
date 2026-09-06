@@ -1,5 +1,5 @@
 "use client";
-import { useGetProfile } from "@/services/Profile/getProfile";
+import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { AdminSecuritySection } from "./AdminSecuritySection";
 import { SiteInfoSection } from "./SiteInfoSection";
 import { PersonalInfoForm } from "@/app/(dashboard)/components/shared/PersonalInfoForm";

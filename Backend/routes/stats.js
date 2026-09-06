@@ -14,4 +14,16 @@ statsRouter.get("/admin",
     cacheMiddleware(60),
     controller.getAdmin);
 
+statsRouter.get("/admin/timeseries",
+    authUser,
+    authAdmin,
+    cacheMiddleware(60),
+    controller.getAdminTimeseries);
+
+/*  USER  */
+statsRouter.get("/me/timeseries",
+    authUser,
+    cacheMiddleware(60),
+    controller.getUserTimeseries);
+
 module.exports = statsRouter;

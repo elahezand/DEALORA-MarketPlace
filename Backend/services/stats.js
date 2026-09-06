@@ -11,7 +11,7 @@ const PUBLISHED_LISTING_FILTER = {
 };
 function getStartOfToday() {
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
 const getPublicStats = async () => {
@@ -61,5 +61,69 @@ const getAdminStats = async () => {
   };
 };
 
-module.exports = { getAdminStats };
-module.exports = { getPublicStats, getAdminStats };
+/* Build an array of the last `days` day-buckets (oldest first), each as "YYYY-MM-DD" */
+function buildDayBuckets(days) {
+  const buckets = [];
+  const start = getStartOfToday();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(start);
+    d.setUTCDate(d.getUTCDate() - i);
+    buckets.push(d.toISOString().slice(0, 10));
+  }
+  return buckets;
+}
+
+/* Group a model's documents created in the last `days` days by day, using `dateField` */
+async function countByDay(Model, days, extraMatch = {}, dateField = "createdAt") {
+  const since = new Date(getStartOfToday());
+  since.setUTCDate(since.getUTCDate() - (days - 1));
+
+  const rows = await Model.aggregate([
+    { $match: { ...extraMatch, [dateField]: { $gte: since } } },
+    {
+      $group: {
+        _id: { $dateToString: { format: "%Y-%m-%d", date: `$${dateField}` } },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const map = new Map(rows.map((r) => [r._id, r.count]));
+  return buildDayBuckets(days).map((day) => ({ day, count: map.get(day) || 0 }));
+}
+
+/* ADMIN — orders & new users per day, for dashboard charts */
+const getAdminStatsTimeseries = async (days = 14) => {
+  const rangeDays = Math.min(Math.max(Number(days) || 14, 7), 90);
+
+  const [orders, users] = await Promise.all([
+    countByDay(Order, rangeDays),
+    countByDay(User, rangeDays),
+  ]);
+
+  return {
+    days: rangeDays,
+    labels: orders.map((r) => r.day),
+    orders: orders.map((r) => r.count),
+    newUsers: users.map((r) => r.count),
+  };
+};
+
+const getUserStatsTimeseries = async (userId, days = 14) => {
+  const rangeDays = Math.min(Math.max(Number(days) || 14, 7), 90);
+
+  const orders = await countByDay(Order, rangeDays, { user: userId });
+
+  return {
+    days: rangeDays,
+    labels: orders.map((r) => r.day),
+    orders: orders.map((r) => r.count),
+  };
+};
+
+module.exports = {
+  getPublicStats,
+  getAdminStats,
+  getAdminStatsTimeseries,
+  getUserStatsTimeseries,
+};

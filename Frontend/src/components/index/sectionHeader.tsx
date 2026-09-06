@@ -25,8 +25,8 @@ export default function SectionHeader({
     Boolean(linkHref) && (itemCount === undefined || itemCount >= linkThreshold);
 
   return (
-    <div className="flex items-end justify-between mb-8 gap-4">
-      <div className="space-y-1.5">
+    <div className="flex flex-wrap items-end justify-between mb-8 gap-x-4 gap-y-3">
+      <div className="space-y-1.5 min-w-0">
         <div className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-widest text-primary-600 dark:text-primary-400">
           {icon && <span className="text-lg">{icon}</span>}
           {eyebrow}

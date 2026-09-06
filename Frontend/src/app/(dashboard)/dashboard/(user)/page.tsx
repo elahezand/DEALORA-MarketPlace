@@ -1,21 +1,19 @@
 import Link from "next/link";
-import Stats from "@/app/(dashboard)/components/(user)/index/Stats";
 import Orders from "@/app/(dashboard)/components/(user)/index/RecentOrders";
 import Listings from "@/app/(dashboard)/components/(user)/index/RecentListings";
 import ProfileBanner from "@/app/(dashboard)/components/(user)/index/ProfileBanner";
+import CartPreview from "@/app/(dashboard)/components/(user)/index/CartPreview";
+import MiniCalendar from "@/app/(dashboard)/components/shared/MiniCalendar";
 import { OrdersResponse } from "@/types/Order";
 import MyListingsResponse from "@/types/Listings";
 import { useAuthServerData } from "@/utils/hooks/useServerData";
 
-interface FavoritesCountResponse {
-  count: number;
-}
+
 
 export default async function DashboardPage() {
-  const [orders, listings, favoritesCount] = await Promise.all([
+  const [orders, listings] = await Promise.all([
     useAuthServerData<OrdersResponse>("/orders/my"),
     useAuthServerData<MyListingsResponse>("/listings/my"),
-    useAuthServerData<FavoritesCountResponse>("/wishList/count"),
   ]);
 
   const orderList = orders?.data?.data ?? [];
@@ -40,20 +38,15 @@ export default async function DashboardPage() {
       </div>
       {/* Profile completion banner */}
       <ProfileBanner />
-      <Stats
-        ordersCount={orderList.length}
-        ordersHasMore={!!orders?.data?.pagination?.hasMore}
-        listingsCount={listingList.length}
-        listingsHasMore={!!listings?.data?.pagination?.hasMore}
-        activeListingsCount={
-          listingList.filter((l) => l.status === "active" || l.status === "accepted").length
-        }
-        favoritesCount={favoritesCount?.count ?? 0}
-      />
       {/* Orders + Listings side by side on large screens */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Orders initialData={orderList} />
         <Listings initialData={listingList} />
+      </div>
+      {/* Cart preview + calendar side by side */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-6">
+        <CartPreview />
+        <MiniCalendar compact />
       </div>
     </div>
   );

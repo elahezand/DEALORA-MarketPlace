@@ -2,6 +2,7 @@ const { Types } = require("mongoose");
 const Cart = require("../models/cart");
 const Order = require("../models/order");
 const Listing = require("../models/listing");
+const Coupon = require("../models/coupon");
 const { paginate } = require("../utils/helper");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -94,6 +95,16 @@ const verify = async (authority) => {
   order.payment.refId = result.refId;
   order.payment.paidAt = new Date();
   order.status = "processing";
+
+  // Coupon usage limits are only checked at cart/validation time, so the
+  // actual usage count must be incremented here on successful payment,
+  // otherwise usageLimit is never enforced and a coupon can be reused forever.
+  if (order.coupon?.couponRef) {
+    await Coupon.updateOne(
+      { _id: order.coupon.couponRef },
+      { $inc: { usedCount: 1 } }
+    );
+  }
 
   await Promise.all(
     order.items.map(async (item) => {

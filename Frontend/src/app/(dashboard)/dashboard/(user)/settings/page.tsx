@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@heroui/react";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
-import AddNewAddress from "@/components/cart/AddNewAddress";
-import { AddressCard } from "@/components/cart/AddressCart";
+import AddNewAddress from "@/components/shared/address/AddNewAddress";
+import { AddressCard } from "@/components/shared/address/AddressCard";
 import { PersonalInfoForm } from "@/app/(dashboard)/components/shared/PersonalInfoForm";
 import { IAddress } from "@/types/User";
 

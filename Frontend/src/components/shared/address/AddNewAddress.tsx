@@ -88,11 +88,9 @@ export default function AddNewAddress({
     };
 
     if (!isAdding) return null;
- 
+
     return (
-        <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="card p-6 space-y-6 animate-in fade-in slide-in-from-top-2">
+        <div className="card p-6 space-y-6 animate-in fade-in slide-in-from-top-2">
             <h3 className="text-sm font-bold tracking-tight">
                 {editingAddress ? "Edit Address" : "Add New Address"}
             </h3>
@@ -105,7 +103,7 @@ export default function AddNewAddress({
 
                 <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider">City</label>
-                    <Input size="sm" placeholder="Tehran" {...register("city")} isInvalid={!!errors.city} />
+                    <Input size="sm" placeholder="Enter your city" {...register("city")} isInvalid={!!errors.city} />
                 </div>
 
                 <div className="flex flex-col gap-1.5 md:col-span-2">
@@ -115,7 +113,7 @@ export default function AddNewAddress({
 
                 <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider">State</label>
-                    <Input size="sm" placeholder="Tehran" {...register("state")} isInvalid={!!errors.state} />
+                    <Input size="sm" placeholder="Enter your state / province" {...register("state")} isInvalid={!!errors.state} />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -126,10 +124,11 @@ export default function AddNewAddress({
 
             <div className="flex items-center gap-3 pt-2">
                 <Button
-                    type="submit"
+                    type="button"
                     size="sm"
                     className="btn-primary"
                     isLoading={isPending || updating}
+                    onPress={handleSubmit(onSubmit)}
                 >
                     {editingAddress ? "Update" : "Save"}
                 </Button>
@@ -145,6 +144,6 @@ export default function AddNewAddress({
                     Cancel
                 </Button>
             </div>
-        </form>
+        </div>
     );
 }

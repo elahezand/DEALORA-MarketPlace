@@ -23,7 +23,7 @@ exports.get = async (req, res, next) => {
 // CREATE
 exports.post = async (req, res, next) => {
   try {
-    const data = await service.create(req.parsed.data);
+    const data = await service.create({ ...req.parsed.data, admin: req.user._id });
     res.status(201).json(data);
   } catch (err) {
     next(err);

@@ -3,6 +3,7 @@
 import Stats from "@/app/(dashboard)/components/(admin)/index/Stats";
 import RecentUsers from "@/app/(dashboard)/components/(admin)/index/RecentUsers";
 import RecentStores from "@/app/(dashboard)/components/(admin)/index/RecentStores";
+import RecentOffers from "@/app/(dashboard)/components/(admin)/index/RecentOffers";
 import RecentOrders from "@/app/(dashboard)/components/(admin)/index/RecentOrders";
 
 export default function AdminDashboardPage() {
@@ -16,11 +17,12 @@ export default function AdminDashboardPage() {
                     </h1>
                 </div>
             </div>
-            <Stats />
+            <Stats/>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <RecentUsers />
                 <RecentStores />
             </div>
+            <RecentOffers />
             <RecentOrders />
         </div>
     );

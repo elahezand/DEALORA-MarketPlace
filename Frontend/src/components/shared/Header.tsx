@@ -16,7 +16,7 @@ import {
 } from "@heroui/react";
 import dynamic from "next/dynamic";
 import CartIcon from "./CartIcon";
-import { HiOutlineUser } from "react-icons/hi2";
+import { HiOutlineUser, HiOutlineBellAlert } from "react-icons/hi2";
 import { usePathname, useRouter } from "next/navigation";
 import { api } from "@/services/interceptor";
 import clsx from "clsx";
@@ -29,6 +29,8 @@ import Logo from "./Logo";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCreateNotification } from "@/services/Notifications/useCreateNotification";
+import { AdminFormModal, FormField, textareaClass } from "@/app/(dashboard)/components/(admin)/shared/AdminFormModal";
 
 const AuthModal = dynamic(() => import("../modals/AuthModal"), { ssr: false });
 const LocationsModal = dynamic(() => import("../modals/locations"), { ssr: false });
@@ -50,6 +52,20 @@ export default function Header() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const isAdmin = !!user?.role?.includes("ADMIN");
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [noteMsg, setNoteMsg] = useState("");
+  const { mutate: createNotification, isPending: isCreatingNote } = useCreateNotification(() => {
+    setIsNoteModalOpen(false);
+    setNoteMsg("");
+  });
+
+  function handleCreateNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!noteMsg.trim()) return;
+    createNotification({ msg: noteMsg.trim(), admin: user?._id });
+  }
 
   const navItems: NavItem[] = useMemo(
     () => [
@@ -177,6 +193,18 @@ export default function Header() {
           <NavbarItem className="text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors">
             <CartIcon />
           </NavbarItem>
+          {isAdmin && (
+            <NavbarItem>
+              <button
+                type="button"
+                onClick={() => setIsNoteModalOpen(true)}
+                title="New notification"
+                className="relative w-10 h-10 flex items-center justify-center rounded-full text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
+              >
+                <HiOutlineBellAlert size={20} />
+              </button>
+            </NavbarItem>
+          )}
           <ThemeSwitcher />
           {user ? (
             <Dropdown placement="bottom-end">
@@ -330,6 +358,48 @@ export default function Header() {
       </Navbar>
       <AuthModal isOpen={isAuthOpen} setIsOpen={setIsAuthOpen} />
       <LocationsModal isOpen={isLocationsModalOpen} setIsOpen={setIsLocationsModalOpen} />
+
+      {isAdmin && (
+        <AdminFormModal
+          isOpen={isNoteModalOpen}
+          onClose={() => setIsNoteModalOpen(false)}
+          title="New Notification"
+          icon={HiOutlineBellAlert}
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setIsNoteModalOpen(false)}
+                className="text-xs font-bold px-4 h-9 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="header-note-form"
+                disabled={isCreatingNote || !noteMsg.trim()}
+                className="btn-primary !w-auto px-5 h-9 text-xs disabled:opacity-50"
+              >
+                {isCreatingNote ? "Sending..." : "Send"}
+              </button>
+            </>
+          }
+        >
+          <form id="header-note-form" onSubmit={handleCreateNote} className="flex flex-col gap-4">
+            <FormField label="Message">
+              <textarea
+                className={textareaClass}
+                rows={3}
+                value={noteMsg}
+                onChange={(e) => setNoteMsg(e.target.value)}
+                placeholder="Write a quick notification..."
+                required
+                autoFocus
+              />
+            </FormField>
+          </form>
+        </AdminFormModal>
+      )}
     </div>
   );
 }

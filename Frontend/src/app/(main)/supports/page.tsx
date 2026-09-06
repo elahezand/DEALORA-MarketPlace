@@ -1,28 +1,25 @@
 "use client"
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useGet } from "@/utils/hooks/useReactQueryHooks";
+import { useGetArticles } from "@/services/Article/useGetArticles";
+import { IArticle } from "@/types/Article";
+import { CategoriesTypeResponse, ICategory } from "@/types/Category";
 
 export default function SupportSection() {
-  const articles = [
-    { id: 1, title: "How to post an ad", excerpt: "Step-by-step guide to creating a listing: choose category, write a title and add photos." },
-    { id: 2, title: "Safe trading guide", excerpt: "Tips for meeting in person, secure payments, and spotting scams." },
-    { id: 3, title: "Managing your ads", excerpt: "Edit, delete and renew your listings from your dashboard." },
-    { id: 4, title: "Listing rules & policies", excerpt: "What is allowed, what gets removed, and basic legal/ethical notes." },
-    { id: 5, title: "Payments & promotions", excerpt: "Available packages, payment methods, and refund conditions." },
-  ];
-
-  const categories = [
-    { id: "cars", name: "Cars" },
-    { id: "real-estate", name: "Real Estate" },
-    { id: "electronics", name: "Electronics" },
-    { id: "home", name: "Home & Garden" },
-    { id: "services", name: "Services" },
-    { id: "jobs", name: "Jobs" },
-  ];
+  const router = useRouter();
 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const { data: articlesData, isLoading: isLoadingArticles } = useGetArticles({ limit: 20 });
+  const articles: IArticle[] = articlesData?.pages?.[0]?.data?.data ?? [];
+
+  const { data: categoriesData, isLoading: isLoadingCategories } =
+    useGet<CategoriesTypeResponse>("/categories");
+  const categories: ICategory[] = (categoriesData?.data ?? []).slice(0, 6);
 
   const matches = query
     ? articles.filter(
@@ -94,9 +91,9 @@ export default function SupportSection() {
           >
             {matches.map((m) => (
               <div
-                key={m.id}
+                key={m._id}
                 role="option"
-                onClick={() => (window.location.href = `/contact-us`)}
+                onClick={() => router.push(`/supports/article/${m._id}`)}
                 className="px-5 py-3 hover:bg-[var(--background-soft)] cursor-pointer transition duration-150 group"
               >
                 <div className="font-bold text-[var(--foreground)] group-hover:text-[var(--primary-500)] dark:group-hover:text-[var(--accent-400)] text-sm transition duration-150">
@@ -125,35 +122,50 @@ export default function SupportSection() {
             </h3>
           </div>
 
-          <section className="grid gap-4 text-left">
-            {articles.slice(0, 4).map((a) => (
-              <article
-                key={a.id}
-                className="bg-[var(--background-soft)] border border-[var(--border)] p-5 rounded-xl hover:shadow-[var(--card-shadow-2)] transition duration-200 flex flex-col justify-between min-h-[140px]"
-              >
-                <div>
-                  <h4 className="text-[var(--foreground)] font-bold text-base leading-snug">
-                    {a.title}
-                  </h4>
-                  <p className="text-[var(--foreground-muted)] text-xs mt-1.5 line-clamp-2 leading-relaxed">
-                    {a.excerpt}
-                  </p>
-                </div>
+          {isLoadingArticles ? (
+            <div className="grid gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-[140px] rounded-xl bg-[var(--background-soft)] border border-[var(--border)] animate-pulse" />
+              ))}
+            </div>
+          ) : articles.length === 0 ? (
+            <p className="text-sm text-[var(--foreground-muted)] py-8 text-center">
+              No articles yet — check back soon.
+            </p>
+          ) : (
+            <section className="grid gap-4 text-left">
+              {articles.slice(0, 4).map((a) => (
+                <article
+                  key={a._id}
+                  className="bg-[var(--background-soft)] border border-[var(--border)] p-5 rounded-xl hover:shadow-[var(--card-shadow-2)] transition duration-200 flex flex-col justify-between min-h-[140px]"
+                >
+                  <div>
+                    <h4 className="text-[var(--foreground)] font-bold text-base leading-snug">
+                      {a.title}
+                    </h4>
+                    <p className="text-[var(--foreground-muted)] text-xs mt-1.5 line-clamp-2 leading-relaxed">
+                      {a.excerpt}
+                    </p>
+                  </div>
 
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-[var(--border)]">
-                  <small className="text-[var(--foreground-subtle)] font-semibold uppercase tracking-wider text-[10px]">
-                    Updated recently
-                  </small>
-                  <Link
-                    href="/contact-us"
-                    className="btn-primary !h-8 !px-4 !text-[12px] font-bold"
-                  >
-                    Read more
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </section>
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-[var(--border)]">
+                    <small className="text-[var(--foreground-subtle)] font-semibold uppercase tracking-wider text-[10px]">
+                      {new Date(a.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </small>
+                    <Link
+                      href={`/supports/article/${a._id}`}
+                      className="btn-primary !h-8 !px-4 !text-[12px] font-bold"
+                    >
+                      Read more
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
         </div>
 
         {/* PLATFORM CATEGORIES */}
@@ -164,24 +176,36 @@ export default function SupportSection() {
             </h3>
           </div>
 
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 text-left">
-            {categories.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between bg-[var(--background-soft)] border border-[var(--border)] p-3.5 rounded-xl hover:shadow-[var(--card-shadow-2)] transition duration-150"
-              >
-                <span className="text-[var(--foreground)] text-sm font-bold pl-1">
-                  {c.name}
-                </span>
-                <Link
-                  href="/posts"
-                  className="btn-primary !h-8 !px-4 !text-[12px] font-bold"
+          {isLoadingCategories ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-[52px] rounded-xl bg-[var(--background-soft)] border border-[var(--border)] animate-pulse" />
+              ))}
+            </div>
+          ) : categories.length === 0 ? (
+            <p className="text-sm text-[var(--foreground-muted)] py-4 text-center">
+              No categories yet.
+            </p>
+          ) : (
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 text-left">
+              {categories.map((c) => (
+                <div
+                  key={c._id}
+                  className="flex items-center justify-between bg-[var(--background-soft)] border border-[var(--border)] p-3.5 rounded-xl hover:shadow-[var(--card-shadow-2)] transition duration-150"
                 >
-                  Explore
-                </Link>
-              </div>
-            ))}
-          </section>
+                  <span className="text-[var(--foreground)] text-sm font-bold pl-1">
+                    {c.title}
+                  </span>
+                  <Link
+                    href={`/posts?categoryId=${c._id}`}
+                    className="btn-primary !h-8 !px-4 !text-[12px] font-bold"
+                  >
+                    Explore
+                  </Link>
+                </div>
+              ))}
+            </section>
+          )}
         </div>
 
       </div>

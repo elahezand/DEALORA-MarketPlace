@@ -3,7 +3,10 @@ const cacheMiddleware = (ttl = 300) => {
   return async (req, res, next) => {
     if (req.method !== 'GET') return next();
 
-    const cacheKey = `cache:${req.originalUrl}`;
+    // Scope the cache per-user for authenticated routes (e.g. "/offers/me"),
+    // otherwise every user would share one cached response keyed only by URL.
+    const userPart = req.user?._id ? `user:${req.user._id}` : "public";
+    const cacheKey = `cache:${userPart}:${req.originalUrl}`;
     try {
       const cached = await redis.get(cacheKey);
 

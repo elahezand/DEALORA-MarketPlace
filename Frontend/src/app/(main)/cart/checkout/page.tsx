@@ -11,8 +11,8 @@ import { ShieldCheck } from "lucide-react";
 import { useGetProfile } from '@/services/Profile/useGetProfile';
 import { IAddress } from '@/types/User';
 import { CartItem } from '@/types/Cart';
-import { AddressCard } from '@/components/cart/AddressCart';
-import AddNewAddress from '@/components/cart/AddNewAddress';
+import { AddressCard } from '@/components/shared/address/AddressCard';
+import AddNewAddress from '@/components/shared/address/AddNewAddress';
 
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;

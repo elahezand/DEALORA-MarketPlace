@@ -42,8 +42,23 @@ const createUserSchema = z.object({
 
 const updateUserSchema = createUserSchema.partial();
 
+/*
+ * Used for PUT /users/me/profile.
+ * Deliberately excludes "role", "refreshToken" and "phone":
+ * those must never be settable by the user themselves through
+ * a generic profile-update endpoint (role -> privilege escalation,
+ * refreshToken -> session hijack/bypass, phone -> identity tied to OTP auth).
+ */
+const updateMyProfileSchema = z.object({
+  username: z.string().min(3).max(30).optional(),
+  email: z.string().email({ message: "Invalid email" }).optional(),
+  addresses: z.array(addressSchema).optional(),
+  profilePicture: z.string().url().optional(),
+});
+
 module.exports = {
   createUserSchema,
   updateUserSchema,
+  updateMyProfileSchema,
   addressSchema,
 };

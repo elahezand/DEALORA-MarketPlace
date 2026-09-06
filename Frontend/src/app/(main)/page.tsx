@@ -167,8 +167,8 @@ export default async function Page() {
         </div>
       </Section>
 
-      {/* ── DISCOVER TABS (soft tone): Best Sellers / Trending / Free Shipping / Brand New ── */}
-      <Section tone="soft">
+      {/* ── DISCOVER TABS (accent tone): Best Sellers / Trending / Free Shipping / Brand New ── */}
+      <Section tone="accent">
         <DiscoverTabs listings={allListings} />
       </Section>
 
@@ -203,8 +203,18 @@ export default async function Page() {
             </div>
             <h3 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">Ready to clear out some space?</h3>
             <p className="text-sm text-foreground-muted leading-relaxed">List your items in under 2 minutes for free. Our AI smart search will match your product with local buyers instantly.</p>
+            <p className="text-sm text-foreground-muted">
+              Selling more than a few items?{" "}
+              <Link
+                href="/create-shop"
+                className="font-bold text-primary-600 dark:text-primary-400 hover:underline underline-offset-2"
+              >
+                Open your own shop →
+              </Link>
+            </p>
           </div>
           <Link href="/posts/new" className="relative z-10 px-8 py-3 rounded-lg font-bold
+                 w-full md:w-auto justify-center
                  bg-primary-600 dark:bg-primary-500
                  text-white shadow-lg
                  hover:bg-primary-700 dark:hover:bg-primary-600

@@ -47,4 +47,42 @@ export const useGetAdminStats = () => {
     isError,
   };
 };
+
+export interface StatsTimeseries {
+  days: number;
+  labels: string[];
+  orders: number[];
+  newUsers?: number[];
+}
+
+interface GetTimeseriesResponse {
+  success: boolean;
+  data: StatsTimeseries;
+}
+
+export const useGetAdminStatsTimeseries = (days = 14) => {
+  const { data, isLoading, isError } = useGet<GetTimeseriesResponse>(
+    "/stats/admin/timeseries",
+    { days }
+  );
+
+  return {
+    timeseries: data?.data ?? null,
+    isLoading,
+    isError,
+  };
+};
+
+export const useGetUserStatsTimeseries = (days = 14) => {
+  const { data, isLoading, isError } = useGet<GetTimeseriesResponse>(
+    "/stats/me/timeseries",
+    { days }
+  );
+
+  return {
+    timeseries: data?.data ?? null,
+    isLoading,
+    isError,
+  };
+};
  

@@ -49,6 +49,11 @@ exports.postNewUser = async (req, res, next) => {
 exports.putUser = async (req, res, next) => {
   try {
     const updateData = { ...req.parsed.data };
+    // Never allow a user to change these on themselves via this endpoint,
+    // regardless of what the validation schema currently allows.
+    delete updateData.role;
+    delete updateData.refreshToken;
+    delete updateData.phone;
 
     if (req.file) {
       updateData.profilePicture = `/users/avatars/${req.file.filename}`;

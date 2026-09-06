@@ -18,6 +18,7 @@ import {
   HiOutlineChatBubbleLeftRight,
   HiOutlineFlag,
   HiOutlineLifebuoy,
+  HiOutlineNewspaper,
   HiOutlineEnvelope,
   HiOutlineBell,
   HiOutlineCog6Tooth,
@@ -70,6 +71,7 @@ const adminMenuGroups: AdminNavGroup[] = [
       { name: "Comments", href: "/dashboard/admin/comments", icon: HiOutlineChatBubbleLeftRight },
       { name: "Reports", href: "/dashboard/admin/reports", icon: HiOutlineFlag },
       { name: "Support", href: "/dashboard/admin/support", icon: HiOutlineLifebuoy },
+      { name: "Articles", href: "/dashboard/admin/articles", icon: HiOutlineNewspaper },
     ],
   },
   {

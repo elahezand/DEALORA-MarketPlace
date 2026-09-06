@@ -134,7 +134,7 @@ export default function LocationSearch() {
       <button
         onClick={handleSearch}
         disabled={isPending}
-       className="btn-primary ml-2"
+        className="btn-primary shrink-0 !w-11 sm:!w-12 !px-0 ml-2"
       >
         <IoSearch className="text-lg stroke-[2px]" />
       </button>

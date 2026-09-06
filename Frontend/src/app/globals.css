@@ -943,6 +943,66 @@ textarea:focus {
   background: var(--primary-400) !important;
 }
 
+/* ── Swiper navigation arrows: round blue buttons (site-wide) ── */
+
+.swiper-button-next,
+.swiper-button-prev {
+  width: 40px !important;
+  height: 40px !important;
+
+  margin-top: -20px !important;
+
+  border-radius: 999px !important;
+
+  background: var(--card-solid);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
+
+  color: var(--primary-600) !important;
+
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 15px !important;
+  font-weight: 700;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background: var(--primary-600);
+  border-color: var(--primary-600);
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28);
+  transform: scale(1.05);
+}
+
+.swiper-button-next.swiper-button-disabled,
+.swiper-button-prev.swiper-button-disabled {
+  opacity: 0.35;
+}
+
+.dark .swiper-button-next,
+.dark .swiper-button-prev {
+  background: var(--card-solid);
+  border-color: var(--border);
+  color: var(--primary-400) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dark .swiper-button-next:hover,
+.dark .swiper-button-prev:hover {
+  background: var(--primary-500);
+  border-color: var(--primary-500);
+  color: #ffffff !important;
+}
+
 
 /* =========================================================
    ERROR

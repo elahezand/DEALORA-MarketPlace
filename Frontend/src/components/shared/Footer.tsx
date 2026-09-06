@@ -13,7 +13,7 @@ interface NewsletterBannerProps {
 
 export function NewsletterBanner({ email, setEmail, handleSubscribe, isPending }: NewsletterBannerProps) {
   return (
-    <div className="absolute left-1/2 -top-28 w-full max-w-6xl -translate-x-1/2 px-4 z-30">
+    <div className="relative mb-10 lg:mb-0 lg:absolute lg:left-1/2 lg:-top-28 lg:w-full lg:max-w-6xl lg:-translate-x-1/2 lg:px-4 lg:z-30">
       <div className="page-card relative overflow-hidden p-8 sm:p-10">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
           <div className="max-w-lg">
@@ -90,10 +90,10 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="relative overflow-hidden pt-32 pb-12 bg-[var(--background-soft)]/40">
+    <footer className="relative overflow-hidden pt-8 lg:pt-32 pb-12 bg-[var(--background-soft)]/40">
       <div className="relative mx-auto max-w-7xl px-6">
         <NewsletterBanner email={email} setEmail={setEmail} handleSubscribe={handleSubscribe} isPending={isPending} />
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 pt-30 pb-12 md:gap-16">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 pt-4 lg:pt-30 pb-12 md:gap-16">
           <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
             <Logo showText className="h-[50px] w-[50px] object-contain sm:mt-4" />
             <p className="text-sm text-[var(--foreground-muted)] leading-relaxed">

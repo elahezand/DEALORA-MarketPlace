@@ -20,6 +20,7 @@ const validate = require("../middlewares/validate");
 const {
   createUserSchema,
   updateUserSchema,
+  updateMyProfileSchema,
   addressSchema,
 } = require("../validators/user");
 
@@ -35,7 +36,7 @@ userRouter.put(
   "/me/profile",
   authUser,
   upload.single("avatar"),
-  validate(updateUserSchema),
+  validate(updateMyProfileSchema),
   putUser
 );
 

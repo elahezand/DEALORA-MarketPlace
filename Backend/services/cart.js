@@ -97,8 +97,7 @@ const addToCart = async (userId, items) => {
   cart.pricing = totals.pricing;
 
   await cart.save();
-  console.log(cart);
-  
+
   return cart;
 };
 

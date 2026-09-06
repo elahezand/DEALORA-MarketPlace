@@ -30,6 +30,7 @@ const statsRouter = require("./routes/stats");
 const reportRouter = require("./routes/report");
 const chatRouter = require("./routes/chat");
 const withdrawalRouter = require("./routes/withdrawal");
+const articleRouter = require("./routes/article");
 
 const app = express();
 
@@ -106,6 +107,7 @@ const routes = [
   ["/reports", reportRouter],
   ["/chat", chatRouter],
   ["/withdrawals", withdrawalRouter],
+  ["/articles", articleRouter],
 ];
 
 routes.forEach(([routePath, router]) => {

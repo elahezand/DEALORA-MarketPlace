@@ -149,9 +149,6 @@ export default function CartPage() {
                         {offer?.store && (
                           <MetaItem label="Sold by" value={offerStoreName || "Store"} />
                         )}
-                        {offer?.condition && (
-                          <MetaItem label="Condition" value={offer.condition} />
-                        )}
                       </div>
                     </div>
 

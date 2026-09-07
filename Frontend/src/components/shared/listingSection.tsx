@@ -52,6 +52,7 @@ export default function ListingsSection({ listings }: Props) {
                 const title = item?.title || "Untitled";
                 const images = item?.images || [];
                 const condition = item.condition || "new";
+                const hasRating = !!item.metrics?.reviewsCount;
 
                 return (
                     <Link
@@ -146,6 +147,18 @@ export default function ListingsSection({ listings }: Props) {
                                     {condition}
                                 </span>
                             </div>
+
+                            {/* Rating badge — only when the listing has at least one review */}
+                            {hasRating && (
+                                <div className="absolute top-3 right-2 z-10">
+                                    <span className="px-2 py-0.5 text-[10px] font-bold tracking-wide
+                                                     rounded-md backdrop-blur-md bg-black/70
+                                                     text-white shadow-sm flex items-center gap-0.5">
+                                        <span className="text-amber-400">★</span>
+                                        {(item.metrics?.score ?? 0).toFixed(1)}
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         {/* ── DETAILS —── */}

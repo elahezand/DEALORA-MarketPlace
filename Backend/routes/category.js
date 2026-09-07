@@ -21,6 +21,12 @@ categoryRouter.get(
 );
 
 categoryRouter.get(
+    "/slug/:slug",
+    cacheMiddleware(300),
+    controller.getBySlug
+);
+
+categoryRouter.get(
     "/:id",
     validateObjectIdParam("id"),
     controller.getOne

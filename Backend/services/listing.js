@@ -22,7 +22,7 @@ async function getAllListings(query = {}) {
   });
 }
 
-/* === GET ALL (ADMIN — can filter/see any status, e.g. pending/rejected) === */
+/* === GET ALL (ADMIN — can filter/see any status=== */
 async function getAllListingsAdmin(query = {}) {
   const filters = await buildListingFilters(query, { isAdmin: true });
   const limit = Math.min(query.limit ? Number(query.limit) : 20, 100);
@@ -56,42 +56,8 @@ async function getListingById(id, query = {}) {
       status: "accepted",
       stock: { $gt: 0 },
     })
-      .populate("store", "_id name")
+      .populate("store", "_id name meta.ratings meta.reviewsCount")
       .lean({ virtuals: true });
-
-    const [aggregatedData] = await Listing.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(id) } },
-      {
-        $lookup: {
-          from: "comments",
-          localField: "_id",
-          foreignField: "product",
-          as: "comments",
-        },
-      },
-      {
-        $addFields: {
-          commentsCount: { $size: "$comments" },
-          score: {
-            $cond: [
-              { $gt: [{ $size: "$comments" }, 0] },
-              { $avg: "$comments.score" },
-              5,
-            ],
-          },
-        },
-      },
-      { $project: { comments: 0 } },
-    ]);
-
-    if (aggregatedData) {
-      listingData = {
-        ...aggregatedData,
-        "metrics.views": listingData.metrics?.views || 0,
-        categoryPath: listingData.categoryPath,
-        user: listingData.user,
-      };
-    }
 
     listingData.offers = offers;
 

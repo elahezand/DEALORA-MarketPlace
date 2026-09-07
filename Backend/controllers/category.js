@@ -22,6 +22,18 @@ exports.getOne = async (req, res, next) => {
   }
 };
 
+/* Public: look a category up by its slug*/
+exports.getBySlug = async (req, res, next) => {
+  try {
+    const data = await service.getCategoryBySlug(req.params.slug);
+    if (!data)
+      return next(new AppError(404, "Category not found"));
+    res.status(200).json({ success: true, data });
+  } catch (e) {
+    next(e);
+  }
+};
+
 exports.post = async (req, res, next) => {
   try {
     const category = await service.createCategory(req.parsed.data);

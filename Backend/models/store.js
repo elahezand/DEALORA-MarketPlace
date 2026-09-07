@@ -30,7 +30,6 @@ const storeSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     meta: {
       ratings: { type: Number, default: 0 },
-      reviewsCount: { type: Number, default: 0 },
     },
   },
   {

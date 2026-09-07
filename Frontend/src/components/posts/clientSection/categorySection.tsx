@@ -52,7 +52,7 @@ export default function CategorySection() {
                                 icon={item.icon}
                                 description={item.description}
                                 items={item.subCategories}
-                                id={item._id}
+                                slug={item.slug}
                             />
                         </div>
                     </li>

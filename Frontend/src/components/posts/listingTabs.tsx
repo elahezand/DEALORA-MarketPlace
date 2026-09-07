@@ -14,9 +14,12 @@ export default function ListingTypeTabs({ currentType }: ListingTypeTabsProps) {
   const searchParams = useSearchParams();
 
   const handleTabChange = (type: ListingType) => {
-    const params = new URLSearchParams(searchParams); 
+    const params = new URLSearchParams(searchParams);
     params.set("listingType", type);
-    params.delete("page"); 
+    params.delete("page");
+    if (type === "user_ad") {
+      params.delete("rating");
+    }
     router.push(`?${params.toString()}`, { scroll: false });
   };
 

@@ -60,6 +60,8 @@ export interface ListingProps {
   metrics: {
     views: number;
     sold?: number;
+    score?: number;
+    reviewsCount?: number;
   };
 
   shortIdentifier?: string;

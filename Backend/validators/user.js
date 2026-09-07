@@ -13,10 +13,6 @@ const citySetByStateKey = Object.fromEntries(
 const addressSchema = z.object({
   name: z.string().min(1),
   postalCode: z.string().min(4).max(20),
-  location: z.object({
-    lat: z.number().min(-90).max(90),
-    lng: z.number().min(-180).max(180),
-  }),
   address: z.string().min(5),
   state: z.string().min(1),
   city: z.string().min(1),
@@ -42,13 +38,6 @@ const createUserSchema = z.object({
 
 const updateUserSchema = createUserSchema.partial();
 
-/*
- * Used for PUT /users/me/profile.
- * Deliberately excludes "role", "refreshToken" and "phone":
- * those must never be settable by the user themselves through
- * a generic profile-update endpoint (role -> privilege escalation,
- * refreshToken -> session hijack/bypass, phone -> identity tied to OTP auth).
- */
 const updateMyProfileSchema = z.object({
   username: z.string().min(3).max(30).optional(),
   email: z.string().email({ message: "Invalid email" }).optional(),

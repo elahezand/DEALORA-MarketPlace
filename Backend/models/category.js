@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const slugify = require("slugify");
 const { Schema } = mongoose;
 
 const optionSchema = new Schema(
@@ -68,7 +69,16 @@ const categorySchema = new Schema(
   }
 );
 
-categorySchema.index({ slug: 1, parent: 1 }, { unique: true });
+
+categorySchema.index({ slug: 1 }, { unique: true });
+categorySchema.pre("validate", function (next) {
+  if (!this.slug && this.title) {
+    this.slug = slugify(this.title, { lower: true, strict: true });
+  } else if (this.slug) {
+    this.slug = slugify(this.slug, { lower: true, strict: true });
+  }
+  next();
+});
 
 categorySchema.virtual("children", {
   ref: "Category",

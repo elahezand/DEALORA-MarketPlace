@@ -10,7 +10,6 @@ const createOfferSchema = z.object({
     seller: objectId,
     store: objectId,
     product: objectId,
-    condition: z.enum(["new", "used"]).default("new"),
     price: z.number().nonnegative(),
     discount: z.number().min(0).max(100).default(0),
     stock: z.number().int().min(1),

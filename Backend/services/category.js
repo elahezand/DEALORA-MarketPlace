@@ -1,5 +1,4 @@
 const Category = require("../models/category");
-const { all } = require("../routes/category");
 const AppError = require("../utils/AppError");
 
 /*  tree builder  */
@@ -17,8 +16,7 @@ const getAllCategories = async () => {
     return buildTree(categories);
 };
 
-const getCategoryById = async (id) => {
-    const category = await Category.findById(id).lean();
+const withInheritedFilters = async (category) => {
     if (!category) return null;
 
     let allFilters = [...(category.filters || [])];
@@ -45,6 +43,19 @@ const getCategoryById = async (id) => {
         filters: uniqueFilters
     };
 };
+
+const getCategoryById = async (id) => {
+    const category = await Category.findById(id).lean();
+    if (!category) return null;
+    return withInheritedFilters(category);
+};
+
+/* Used for public, slug-based */
+const getCategoryBySlug = async (slug) => {
+    const category = await Category.findOne({ slug }).lean();
+    if (!category) return null;
+    return withInheritedFilters(category);
+};
 /* create */
 const createCategory = async (data) => {
     try {
@@ -58,7 +69,14 @@ const createCategory = async (data) => {
 };
 
 const updateCategory = async (id, data) => {
-    return Category.findByIdAndUpdate(id, { $set: data }, { new: true });
+    try {
+        return await Category.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
+    } catch (e) {
+        if (e.code === 11000) {
+            throw new AppError(409, "A category with this slug already exists");
+        }
+        throw e;
+    }
 };
 
 /*  delete */
@@ -74,6 +92,7 @@ const deleteCategoryRecursive = async (id) => {
 module.exports = {
     getAllCategories,
     getCategoryById,
+    getCategoryBySlug,
     createCategory,
     updateCategory,
     deleteCategory: deleteCategoryRecursive,

@@ -23,13 +23,6 @@ const offerSellerSchema = new mongoose.Schema(
       index: true,
     },
 
-    condition: {
-      type: String,
-      enum: ["new", "used"],
-      default: "new",
-      index: true,
-    },
-
     price: {
       type: Number,
       required: true,

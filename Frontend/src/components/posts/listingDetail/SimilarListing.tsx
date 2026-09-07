@@ -67,7 +67,7 @@ export default function SimilarListing({ listings }: SimilarListingProps) {
 
                                     <div className="flex items-center justify-between pt-1 border-t border-[var(--border)]/40">
                                         <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[var(--primary-50)] text-[var(--primary-600)] dark:bg-[var(--neutral-900)] dark:text-[var(--accent-300)] border border-[var(--border)]">
-                                            {item.condition || "Used"}
+                                            {item.condition === "used" ? "Used" : "New"}
                                         </span>
                                     </div>
                                 </div>

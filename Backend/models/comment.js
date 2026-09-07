@@ -126,5 +126,87 @@ commentSchema.index({ listing: 1, status: 1, parentId: 1 });
 commentSchema.index({ user: 1, createdAt: -1 });
 commentSchema.index({ parentId: 1, createdAt: 1 });
 
+async function syncListingScore(listingId) {
+  if (!listingId) return;
+
+  const [agg] = await Comment.aggregate([
+    {
+      $match: {
+        listing: new mongoose.Types.ObjectId(listingId),
+        status: "approved",
+        parentId: null,
+        rating: { $ne: null },
+      },
+    },
+    { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
+  ]);
+
+  const score = agg ? Math.round(agg.avgRating * 10) / 10 : 0;
+  const reviewsCount = agg ? agg.count : 0;
+
+  const Listing = mongoose.model("Listing");
+  const listing = await Listing.findByIdAndUpdate(
+    listingId,
+    {
+      "metrics.score": score,
+      "metrics.reviewsCount": reviewsCount
+    },
+    { new: true }
+  )
+    .select("store listingType")
+    .lean();
+
+  if (listing?.listingType === "store_product" && listing.store) {
+    await syncStoreScore(listing.store);
+  }
+}
+async function syncStoreScore(storeId) {
+  if (!storeId) return;
+
+  const Listing = mongoose.model("Listing");
+  const Store = mongoose.model("Store");
+
+  const listingIds = await Listing.find({
+    store: storeId,
+    listingType: "store_product",
+  }).distinct("_id");
+
+  if (!listingIds.length) {
+    await Store.findByIdAndUpdate(storeId, {
+      "meta.ratings": 0,
+    });
+    return;
+  }
+
+  const [agg] = await Listing.aggregate([{
+    $match: {
+      _id: { $in: listingIds },
+      "metrics.reviewsCount": { $gt: 0 },
+    },
+  },
+  { $group: { _id: null, avgRating: { $avg: "$metrics.score" } } },
+  ]);
+
+  await Store.findByIdAndUpdate(storeId, {
+    "meta.ratings": agg ? Math.round(agg.avgRating * 10) / 10 : 0,
+  });
+}
+
+commentSchema.post("save", async function () {
+  try {
+    await syncListingScore(this.listing);
+  } catch (error) {
+    console.error("Error syncing listing score:", error);
+  }
+});
+commentSchema.post("findOneAndUpdate", async function () {
+  const doc = await this.model.findOne(this.getQuery());
+  if (doc) await syncListingScore(doc.listing);
+});
+commentSchema.post("updateOne", async function () {
+  const doc = await this.model.findOne(this.getQuery());
+  if (doc) await syncListingScore(doc.listing);
+});
+
 const Comment = mongoose.models.Comment || mongoose.model("Comment", commentSchema);
 module.exports = Comment;

@@ -19,20 +19,13 @@ export default function LocationSearch() {
   const handleSelectCity = (state: string | null) => {
     setSelectedCity(state);
     setCityOpen(false);
-    if (state) {
-      startTransition(() => {
-        localStorage.setItem("city", JSON.stringify({ state }));
-      });
-    } else {
-      localStorage.removeItem("city");
-    }
   };
 
   const handleSearch = () => {
     startTransition(() => {
       const params = new URLSearchParams();
       if (search.trim()) params.set("q", search.trim());
-      if (selectedCity) params.set("city", selectedCity);
+      if (selectedCity) params.set("cities", selectedCity);
       router.push(`/posts?${params.toString()}`);
     });
   };

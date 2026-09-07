@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Store = require("../models/store");
+const Category = require("../models/category");
 const AppError = require("./AppError");
 
 const Offer = require("../models/offerSeller");
@@ -103,17 +103,39 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
   }
 
   // 4. Category Filter
-  if (query.categoryId && isValidId(query.categoryId)) {
+  // Public/front-end URLs now carry the category *slug* (?category=mobile-phones)
+  // so links, bookmarks and shares don't leak internal ObjectIds. `categoryId`
+  // is still supported for internal/back-office callers that already have the id.
+  if (query.category) {
+    const categoryDoc = await Category.findOne({ slug: query.category })
+      .select("_id")
+      .lean();
+    if (categoryDoc) {
+      filters.categoryPath = categoryDoc._id;
+    } else {
+      // Unknown slug -> no results, rather than silently ignoring the filter.
+      filters.categoryPath = null;
+    }
+  } else if (query.categoryId && isValidId(query.categoryId)) {
     filters.categoryPath = new mongoose.Types.ObjectId(query.categoryId);
   }
 
   // 5. Price Range Filter -- matches Listing.price: Number
   if (query.price) {
     if (query.price.includes("-")) {
-      const [min, max] = query.price.split("-").map(Number);
-      filters.price = {};
-      if (!isNaN(min)) filters.price.$gte = min;
-      if (!isNaN(max)) filters.price.$lte = max;
+      // "100-500" -> {gte:100, lte:500} | "100-" -> {gte:100} | "-500" -> {lte:500}
+      // NOTE: previously this did `.split("-").map(Number)`, and Number("") is 0
+      // (not NaN), so a min-only filter like "100-" silently became {gte:100, lte:0} —
+      // an impossible range that always returned 0 results. Empty sides must be
+      // treated as "no bound", not as 0.
+      const [minStr, maxStr] = query.price.split("-");
+      const min = minStr === "" ? undefined : Number(minStr);
+      const max = maxStr === "" ? undefined : Number(maxStr);
+
+      const priceFilter = {};
+      if (min !== undefined && !isNaN(min)) priceFilter.$gte = min;
+      if (max !== undefined && !isNaN(max)) priceFilter.$lte = max;
+      if (Object.keys(priceFilter).length > 0) filters.price = priceFilter;
     } else {
       const p = Number(query.price);
       if (!isNaN(p)) filters.price = p;
@@ -129,23 +151,29 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     }
   }
 
-  if (query.condition) {
+  // 6. Condition Filter ("new" / "used")
+  // The listing itself is what has a condition (a store creates a separate
+  // catalog listing per condition, e.g. "iPhone 15 (New)" vs "iPhone 15
+  // (Used)" are two different Listings). Sellers just place price/stock
+  // offers against an existing listing — they don't set their own condition
+  // — so Listing.condition is the single source of truth for both types.
+  if (query.condition && ["new", "used"].includes(query.condition)) {
     filters.condition = query.condition;
   }
-  if (query.rating) {
+  // 7. Rating Filter
+  // Ratings come from user comments (Comment.rating, averaged into
+  // Listing.metrics.score whenever a comment is approved/rejected/deleted —
+  // see models/comment.js). Reviews can only be left on store products (a
+  // classified ad, user_ad, is a single owner's own item with no review
+  // concept), so the rating filter is meaningless there and is ignored.
+  if (query.rating && query.listingType !== "user_ad") {
     const minRating = Number(query.rating);
     if (!isNaN(minRating)) {
-      const matchingStores = await Store.find({
-        "meta.ratings": { $gte: minRating },
-      })
-        .select("_id")
-        .lean();
-
-      filters.store = { $in: matchingStores.map((s) => s._id) };
+      filters["metrics.score"] = { $gte: minRating };
     }
   }
 
-  // 6. Location Filters
+  // 8. Location Filters
   if (query.state) {
     filters["location.state"] = { $regex: new RegExp(escapeRegex(query.state), "i") };
   }
@@ -164,7 +192,7 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     filters["location.city"] = { $regex: new RegExp(escapeRegex(query.city), "i") };
   }
 
-  // 7. Variants attributes (color, size)
+  // 9. Variants attributes (color, size)
   for (const [key, value] of Object.entries(query)) {
     if (["color", "size"].includes(key)) {
       filters[`variants.attributes.${key}`] = value;
@@ -181,7 +209,7 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
       filters[`specs.${key}`] = value;
     }
   }
-  // 9. Advanced Smart Search Query (q)
+  // 10. Advanced Smart Search Query (q)
   if (query.q) {
     const normalizeText = (str) => {
       return str

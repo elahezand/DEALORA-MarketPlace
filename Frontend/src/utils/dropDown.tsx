@@ -7,11 +7,13 @@ import Link from "next/link";
 interface SubCategory {
     _id: string;
     title: string;
+    slug: string;
 }
 
 interface Item {
     _id: string;
     title: string;
+    slug: string;
     subCategories?: SubCategory[];
 }
 
@@ -19,7 +21,7 @@ interface DropdownProps {
     title: string;
     items?: Item[];
     description?: string;
-    id: string;
+    slug: string;
     icon?: {
         svgCode?: string;
     };
@@ -29,7 +31,7 @@ export default function Dropdown({
     title,
     items,
     description,
-    id,
+    slug,
     icon
 }: DropdownProps) {
     const [open, setOpen] = useState(false);
@@ -43,7 +45,7 @@ export default function Dropdown({
                         className="w-8 h-8 flex items-center justify-center text-[var(--primary-500)] dark:text-[var(--accent-400)] transition-colors"
                     />
                     <Link
-                        href={`/posts?categoryId=${id}`}
+                        href={`/posts?category=${slug}`}
                         className="block flex-1 text-[var(--foreground)] font-semibold text-[17px] hover:text-[var(--primary-600)] dark:hover:text-[var(--accent-400)] transition-colors"
                     >
                         {title}
@@ -69,7 +71,7 @@ export default function Dropdown({
                     {items.map((item) => (
                         <li key={item._id} className="group/sub">
                             <Link
-                                href={`/posts?categoryId=${item._id}`}
+                                href={`/posts?category=${item.slug}`}
                                 className="block py-1 text-[var(--foreground)] opacity-90 font-medium text-[15px] hover:text-[var(--primary-500)] dark:hover:text-[var(--accent-400)] cursor-pointer transition-colors"
                             >
                                 {item.title}
@@ -80,7 +82,7 @@ export default function Dropdown({
                                     {item.subCategories.map((s) => (
                                         <li key={s._id}>
                                             <Link
-                                                href={`/posts?categoryId=${s._id}`}
+                                                href={`/posts?category=${s.slug}`}
                                                 className="block py-1 text-[var(--foreground-muted)] text-[13px] hover:text-[var(--foreground)] cursor-pointer transition-colors"
                                             >
                                                 {s.title}

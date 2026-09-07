@@ -197,7 +197,7 @@ export default function SupportSection() {
                     {c.title}
                   </span>
                   <Link
-                    href={`/posts?categoryId=${c._id}`}
+                    href={`/posts?category=${c.slug}`}
                     className="btn-primary !h-8 !px-4 !text-[12px] font-bold"
                   >
                     Explore

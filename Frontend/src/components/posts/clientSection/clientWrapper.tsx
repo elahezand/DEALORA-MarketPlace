@@ -24,7 +24,7 @@ export default function ClientWrapper() {
     const currentPage = Number(searchParams.get("page")) || 1;
 
     const currentFilters = useMemo(() => ({
-        categoryId: searchParams.get("categoryId") || "",
+        category: searchParams.get("category") || "",
         listingType: searchParams.get("listingType") || "",
         price: searchParams.get("price") || "",
         condition: searchParams.get("condition") || "",
@@ -239,35 +239,43 @@ export default function ClientWrapper() {
                 </div>
             </div>
 
-            {/* SELLER RATING */}
-            <div className="flex flex-col gap-3 border-b border-[var(--border)] py-6">
-                <SectionHeader title="Seller Rating" />
-                <div className="flex flex-col gap-2">
-                    {[
-                        { value: "", label: "Any" },
-                        { value: "4", label: "4★ & above" },
-                        { value: "3", label: "3★ & above" },
-                    ].map((opt) => (
-                        <label
-                            key={opt.value || "any"}
-                            className="flex items-center gap-2.5 cursor-pointer select-none"
-                        >
-                            <input
-                                type="radio"
-                                name="rating"
-                                checked={currentFilters.rating === opt.value}
-                                onChange={() => handleFilterChange({ rating: opt.value })}
-                                className="!w-4 !h-4 border-[var(--input-border)] bg-transparent text-[var(--ring)] accent-[var(--ring)] focus:ring-0 cursor-pointer"
-                            />
-                            <span className="text-sm text-[var(--foreground)]">{opt.label}</span>
-                        </label>
-                    ))}
+            {/* RATING — average of a listing's approved user reviews.
+                Reviews only exist for store products (a classified ad is a
+                single owner's own item with no review concept), so this is
+                hidden on the user_ad tab. */}
+            {currentFilters.listingType !== "user_ad" && (
+                <div className="flex flex-col gap-3 border-b border-[var(--border)] py-6">
+                    <SectionHeader title="Rating" />
+                    <div className="flex flex-col gap-2">
+                        {[
+                            { value: "", label: "Any" },
+                            { value: "5", label: "★★★★★ (5 only)" },
+                            { value: "4", label: "★★★★☆ & above" },
+                            { value: "3", label: "★★★☆☆ & above" },
+                            { value: "2", label: "★★☆☆☆ & above" },
+                            { value: "1", label: "★☆☆☆☆ & above" },
+                        ].map((opt) => (
+                            <label
+                                key={opt.value || "any"}
+                                className="flex items-center gap-2.5 cursor-pointer select-none"
+                            >
+                                <input
+                                    type="radio"
+                                    name="rating"
+                                    checked={currentFilters.rating === opt.value}
+                                    onChange={() => handleFilterChange({ rating: opt.value })}
+                                    className="!w-4 !h-4 border-[var(--input-border)] bg-transparent text-[var(--ring)] accent-[var(--ring)] focus:ring-0 cursor-pointer"
+                                />
+                                <span className="text-sm text-[var(--foreground)]">{opt.label}</span>
+                            </label>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="py-4">
                 <Options
-                    categoryId={currentFilters.categoryId}
+                    categorySlug={currentFilters.category}
                     appendToFilter={appendToFilter}
                     activeFilters={activeFilters}
                 />

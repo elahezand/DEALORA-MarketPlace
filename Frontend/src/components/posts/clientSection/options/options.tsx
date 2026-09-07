@@ -14,18 +14,25 @@ import { ICategoryResponse, ICategoryFilter, ICategoryFilterOption } from '@/typ
 export type FilterValue = string | boolean | [number, number];
 
 interface OptionsProps {
-    categoryId: string;
+    categorySlug: string;
     appendToFilter: (field: string, value: FilterValue) => void;
     activeFilters?: Record<string, FilterValue>;
 }
 
 export default function Options({
-    categoryId,
+    categorySlug,
     appendToFilter,
     activeFilters = {},
 }: OptionsProps) {
 
-    const { data, isLoading } = useGet<ICategoryResponse>(`/categories/${categoryId}`);
+    const { data, isLoading } = useGet<ICategoryResponse>(
+        `/categories/slug/${categorySlug}`,
+        undefined,
+        { enabled: !!categorySlug }
+    );
+
+    if (!categorySlug) return null;
+
     if (isLoading)
         return (
             <div className="space-y-3 py-6">

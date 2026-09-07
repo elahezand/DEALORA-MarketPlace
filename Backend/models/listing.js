@@ -90,6 +90,8 @@ const UnifiedListingSchema = new Schema(
     metrics: {
       views: { type: Number, default: 0, min: 0 },
       sold: { type: Number, default: 0, min: 0 },
+      score: { type: Number, default: 0, min: 0, max: 5 },
+      reviewsCount: { type: Number, default: 0, min: 0 },
     },
     status: {
       type: String,

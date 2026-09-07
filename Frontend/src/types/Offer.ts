@@ -4,7 +4,6 @@ export interface  Offer {
   price: number;
   discount?: number;
   finalPrice?: number;
-  condition?: "new" | "used";
   stock: number;
   status: OfferStatus;
   adminComment?: string | null;
@@ -12,7 +11,7 @@ export interface  Offer {
   seller?: { _id: string; username?: string; phone?: string } | string;
   product?: { _id: string; title?: string; images?: string[] } | string;
   listing?: { _id: string; title?: string; images?: string[] } | string;
-  store?: { _id: string; name?: string } | string;
+  store?: { _id: string; name?: string; meta?: { ratings?: number; reviewsCount?: number } } | string;
 }
 
 

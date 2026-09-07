@@ -17,7 +17,7 @@ const getCartById = async (id) => {
     .populate("items.product", "title images")
     .populate({
       path: "items.offer",
-      select: "price discount stock store finalPrice condition",
+      select: "price discount stock store finalPrice",
       populate: { path: "store", select: "name" },
     });
 
@@ -38,7 +38,7 @@ const getUserCart = async (userId) => {
     .populate("items.product", "title images")
     .populate({
       path: "items.offer",
-      select: "price discount stock store finalPrice condition",
+      select: "price discount stock store finalPrice",
       populate: { path: "store", select: "name" },
     });
 

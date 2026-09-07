@@ -1,4 +1,5 @@
 const Comment = require("../models/comment");
+const Listing = require("../models/listing");
 const mongoose = require("mongoose");
 const { paginate } = require("../utils/helper");
 const AppError = require("../utils/AppError");
@@ -124,6 +125,18 @@ exports.create = async (userId, data) => {
     }
 
     listing = parent.listing;
+  } else {
+
+    if (!isValidId(listing)) {
+      throw new AppError(400, "Invalid listing");
+    }
+    const targetListing = await Listing.findById(listing).select("listingType").lean();
+    if (!targetListing) {
+      throw new AppError(404, "Listing not found");
+    }
+    if (targetListing.listingType !== "store_product") {
+      throw new AppError(400, "Reviews can only be left on store products");
+    }
   }
 
   return Comment.create({

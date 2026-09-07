@@ -51,6 +51,7 @@ interface ListingComponentProps {
 }
 
 export default function ListingDetailsClient({ data }: ListingComponentProps) {
+console.log(data);
 
     const [phoneRevealed, setPhoneRevealed] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -273,7 +274,9 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                             <div className="flex items-center justify-between">
                                 <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[var(--primary-50)] text-[var(--primary-700)] dark:bg-[var(--primary-950)] dark:text-[var(--accent-300)] border border-[var(--border)]">
                                     <Sparkles size={10} className="fill-current" />
-                                    {isStoreProduct ? "Store Product" : `${data.condition === "new" ? "New" : "Used"} Ad`}
+                                    {isStoreProduct
+                                        ? `${data.condition === "used" ? "Used" : "New"} · Store Product`
+                                        : `${data.condition === "new" ? "New" : "Used"} Ad`}
                                 </span>
                                 <span className="flex items-center gap-1 text-[12px] font-medium text-[var(--foreground-muted)]">
                                     <Eye size={13} className="text-[var(--foreground-subtle)]" />
@@ -285,6 +288,15 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                 <h1 className="!text-2xl md:text-[18px] font-semibold leading-snug tracking-tight text-[var(--foreground)] break-words">
                                     {data.title}
                                 </h1>
+                                {!!data.metrics?.reviewsCount && (
+                                    <div className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--foreground)] -mt-4">
+                                        <span className="text-amber-500">★</span>
+                                        {(data.metrics.score ?? 0).toFixed(1)}
+                                        <span className="text-[12px] font-medium text-[var(--foreground-muted)]">
+                                            ({data.metrics.reviewsCount} review{data.metrics.reviewsCount === 1 ? "" : "s"})
+                                        </span>
+                                    </div>
+                                )}
                                 {displayLocation && (
                                     <div className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--foreground-muted)]">
                                         <MapPin size={13} className="text-[var(--foreground-subtle)]" />
@@ -403,7 +415,6 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                     </div>
                 </div>
             </div>
-
             {/* LOWER SECTION: Offers, Description, Specifications, Protection Notice, Map */}
             <div className="grid grid-cols-1 gap-6 mt-6">
                 {/* OFFERS (STORE PRODUCT ONLY) */}
@@ -413,12 +424,22 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                         <div className="divide-y divide-[var(--border)]">
                             {data.offers.map((offer: Offer) => {
                                 const storeName = typeof offer.store === "object" ? offer.store?.name : undefined;
+                                const storeRating = typeof offer.store === "object" ? offer.store?.meta?.ratings : undefined;
                                 const displayPrice = offer.finalPrice ?? offer.price;
                                 return (
                                     <div key={offer._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-[var(--foreground)]">{storeName || "Vendor"}</span>
-                                            <span className="text-xs text-[var(--foreground-subtle)]">Condition: {offer.condition}</span>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-xs text-[var(--foreground-subtle)]">{offer.stock} in stock</span>
+                                                {!!storeRating && (
+                                                    <span className="text-xs text-[var(--foreground-subtle)] flex items-center gap-0.5">
+                                                        <span aria-hidden>·</span>
+                                                        <span className="text-amber-500">★</span>
+                                                        {storeRating.toFixed(1)}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="text-right">

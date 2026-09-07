@@ -21,9 +21,9 @@ export default function CategoriesSection() {
   const [isPending, startTransition] = useTransition();
   const { data, isLoading } = useGet<CategoriesTypeResponse>("/categories");
 
-  const handleClick = (categoryId: string) => {
+  const handleClick = (categorySlug: string) => {
     startTransition(() => {
-      router.push(`/posts?categoryId=${categoryId}`);
+      router.push(`/posts?category=${categorySlug}`);
     });
   };
 
@@ -45,7 +45,7 @@ export default function CategoriesSection() {
       {data?.data.map((cat, i) => (
         <button
           key={cat._id}
-          onClick={() => handleClick(cat._id)}
+          onClick={() => handleClick(cat.slug)}
           disabled={isPending}
           className="group relative overflow-hidden rounded-xl p-5
                      border border-primary-200 hover:border-primary-400 

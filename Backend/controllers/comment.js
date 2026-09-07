@@ -10,11 +10,61 @@ exports.getByListing = async (req, res, next) => {
   }
 };
 
-// ADMIN - GET ALL
+// ADMIN - GET ALL AND ANSWER
 exports.getAdmin = async (req, res, next) => {
   try {
     const data = await commentService.getAdmin(req.query);
     res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+exports.reply = async (req, res, next) => {
+  try {
+    const reply = await commentService.replyToComment(
+      req.user._id,
+      req.params.id,
+      req.parsed.data.body
+    );
+ 
+    res.status(201).json({
+      message: "Reply posted",
+      data: reply,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+// ADMIN MODERATE
+exports.moderate = async (req, res, next) => {
+  try {
+    const updated = await commentService.moderate(
+      req.params.id,
+      req.user._id,
+      req.parsed.data
+    );
+
+    res.status(200).json({
+      message: "Moderated successfully",
+      data: updated,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ADMIN DELETE
+exports.remove = async (req, res, next) => {
+  try {
+    const deleted = await commentService.adminDelete(
+      req.params.id,
+      req.user._id
+    );
+
+    res.status(200).json({
+      message: "Deleted",
+      data: deleted,
+    });
   } catch (err) {
     next(err);
   }
@@ -49,41 +99,6 @@ exports.patch = async (req, res, next) => {
     res.status(200).json({
       message: "Comment updated",
       data: updated,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// ADMIN MODERATE
-exports.moderate = async (req, res, next) => {
-  try {
-    const updated = await commentService.moderate(
-      req.params.id,
-      req.user._id,
-      req.parsed.data
-    );
-
-    res.status(200).json({
-      message: "Moderated successfully",
-      data: updated,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// ADMIN DELETE
-exports.remove = async (req, res, next) => {
-  try {
-    const deleted = await commentService.adminDelete(
-      req.params.id,
-      req.user._id
-    );
-
-    res.status(200).json({
-      message: "Deleted",
-      data: deleted,
     });
   } catch (err) {
     next(err);

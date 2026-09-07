@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useDelete } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
-const ENDPOINT = "/comments/admin";
 
 export const useDeleteComment = () => {
   const queryClient = useQueryClient();

@@ -11,6 +11,7 @@ import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, textareaClass } from "../shared/AdminFormModal";
 import { useModerateComment } from "@/services/Comments/useModerateComment";
 import { useDeleteComment } from "@/services/Comments/useDeleteComment";
+import { useAnswerComment } from "@/services/Comments/useAnswerComment";
 import { InfiniteData } from "@tanstack/react-query";
 import { CommentStatus, AdminComment, AdminCommentsResponse } from "@/types/CommetTypes";
 import { log } from "util";
@@ -40,6 +41,8 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
   const [status, setStatus] = useState<CommentStatus | "all">("pending");
   const [rejectTarget, setRejectTarget] = useState<AdminComment | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [replyTarget, setReplyTarget] = useState<AdminComment | null>(null);
+  const [replyBody, setReplyBody] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);
 
   const params = status === "all" ? { limit: 20 } : { limit: 20, status };
@@ -66,6 +69,22 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
   });
 
   const { mutate: removeComment } = useDeleteComment();
+
+  const { mutate: sendAnswer, isPending: isReplying } = useAnswerComment(() => {
+    setReplyTarget(null);
+    setReplyBody("");
+  });
+
+  function openReply(c: AdminComment) {
+    setReplyTarget(c);
+    setReplyBody("");
+  }
+
+  function submitReply(e: React.FormEvent) {    
+    e.preventDefault();
+    if (!replyTarget || !replyBody.trim()) return;
+    sendAnswer({ parentId: replyTarget._id, body: replyBody.trim() });
+  }
 
   function handleApprove(c: AdminComment) {    
     setActioningId(c._id);
@@ -150,7 +169,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
         <tbody>
           {comments.map((c) => {
             const author = typeof c.user === "object" ? c.user : null;
-            const product = typeof c.productId === "object" ? c.productId : null;
+            const product = typeof c.listing === "object" ? c.listing : null;
             const busy = actioningId === c._id;
             return (
               <tr key={c._id} className="border-b border-[var(--border)] hover:bg-[var(--background-soft)] transition-colors">
@@ -177,6 +196,16 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                    {!c.parentId && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => openReply(c)}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--primary-500)]/30 text-[var(--primary-500)] hover:bg-[var(--primary-500)]/10 transition-colors disabled:opacity-40"
+                      >
+                        Reply
+                      </button>
+                    )}
                     {c.status !== "approved" && (
                       <button
                         type="button"
@@ -262,6 +291,45 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Why is this comment being rejected?"
               required
+            />
+          </FormField>
+        </form>
+      </AdminFormModal>
+
+      <AdminFormModal
+        isOpen={!!replyTarget}
+        onClose={() => setReplyTarget(null)}
+        title="Reply to Comment"
+        icon={HiOutlineChatBubbleLeftRight}
+        footer={
+          <>
+            <button type="button" onClick={() => setReplyTarget(null)} className="text-xs font-bold px-4 h-9 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors">
+              Cancel
+            </button>
+            <button type="submit" form="reply-comment-form" disabled={isReplying || !replyBody.trim()} className="btn-primary !w-auto px-5 h-9 text-xs disabled:opacity-50">
+              {isReplying ? "Posting..." : "Post Reply"}
+            </button>
+          </>
+        }
+      >
+        <form id="reply-comment-form" onSubmit={submitReply} className="flex flex-col gap-4">
+          {replyTarget && (
+            <div className="rounded-lg bg-[var(--background-soft)] border border-[var(--border)] p-3">
+              <p className="text-xs text-[var(--foreground-subtle)] font-semibold uppercase tracking-wider mb-1">
+                Replying to
+              </p>
+              <p className="text-sm text-[var(--foreground-muted)] line-clamp-3">{replyTarget.body}</p>
+            </div>
+          )}
+          <FormField label="Your reply (posted publicly, auto-approved)">
+            <textarea
+              className={textareaClass}
+              rows={4}
+              value={replyBody}
+              onChange={(e) => setReplyBody(e.target.value)}
+              placeholder="Write your response as the store/admin..."
+              required
+              autoFocus
             />
           </FormField>
         </form>

@@ -128,7 +128,7 @@ export default function AddNewAddress({
                     size="sm"
                     className="btn-primary"
                     isLoading={isPending || updating}
-                    onPress={handleSubmit(onSubmit)}
+                    onPress={() => handleSubmit(onSubmit)()}
                 >
                     {editingAddress ? "Update" : "Save"}
                 </Button>

@@ -75,6 +75,8 @@ export default function Header() {
       { label: "Post an Ad", href: "/posts/new" },
       { label: "Support", href: "/supports" },
       { label: "About", href: "/about" },
+      { label: "Contact US", href: "/contact-us" },
+
     ],
     []
   );
@@ -101,7 +103,6 @@ export default function Header() {
       void (async () => {
         try {
           await api.post("/auth/logout", {}, { withCredentials: true });
-
           queryClient.setQueryData(["/auth/me", undefined], null);
 
           toast.success("Logged out successfully");

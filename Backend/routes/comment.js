@@ -13,6 +13,7 @@ const {
   createCommentSchema,
   updateCommentByOwnerSchema,
   moderateCommentSchema,
+  replySchema,
 } = require("../validators/comment");
 
 // RATE LIMITS
@@ -50,6 +51,16 @@ router.delete(
   actionRateLimit,
   validateObjectId("id"),
   controller.remove
+);
+
+router.post(
+  "/:id/answer",
+  authUser,
+  authAdmin,
+  actionRateLimit,
+  validateObjectId("id"),
+  validate(replySchema),
+  controller.reply
 );
 
 // PUBLIC

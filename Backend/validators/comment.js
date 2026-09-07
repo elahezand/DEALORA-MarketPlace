@@ -92,16 +92,11 @@ const moderateCommentSchema = z
     }
   });
 
+
 const replySchema = z
   .object({
+    parentId: objectId("parentId"),
     body: trimmedString(1, 2000),
-  })
-  .strict();
-
-const addReplySchema = z
-  .object({
-    commentId: objectId("commentId"),
-    reply: replySchema,
   })
   .strict();
 
@@ -109,5 +104,5 @@ module.exports = {
   createCommentSchema,
   updateCommentByOwnerSchema,
   moderateCommentSchema,
-  addReplySchema,
+  replySchema,
 };

@@ -1,6 +1,6 @@
 const Comment = require("../models/comment");
 const mongoose = require("mongoose");
-const {paginate} = require("../utils/helper");
+const { paginate } = require("../utils/helper");
 const AppError = require("../utils/AppError");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -19,21 +19,21 @@ exports.getByProduct = async (listing, query = {}) => {
     deletedAt: null,
   };
 
-const parents = await paginate(Comment, {
-  limit: query.limit,
-  cursor: query.cursor,
-  filters: filters,
-  populate: "user", 
-});
+  const parents = await paginate(Comment, {
+    limit: query.limit,
+    cursor: query.cursor,
+    filters: filters,
+    populate: "user",
+  });
   const parentIds = parents.data.map((p) => p._id);
 
   const replies = parentIds.length
     ? await Comment.find({
-        listing,
-        parentId: { $in: parentIds },
-        status: "approved",
-        deletedAt: null,
-      }).populate("user")
+      listing,
+      parentId: { $in: parentIds },
+      status: "approved",
+      deletedAt: null,
+    }).populate("user")
     : [];
 
   const map = new Map();
@@ -75,6 +75,33 @@ exports.getAdmin = async (query = {}) => {
   });
 };
 
+exports.replyToComment = async (adminId, parentId, body) => {
+  if (!isValidId(parentId)) {
+    throw new AppError(400, "Invalid comment id");
+  }
+
+  const parent = await Comment.findById(parentId);
+  if (!parent || parent.deletedAt) {
+    throw new AppError(404, "Comment not found");
+  }
+
+  if (parent.parentId) {
+    throw new AppError(409, "Only 1 level reply allowed");
+  }
+
+  if (parent.status !== "approved") {
+    parent.status = "approved";
+    await parent.save();
+  }
+  return Comment.create({
+    user: adminId,
+    listing: parent.listing,
+    parentId: parent._id,
+    body,
+    status: "approved",
+    recommendation: "no_idea",
+  });
+};
 /*  CREATE  */
 
 exports.create = async (userId, data) => {
@@ -88,7 +115,6 @@ exports.create = async (userId, data) => {
     }
 
     const parent = await Comment.findById(parentId);
-
     if (!parent) {
       throw new AppError(404, "Parent not found");
     }
@@ -109,7 +135,6 @@ exports.create = async (userId, data) => {
 };
 
 /*  UPDATE OWN  */
-
 exports.updateOwn = async (userId, id, data) => {
   const comment = await Comment.findOne({
     _id: id,

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { IUser } from "@/types/User";
 
@@ -35,7 +36,8 @@ export function AuthGuard({
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.replace("/login");
+      toast.error("Please log in to access this page");
+      router.replace("/");
       return;
     }
     if (allowedRoles && !isAuthorized) {

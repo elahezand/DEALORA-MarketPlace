@@ -18,17 +18,16 @@ const paginate = async (
     sort = { createdAt: -1 },
     populate = null,
     select = null,
-    cursorField = "_id",
   } = {}
 ) => {
-  limit = Math.min(Math.max(Number(limit) || 20, 1), 50);
+  limit = Math.min(Math.max(Number(limit) || 21, 1), 99);
+
+  const sortKey = Object.keys(sort)[0] || "_id";
+  const sortOrder = sort[sortKey];
 
   const query = { ...filters };
 
   if (cursor) {
-    const sortKey = Object.keys(sort)[0] || "_id";
-    const sortOrder = sort[sortKey];
-
     query[sortKey] = sortOrder === 1
       ? { $gt: cursor }
       : { $lt: cursor };
@@ -50,7 +49,7 @@ const paginate = async (
   const data = await dbQuery;
   const nextCursor =
     data.length === limit
-      ? data[data.length - 1][cursorField]
+      ? data[data.length - 1][sortKey]
       : null;
 
   return {
@@ -103,9 +102,6 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
   }
 
   // 4. Category Filter
-  // Public/front-end URLs now carry the category *slug* (?category=mobile-phones)
-  // so links, bookmarks and shares don't leak internal ObjectIds. `categoryId`
-  // is still supported for internal/back-office callers that already have the id.
   if (query.category) {
     const categoryDoc = await Category.findOne({ slug: query.category })
       .select("_id")
@@ -123,11 +119,6 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
   // 5. Price Range Filter -- matches Listing.price: Number
   if (query.price) {
     if (query.price.includes("-")) {
-      // "100-500" -> {gte:100, lte:500} | "100-" -> {gte:100} | "-500" -> {lte:500}
-      // NOTE: previously this did `.split("-").map(Number)`, and Number("") is 0
-      // (not NaN), so a min-only filter like "100-" silently became {gte:100, lte:0} —
-      // an impossible range that always returned 0 results. Empty sides must be
-      // treated as "no bound", not as 0.
       const [minStr, maxStr] = query.price.split("-");
       const min = minStr === "" ? undefined : Number(minStr);
       const max = maxStr === "" ? undefined : Number(maxStr);
@@ -152,20 +143,10 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
   }
 
   // 6. Condition Filter ("new" / "used")
-  // The listing itself is what has a condition (a store creates a separate
-  // catalog listing per condition, e.g. "iPhone 15 (New)" vs "iPhone 15
-  // (Used)" are two different Listings). Sellers just place price/stock
-  // offers against an existing listing — they don't set their own condition
-  // — so Listing.condition is the single source of truth for both types.
   if (query.condition && ["new", "used"].includes(query.condition)) {
     filters.condition = query.condition;
   }
   // 7. Rating Filter
-  // Ratings come from user comments (Comment.rating, averaged into
-  // Listing.metrics.score whenever a comment is approved/rejected/deleted —
-  // see models/comment.js). Reviews can only be left on store products (a
-  // classified ad, user_ad, is a single owner's own item with no review
-  // concept), so the rating filter is meaningless there and is ignored.
   if (query.rating && query.listingType !== "user_ad") {
     const minRating = Number(query.rating);
     if (!isNaN(minRating)) {
@@ -206,7 +187,7 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
       throw new AppError(400, "Invalid 'filter' query parameter: must be valid JSON");
     }
     for (const [key, value] of Object.entries(parsedFilter)) {
-      filters[`specs.${key}`] = value;
+      filters[`specs.${key}`] = String(value);
     }
   }
   // 10. Advanced Smart Search Query (q)
@@ -214,7 +195,7 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     const normalizeText = (str) => {
       return str
         .toLowerCase()
-        .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+        .replace(/[0-9]/g, (d) => "0123456789".indexOf(d))
         .replace(/[\u064B-\u065F]/g, "")
         .trim();
     };
@@ -281,7 +262,7 @@ const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) =>
 
   const offers = await Offer.find({
     _id: { $in: offerIds },
-  }).populate("product", "_id title images variants");
+  }).populate("listing", "_id title images variants");
 
   const offerMap = new Map(offers.map((o) => [String(o._id), o]));
 
@@ -309,7 +290,7 @@ const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) =>
       skippedItems.push({ offerId, reason: "missing_variant_id" });
       continue;
     }
-    if (!offer.product) {
+    if (!offer.listing) {
       skippedItems.push({ offerId, reason: "offer_missing_product_ref" });
       continue;
     }
@@ -320,9 +301,9 @@ const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) =>
     normalizedItems.push({
       offer: offer._id,
       store: offer.store,
-      product: offer.product._id,
+      product: offer.listing._id,
       variantId: item.variantId,
-      variantSnapshot: getVariantSnapshot(offer.product, item.variantId),
+      variantSnapshot: getVariantSnapshot(offer.listing, item.variantId),
       quantity: item.quantity,
       priceSnapshot: price,
     });
@@ -383,7 +364,7 @@ const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) =>
 
     normalizedItems.push({
       offer: null,
-      store: listing.listingType === "store_product" ? listing.store : null,
+      store: null,
       product: listing._id,
       variantId: item.variantId,
       variantSnapshot: getVariantSnapshot(listing, item.variantId),

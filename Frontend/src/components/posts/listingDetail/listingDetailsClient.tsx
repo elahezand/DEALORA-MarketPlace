@@ -51,7 +51,6 @@ interface ListingComponentProps {
 }
 
 export default function ListingDetailsClient({ data }: ListingComponentProps) {
-console.log(data);
 
     const [phoneRevealed, setPhoneRevealed] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -152,13 +151,9 @@ console.log(data);
         }
 
         setCartError(null);
-
-        const validOfferId =
-            typeof offerId === "string" ? offerId : undefined;
-
-        const selectedOffer = validOfferId
-            ? data?.offers?.find((offer: Offer) => offer._id === validOfferId)
-            : data?.offers?.[0];
+        const selectedOffer = offerId
+            ? data?.offers?.find((offer: Offer) => offer._id === offerId)
+            : undefined;
 
         const targetVariant =
             selectedVariant || data?.variants?.[0];
@@ -405,16 +400,19 @@ console.log(data);
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-[var(--foreground)] truncate m-0 p-0 leading-tight">
-                                    {isStoreProduct ? (data.store?.name || "Official Store") : "Verified seller"}
+                                    {isStoreProduct
+                                        ? `${data.offers?.length || 0} seller${data.offers?.length === 1 ? "" : "s"} available`
+                                        : "Verified seller"}
                                 </p>
                                 <p className="text-[11px] font-medium text-[var(--foreground-subtle)] m-0 p-0 leading-normal">
-                                    {isStoreProduct ? "Authorized Marketplace Vendor" : "Member since 2021"}
+                                    {isStoreProduct ? "Compare offers below to find the best price" : "Member since 2021"}
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
             {/* LOWER SECTION: Offers, Description, Specifications, Protection Notice, Map */}
             <div className="grid grid-cols-1 gap-6 mt-6">
                 {/* OFFERS (STORE PRODUCT ONLY) */}
@@ -425,6 +423,7 @@ console.log(data);
                             {data.offers.map((offer: Offer) => {
                                 const storeName = typeof offer.store === "object" ? offer.store?.name : undefined;
                                 const storeRating = typeof offer.store === "object" ? offer.store?.meta?.ratings : undefined;
+                                const storeReviewsCount = typeof offer.store === "object" ? offer.store?.meta?.reviewsCount : undefined;
                                 const displayPrice = offer.finalPrice ?? offer.price;
                                 return (
                                     <div key={offer._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
@@ -437,6 +436,7 @@ console.log(data);
                                                         <span aria-hidden>·</span>
                                                         <span className="text-amber-500">★</span>
                                                         {storeRating.toFixed(1)}
+                                                        {!!storeReviewsCount && ` (${storeReviewsCount})`}
                                                     </span>
                                                 )}
                                             </div>

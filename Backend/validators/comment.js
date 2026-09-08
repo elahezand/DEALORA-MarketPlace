@@ -39,7 +39,11 @@ const createCommentSchema = z
       "not_recommended",
       "no_idea",
     ]).optional(),
-    parentId: objectId("parentId").optional(),
+    // NOTE: no `parentId` here on purpose. Regular users only ever create
+    // top-level reviews; replies are admin-only and go through the separate,
+    // properly-gated POST /comments/:id/answer route (replySchema below).
+    // Accepting parentId here would let any authenticated user forge a
+    // "reply" to someone else's review.
   })
   .strict();
 

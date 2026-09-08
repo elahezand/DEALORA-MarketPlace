@@ -1,5 +1,6 @@
 const Comment = require("../models/comment");
 const Listing = require("../models/listing");
+const Order = require("../models/order");
 const mongoose = require("mongoose");
 const { paginate } = require("../utils/helper");
 const AppError = require("../utils/AppError");
@@ -104,47 +105,66 @@ exports.replyToComment = async (adminId, parentId, body) => {
   });
 };
 /*  CREATE  */
-
 exports.create = async (userId, data) => {
-  let { parentId, ...rest } = data;
+  const { listing, ...rest } = data;
 
-  let listing = rest.listing;
-
-  if (parentId) {
-    if (!isValidId(parentId)) {
-      throw new AppError(400, "Invalid parentId");
-    }
-
-    const parent = await Comment.findById(parentId);
-    if (!parent) {
-      throw new AppError(404, "Parent not found");
-    }
-
-    if (parent.parentId) {
-      throw new AppError(409, "Only 1 level reply allowed");
-    }
-
-    listing = parent.listing;
-  } else {
-
-    if (!isValidId(listing)) {
-      throw new AppError(400, "Invalid listing");
-    }
-    const targetListing = await Listing.findById(listing).select("listingType").lean();
-    if (!targetListing) {
-      throw new AppError(404, "Listing not found");
-    }
-    if (targetListing.listingType !== "store_product") {
-      throw new AppError(400, "Reviews can only be left on store products");
-    }
+  if (!isValidId(listing)) {
+    throw new AppError(400, "Invalid listing");
   }
 
-  return Comment.create({
+  const targetListing = await Listing.findById(listing).select("listingType").lean();
+  if (!targetListing) {
+    throw new AppError(404, "Listing not found");
+  }
+  if (targetListing.listingType !== "store_product") {
+    throw new AppError(400, "Reviews can only be left on store products");
+  }
+
+  const existingReview = await Comment.findOne({
     user: userId,
     listing,
-    parentId: parentId || null,
-    ...rest,
-  });
+    parentId: null,
+    deletedAt: null,
+  }).lean();
+  if (existingReview) {
+    throw new AppError(409, "You have already reviewed this product");
+  }
+
+  const order = await Order.findOne({
+    user: userId,
+    "items.product": listing,
+    paymentStatus: "paid",
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (!order) {
+    throw new AppError(403, "You can only review products you have purchased and paid for");
+  }
+
+  let store = null;
+  let verifiedPurchase = false;
+  const matchingItem = order.items.find((it) => String(it.product) === String(listing));
+  if (matchingItem?.seller) {
+    store = matchingItem.seller;
+    verifiedPurchase = true;
+  }
+
+  try {
+    return await Comment.create({
+      user: userId,
+      listing,
+      store,
+      verifiedPurchase,
+      parentId: null,
+      ...rest,
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      throw new AppError(409, "You have already reviewed this product");
+    }
+    throw err;
+  }
 };
 
 /*  UPDATE OWN  */

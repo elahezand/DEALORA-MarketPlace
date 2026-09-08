@@ -17,6 +17,13 @@ const commentSchema = new Schema(
       index: true,
     },
 
+    store: {
+      type: Types.ObjectId,
+      ref: "Store",
+      default: null,
+      index: true,
+    },
+
     parentId: {
       type: Types.ObjectId,
       ref: "Comment",
@@ -126,6 +133,11 @@ commentSchema.index({ listing: 1, status: 1, parentId: 1 });
 commentSchema.index({ user: 1, createdAt: -1 });
 commentSchema.index({ parentId: 1, createdAt: 1 });
 
+commentSchema.index(
+  { user: 1, listing: 1 },
+  { unique: true, partialFilterExpression: { parentId: null, deletedAt: null } }
+);
+
 async function syncListingScore(listingId) {
   if (!listingId) return;
 
@@ -145,46 +157,28 @@ async function syncListingScore(listingId) {
   const reviewsCount = agg ? agg.count : 0;
 
   const Listing = mongoose.model("Listing");
-  const listing = await Listing.findByIdAndUpdate(
-    listingId,
-    {
-      "metrics.score": score,
-      "metrics.reviewsCount": reviewsCount
-    },
-    { new: true }
-  )
-    .select("store listingType")
-    .lean();
-
-  if (listing?.listingType === "store_product" && listing.store) {
-    await syncStoreScore(listing.store);
-  }
+  await Listing.findByIdAndUpdate(listingId, {
+    "metrics.score": score,
+    "metrics.reviewsCount": reviewsCount,
+  });
 }
+
+
 async function syncStoreScore(storeId) {
   if (!storeId) return;
 
-  const Listing = mongoose.model("Listing");
   const Store = mongoose.model("Store");
 
-  const listingIds = await Listing.find({
-    store: storeId,
-    listingType: "store_product",
-  }).distinct("_id");
-
-  if (!listingIds.length) {
-    await Store.findByIdAndUpdate(storeId, {
-      "meta.ratings": 0,
-    });
-    return;
-  }
-
-  const [agg] = await Listing.aggregate([{
-    $match: {
-      _id: { $in: listingIds },
-      "metrics.reviewsCount": { $gt: 0 },
+  const [agg] = await Comment.aggregate([
+    {
+      $match: {
+        store: new mongoose.Types.ObjectId(storeId),
+        status: "approved",
+        parentId: null,
+        rating: { $ne: null },
+      },
     },
-  },
-  { $group: { _id: null, avgRating: { $avg: "$metrics.score" } } },
+    { $group: { _id: null, avgRating: { $avg: "$rating" } } },
   ]);
 
   await Store.findByIdAndUpdate(storeId, {
@@ -195,18 +189,26 @@ async function syncStoreScore(storeId) {
 commentSchema.post("save", async function () {
   try {
     await syncListingScore(this.listing);
+    if (this.store) await syncStoreScore(this.store);
   } catch (error) {
-    console.error("Error syncing listing score:", error);
+    console.error("Error syncing listing/store score:", error);
   }
 });
 commentSchema.post("findOneAndUpdate", async function () {
   const doc = await this.model.findOne(this.getQuery());
-  if (doc) await syncListingScore(doc.listing);
+  if (doc) {
+    await syncListingScore(doc.listing);
+    if (doc.store) await syncStoreScore(doc.store);
+  }
 });
 commentSchema.post("updateOne", async function () {
   const doc = await this.model.findOne(this.getQuery());
-  if (doc) await syncListingScore(doc.listing);
+  if (doc) {
+    await syncListingScore(doc.listing);
+    if (doc.store) await syncStoreScore(doc.store);
+  }
 });
 
 const Comment = mongoose.models.Comment || mongoose.model("Comment", commentSchema);
+Comment.syncStoreScore = syncStoreScore;
 module.exports = Comment;

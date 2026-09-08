@@ -52,25 +52,17 @@ const showErrorToast = (error: unknown, fallback: string) => {
   if (err?._authToastShown) return;
 
   const responseData = err?.response?.data;
-  let requestData = err?.config?.data;
-
-  try {
-    if (typeof requestData === "string") {
-      requestData = JSON.parse(requestData);
-    }
-  } catch {
-  }
-  let message = fallback
-
-  if (Array.isArray(responseData?.errors)) {
+  let message = fallback;
+  if (Array.isArray(responseData?.errors) && responseData.errors.length > 0) {
     message = responseData.errors
       .map((item) => item?.message)
       .filter(Boolean)
       .join(" | ");
+  } else if (responseData?.message) {
+    message = responseData.message;
   }
 
-  toast.error(message)
-
+  toast.error(message);
 };
 
 /* 

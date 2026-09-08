@@ -51,11 +51,6 @@ const UnifiedListingSchema = new Schema(
       ref: "User",
       required: function () { return this.listingType === "user_ad"; },
     },
-    store: { 
-      type: Schema.Types.ObjectId,
-      ref: "Store",
-      required: function () { return this.listingType === "store_product"; },
-    },
     location: {
       type: LocationSchema,
       required: function () { return this.listingType === "user_ad"; },
@@ -136,7 +131,6 @@ UnifiedListingSchema.pre("save", async function () {
 UnifiedListingSchema.index({ listingType: 1, status: 1, categoryPath: 1, price: 1 });
 UnifiedListingSchema.index({ status: 1, "location.city": 1, "location.neighborhood": 1 });
 UnifiedListingSchema.index({ user: 1, status: 1 });
-UnifiedListingSchema.index({ store: 1, status: 1 });
 UnifiedListingSchema.index({ "variants.sku": 1 }, { sparse: true });
 UnifiedListingSchema.index({ tags: 1 });
 

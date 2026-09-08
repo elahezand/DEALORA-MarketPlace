@@ -21,7 +21,6 @@ export default function ClientWrapper() {
         setValue(searchParams.get("q") || "");
     }, [searchParams]);
 
-    const currentPage = Number(searchParams.get("page")) || 1;
 
     const currentFilters = useMemo(() => ({
         category: searchParams.get("category") || "",
@@ -32,10 +31,8 @@ export default function ClientWrapper() {
         exchange: searchParams.get("exchange") || "",
         hasPhoto: searchParams.get("hasPhoto") || "",
         filter: searchParams.get("filter") || "",
-        page: currentPage,
-        limit: searchParams.get("limit") || 15,
         q: searchParams.get("q") || ""
-    }), [searchParams, currentPage]);
+    }), [searchParams]);
 
 
     const [priceMin, priceMax] = useMemo(() => {
@@ -52,7 +49,7 @@ export default function ClientWrapper() {
     }, [priceMin, priceMax]);
 
     const handleFilterChange = (newFilterParams: Record<string, string | number> = {}) => {
-        const updatedFilters = { ...currentFilters, ...newFilterParams, page: 1 };
+        const updatedFilters = { ...currentFilters, ...newFilterParams};
 
         const cleanParams = Object.fromEntries(
             Object.entries(updatedFilters).filter(
@@ -239,10 +236,6 @@ export default function ClientWrapper() {
                 </div>
             </div>
 
-            {/* RATING — average of a listing's approved user reviews.
-                Reviews only exist for store products (a classified ad is a
-                single owner's own item with no review concept), so this is
-                hidden on the user_ad tab. */}
             {currentFilters.listingType !== "user_ad" && (
                 <div className="flex flex-col gap-3 border-b border-[var(--border)] py-6">
                     <SectionHeader title="Rating" />

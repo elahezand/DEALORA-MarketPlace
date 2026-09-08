@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { ICategoryFilter } from "@/types/Category";
+import type { FilterValue } from "./options";
 
 interface BooleanFilterItemProps {
     filter: ICategoryFilter;
     filterKey: string;
     urlChecked: boolean;
-    appendToFilter: (key: string, value: boolean) => void;
+    appendToFilter: (key: string, value: FilterValue) => void;
 }
 
 export default function BooleanFilterItem({
@@ -43,7 +44,7 @@ export default function BooleanFilterItem({
                     onChange={(e) => {
                         const value = e.target.checked;
                         setChecked(value);
-                        appendToFilter(filterKey, value);
+                        appendToFilter(filterKey, value ? value : "");
                     }}
                     className="!w-4 !h-4 rounded border-[var(--input-border)] bg-transparent text-[var(--ring)] accent-[var(--ring)] focus:ring-0 cursor-pointer"
                 />

@@ -1,7 +1,7 @@
 import { useServerData } from "@/utils/hooks/useServerData";
 import qs from "qs";
 import { Suspense } from "react";
-import ClientWrapper from "@/components/posts/clientSection/clientWrapper";
+import FilterSidebarWrapper from "@/components/posts/clientSection/FilterSidebarWrapper";
 import SmartSearchWrapper from "@/components/posts/smartSearch/smartSearchWrapper";
 import { PublicListingsResponse } from "@/types/Listings";
 import InfiniteItemsSection from "@/components/posts/infiniteItemsSection";
@@ -38,9 +38,7 @@ export default async function PostsPage({
   return (
     <div className="w-full mx-auto pr-6 relative">
       <div className="flex w-full items-start justify-center mx-auto relative gap-6 lg:gap-8 h-full [overflow:visible]">
-        <aside className="sticky z-20 w-[350px] shrink-0 hidden md:block h-fit self-start">
-          <ClientWrapper />
-        </aside>
+        <FilterSidebarWrapper />
         <div className="w-full flex flex-col gap-6">
           <Suspense fallback={<div className="h-16 w-full animate-pulse bg-gray-100 dark:bg-neutral-800 rounded-2xl" />}>
             <ListingTypeTabs currentType={currentType} />

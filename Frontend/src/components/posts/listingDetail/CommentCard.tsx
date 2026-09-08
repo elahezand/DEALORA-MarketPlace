@@ -1,6 +1,6 @@
 "use client";
 
-import { Star } from "lucide-react";
+import { Star, BadgeCheck } from "lucide-react";
 import { timeAgo } from "@/utils/timeAgo";
 import { CommentItemType } from "@/types/CommetTypes";
 function StarRow({ value, size = 14 }: { value: number; size?: number }) {
@@ -35,8 +35,14 @@ export default function CommentCard({ comment }: { comment: CommentItemType }) {
             {avatarLetter}
           </div>
           <div>
-            <p className="text-sm font-bold text-[var(--foreground)] leading-tight">
+            <p className="text-sm font-bold text-[var(--foreground)] leading-tight flex items-center gap-1.5">
               {displayName}
+              {comment.verifiedPurchase && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--success-bg)] text-[var(--success-500)]">
+                    <BadgeCheck size={11} />
+                    Verified Purchase
+                </span>
+              )}
             </p>
             <p className="text-[11px] text-[var(--foreground-subtle)]">
               {timeAgo(comment.createdAt)}

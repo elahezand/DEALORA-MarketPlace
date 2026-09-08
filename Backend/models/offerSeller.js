@@ -77,7 +77,6 @@ async function syncMinPrice(listingId) {
   });
 
   if (!offers.length) {
-    await mongoose.model("Listing").findByIdAndUpdate(listingId, { price: 0 });
     return;
   }
 
@@ -94,6 +93,9 @@ offerSellerSchema.post("findOneAndUpdate", async function () {
 });
 offerSellerSchema.post("updateOne", async function () {
   const doc = await this.model.findOne(this.getQuery());
+  if (doc) await syncMinPrice(doc.listing);
+});
+offerSellerSchema.post("findOneAndDelete", async function (doc) {
   if (doc) await syncMinPrice(doc.listing);
 });
 

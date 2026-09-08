@@ -6,6 +6,7 @@ import { HiOutlinePhoto, HiOutlineExclamationTriangle } from "react-icons/hi2";
 import { ListingProps } from "@/types/Listings";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { getUrl } from "@/utils/helper"
+import { timeAgo } from "@/utils/timeAgo";
 import { Pagination, EffectFade, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
@@ -21,14 +22,6 @@ function formatPrice(price: number) {
         currency: "USD",
         maximumFractionDigits: 0,
     }).format(price);
-}
-
-function timeAgo(dateStr: string) {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const h = Math.floor(diff / 3_600_000);
-    if (h < 1) return "Just now";
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h / 24)}d ago`;
 }
 
 export default function ListingsSection({ listings }: Props) {
@@ -150,7 +143,7 @@ export default function ListingsSection({ listings }: Props) {
 
                             {/* Rating badge — only when the listing has at least one review */}
                             {hasRating && (
-                                <div className="absolute top-3 right-2 z-10">
+                                <div className="absolute top-0 right-2 z-10">
                                     <span className="px-2 py-0.5 text-[10px] font-bold tracking-wide
                                                      rounded-md backdrop-blur-md bg-black/70
                                                      text-white shadow-sm flex items-center gap-0.5">

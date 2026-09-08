@@ -28,8 +28,13 @@ export default function RadioFilterItem({
         <button
             type="button"
             onClick={() => {
-                setLocalSelected(true); 
-                appendToFilter(filterKey, value); 
+                if (localSelected) {
+                    setLocalSelected(false);
+                    appendToFilter(filterKey, "");
+                } else {
+                    setLocalSelected(true);
+                    appendToFilter(filterKey, value);
+                }
             }}
             className={`w-full text-left flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group/opt ${
                 localSelected

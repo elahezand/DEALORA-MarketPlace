@@ -156,10 +156,6 @@ export default function ListingsModerationClient({
           {listings.map((listing) => {
             const src = getUrl(listing.images?.[0])
             const busy = actioningId === listing._id;
-            const sellerName =
-              listing.listingType === "store_product"
-                ? listing.store?.name
-                : listing.user?.name;
 
             return (
               <tr
@@ -181,9 +177,6 @@ export default function ListingsModerationClient({
                       >
                         {listing.title}
                       </Link>
-                      <p className="text-[11px] text-[var(--foreground-subtle)]">
-                        {sellerName || "—"}
-                      </p>
                     </div>
                   </div>
                 </td>

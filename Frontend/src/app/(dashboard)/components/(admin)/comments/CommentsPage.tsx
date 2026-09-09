@@ -171,6 +171,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
           {comments.map((c) => {
             const author = typeof c.user === "object" ? c.user : null;
             const product = typeof c.listing === "object" ? c.listing : null;
+            const parent = typeof c.parentId === "object" ? c.parentId : null;
             const busy = actioningId === c._id;
             return (
               <tr key={c._id} className="border-b border-[var(--border)] hover:bg-[var(--background-soft)] transition-colors">
@@ -178,6 +179,11 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
                   <p className="text-sm text-[var(--foreground)] line-clamp-2">{c.body}</p>
                   {typeof c.rating === "number" && (
                     <p className="text-xs text-[var(--foreground-subtle)] mt-1">Rating: {c.rating}/5</p>
+                  )}
+                  {parent && (
+                    <p className="text-xs text-[var(--foreground-subtle)] mt-1 line-clamp-1">
+                      <span className="font-semibold">Reply to:</span> {parent.body || "—"}
+                    </p>
                   )}
                 </td>
                 <td className="px-6 py-4">

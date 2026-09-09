@@ -13,8 +13,12 @@ exports.createOffer = async (req, res, next) => {
 //EDIT OFFER
 exports.updateOffer = async (req, res, next) => {
   try {
-    const offer = await service.editOffer(req.user._id, req.parsed.data);
-    res.status(201).json({ message: "Offer UDpdated", offer });
+    const offer = await service.updateOffer(
+      req.user._id,
+      req.params.offerId,
+      req.parsed.data
+    );
+    res.status(200).json({ message: "Offer updated", offer });
   } catch (err) {
     next(err);
   }

@@ -7,25 +7,37 @@ const objectId = (field = "ID") =>
     });
 
 const createOfferSchema = z.object({
-    seller: objectId,
-    store: objectId,
-    product: objectId,
+    listingId: objectId("listingId"),
     price: z.number().nonnegative(),
-    discount: z.number().min(0).max(100).default(0),
     stock: z.number().int().min(1),
+    description: z.string().trim().max(500).optional(),
 });
 
-const updateOfferSchema = z.object({
-    status: z.enum(["pending", "accepted", "rejected"]),
+// Sent by the SELLER when editing their own pending/accepted offer.
+const updateOfferSchema = z
+    .object({
+        price: z.number().nonnegative().optional(),
+        stock: z.number().int().min(1).optional(),
+        description: z.string().trim().max(500).optional(),
+    })
+    .refine(
+        (data) => data.price !== undefined || data.stock !== undefined || data.description !== undefined,
+        { message: "At least one of price, stock or description must be provided" }
+    );
+
+// Sent by the ADMIN when accepting/rejecting a seller's offer.
+const approveOfferSchema = z.object({
+    status: z.enum(["accepted", "rejected"]),
     adminComment: z
         .string()
         .optional()
         .nullable()
         .transform((s) => (typeof s === "string" ? s.trim() : s)),
-})
+});
 
 
 module.exports = {
     createOfferSchema,
     updateOfferSchema,
+    approveOfferSchema,
 };

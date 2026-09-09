@@ -5,7 +5,7 @@ const AppError = require("../utils/AppError");
 
 /* === GET USER FAVORITES === */
 async function getUserFavorites(userId, query = {}) {
-    const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
+    const limit = Math.min(query.limit ? Number(query.limit) : 21, 48);
 
     return paginate(Favorite, {
         limit,
@@ -90,6 +90,78 @@ async function getFavoriteCount(userId) {
     });
 }
 
+/* === CHECK MULTIPLE PRODUCTS AT ONCE (e.g. for a listing grid) === */
+async function checkFavorites(userId, productIds) {
+    const idsArray = Array.isArray(productIds)
+        ? productIds
+        : String(productIds || "")
+            .split(",")
+            .map((id) => id.trim())
+            .filter(Boolean);
+
+    if (idsArray.length === 0) return [];
+
+    const favorites = await Favorite.find({
+        user: userId,
+        product: { $in: idsArray },
+    })
+        .select("product")
+        .lean();
+
+    return favorites.map((f) => String(f.product));
+}
+
+/* === USER FAVORITES FILTERED BY PRODUCT TYPE === */
+async function filterFavoritesByType(userId, type, query = {}) {
+    const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
+
+    return paginate(Favorite, {
+        limit,
+        cursor: query.cursor,
+        filters: {
+            user: userId,
+            productType: type,
+        },
+        sort: { createdAt: -1 },
+        populate: {
+            path: "product",
+            select:
+                "title slug price images status metrics condition shortIdentifier",
+        },
+    });
+}
+
+/* === PUBLIC: MOST-FAVORITED PRODUCTS === */
+async function getPopularProducts(query = {}) {
+    const limit = Math.min(Math.max(Number(query.limit) || 10, 1), 50);
+
+    const popular = await Favorite.aggregate([
+        { $group: { _id: "$product", favoritesCount: { $sum: 1 } } },
+        { $sort: { favoritesCount: -1 } },
+        { $limit: limit },
+    ]);
+
+    if (popular.length === 0) return [];
+
+    const productIds = popular.map((p) => p._id);
+    const listings = await Listing.find({
+        _id: { $in: productIds },
+        status: { $in: ["active", "accepted"] },
+    })
+        .select("title slug price images condition shortIdentifier listingType")
+        .lean();
+
+    const listingMap = new Map(listings.map((l) => [String(l._id), l]));
+
+    return popular
+        .map((p) => {
+            const listing = listingMap.get(String(p._id));
+            if (!listing) return null;
+            return { ...listing, favoritesCount: p.favoritesCount };
+        })
+        .filter(Boolean);
+}
+
 module.exports = {
     getUserFavorites,
     addFavorite,
@@ -97,4 +169,7 @@ module.exports = {
     toggleFavorite,
     isFavorited,
     getFavoriteCount,
+    checkFavorites,
+    filterFavoritesByType,
+    getPopularProducts,
 };

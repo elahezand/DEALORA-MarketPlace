@@ -8,13 +8,13 @@ exports.redirectToListing = async (req, res, next) => {
     if (!shortIdentifier) {
       return next(new AppError(400, "shortIdentifier is required"));
     }
-    const Listing = await Listing.findOne({ shortIdentifier }).lean();
+    const listing = await Listing.findOne({ shortIdentifier }).lean();
 
-    if (!Listing) {
+    if (!listing) {
       return next(new AppError(404, "Listing not found"));
     }
 
-    return res.status(200).json({ data: Listing });
+    return res.status(200).json({ data: listing });
   } catch (err) {
     return next(err);
   }

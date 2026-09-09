@@ -42,7 +42,7 @@ export default function Header() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useGetProfile();
-  
+
   const initials = user?.username
     ? user.username.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
@@ -64,7 +64,9 @@ export default function Header() {
   function handleCreateNote(e: React.FormEvent) {
     e.preventDefault();
     if (!noteMsg.trim()) return;
-    createNotification({ msg: noteMsg.trim(), admin: user?._id });
+    if (!user?._id) return;
+
+    createNotification({ msg: noteMsg.trim(), user: user._id });
   }
 
   const navItems: NavItem[] = useMemo(

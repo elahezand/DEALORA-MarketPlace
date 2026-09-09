@@ -23,6 +23,7 @@ const {
 const {
   createOfferSchema,
   updateOfferSchema,
+  approveOfferSchema,
 } = require("../validators/sellerOffer");
 
 // CREATE OFFER (SELLER)
@@ -68,6 +69,7 @@ offerSellerRouter.patch(
   authUser,
   authAdmin,
   validateObjectIdParam("offerId"),
+  validate(approveOfferSchema),
   approveOffer
 );
 

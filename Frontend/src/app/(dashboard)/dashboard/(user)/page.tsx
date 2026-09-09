@@ -16,8 +16,8 @@ export default async function DashboardPage() {
     useAuthServerData<MyListingsResponse>("/listings/my"),
   ]);
 
-  const orderList = orders?.data?.data ?? [];
-  const listingList = listings?.data?.data ?? [];
+  const orderList = orders?.data ?? [];
+  const listingList = listings?.data ?? [];
 
   return (
     <div className="flex flex-col gap-8 pb-10">

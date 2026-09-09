@@ -37,7 +37,7 @@ export interface AdminComment {
   body: string;
   rating?: number | null;
   status: CommentStatus;
-  parentId: string | null;
+  parentId: { _id: string; body?: string } | string | null;
   createdAt: string;
   user?: { _id: string; username?: string; phone?: string } | string;
   listing?: { _id: string; title?: string } | string;

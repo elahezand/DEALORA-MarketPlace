@@ -62,7 +62,7 @@ exports.getByProduct = async (listing, query = {}) => {
 exports.getAdmin = async (query = {}) => {
   const filters = {};
   if (query.status) filters.status = query.status;
-  if (query.productId && isValidId(query.listing)) filters.listing = query.listing;
+  if (query.listing && isValidId(query.listing)) filters.listing = query.listing;
 
   const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 100);
 
@@ -73,6 +73,7 @@ exports.getAdmin = async (query = {}) => {
     populate: [
       { path: "user", select: "username phone" },
       { path: "listing", select: "title" },
+      { path: "parentId", select: "body" },
     ],
   });
 };

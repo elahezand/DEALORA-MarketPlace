@@ -528,8 +528,6 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                         <SectionHeading icon={<MapPinned size={16} className="text-[var(--primary-500)] dark:text-[var(--accent-400)]" />} title="Location" />
                         <div className="rounded-xl overflow-hidden border border-[var(--border)]">
                             <MapSection
-                                lat={data.location?.lat}
-                                lng={data.location?.lng}
                                 city={data.location?.city}
                                 state={data.location?.state}
                             />

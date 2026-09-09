@@ -33,7 +33,7 @@ exports.getAdmins = async (req, res, next) => {
 
 exports.postNewUser = async (req, res, next) => {
   try {
-    const { phone, isSeller } = req.parsed.data;
+    const { phone, role } = req.parsed.data;
 
     const isBanUser = await Ban.exists({ phone });
     if (isBanUser) {
@@ -46,7 +46,12 @@ exports.postNewUser = async (req, res, next) => {
     }
 
     const usersCount = await User.countDocuments();
-    const userRole = usersCount < 3 ? ["ADMIN"] : isSeller ? ["USER", "SELLER"] : ["USER"];
+    const userRole =
+      usersCount < 3
+        ? ["ADMIN"]
+        : Array.isArray(role) && role.length > 0
+          ? role
+          : ["USER"];
 
     const newUser = await User.create({
       phone,

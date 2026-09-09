@@ -10,7 +10,7 @@ import { log } from "node:console";
 export default function LocationSearch() {
   const router = useRouter();
   const { data, isLoading } = useLocation();
-  
+
   const [stateOpen, setStateOpen] = useState(false);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -109,7 +109,7 @@ export default function LocationSearch() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Search for electronics, cars, housing and more..."
+          placeholder="Search for electronics, clothing, books and more..."
         />
 
         {search && (

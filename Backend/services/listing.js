@@ -24,7 +24,7 @@ async function getAllListings(query = {}) {
 /* === GET ALL (ADMIN — can filter/see any status=== */
 async function getAllListingsAdmin(query = {}) {
   const filters = await buildListingFilters(query, { isAdmin: true });
-  const limit = Math.min(query.limit ? Number(query.limit) : 20, 100);
+  const limit = Math.min(query.limit ? Number(query.limit) : 21, 99);
 
   return await paginate(Listing, {
     limit,
@@ -64,7 +64,7 @@ async function getListingById(id, query = {}) {
     const comments = await paginate(Comment, {
       limit: commentQuery.limit || 10,
       cursor: commentQuery.cursor,
-      filters: { product: id },
+      filters: { listing: id, status: "approved", parentId: null, deletedAt: null },
       populate: ["user"],
     });
 
@@ -137,7 +137,7 @@ async function deleteListing(id, userId) {
 
 /* === MY LISTINGS === */
 async function getMyListings(userId, query = {}) {
-  const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
+  const limit = Math.min(query.limit ? Number(query.limit) : 21, 48);
 
   const filters = {
     owner: userId,

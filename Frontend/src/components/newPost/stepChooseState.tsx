@@ -12,7 +12,7 @@ export default function StepChooseState() {
   const { data } = useLocation();
   let active = true;
 
-  const states = data?.cities ?? [];
+  const states = data?.data ?? [];
   const selectedState = values?.location?.state;
 
   const citiesForState = useMemo(() => {

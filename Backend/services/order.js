@@ -151,7 +151,7 @@ const getMyOrders = async (userId, query = {}) => {
   const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
 
   const filters = {
-    owner: userId,
+    user: userId,
   };
   if (query.status && query.status !== "all") {
     filters.status = query.status;
@@ -160,9 +160,7 @@ const getMyOrders = async (userId, query = {}) => {
   return paginate(Order, {
     limit,
     cursor: query.cursor,
-    filters: {
-      user: userId,
-    },
+    filters,
     sort: { createdAt: -1 },
   });
 };

@@ -6,7 +6,7 @@ import UnderlineWord from "@/components/index/underlineWord";
 import LocationSearch from "@/components/index/locationSearch";
 import CategoriesSection from "@/components/index/categorySection";
 import ListingsCarousel from "@/components/index/ListingCarousel";
-import PopularCities from "@/components/index/popularCities";
+import PopularState from "@/components/index/popularState";
 import StatsBar from "@/components/index/statsBar";
 import HowItWorks from "@/components/index/howItWorks";
 import AppDownloadBanner from "@/components/index/appDownloadBanner";
@@ -123,7 +123,7 @@ export default async function Page() {
           >
             <LocationSearch />
           </MotionDiv>
-          <PopularCities />
+          <PopularState />
         </div>
       </section>
       {/* ── DISCOVERY BAND: Stats + Categories ── */}

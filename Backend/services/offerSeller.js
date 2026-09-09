@@ -50,13 +50,13 @@ exports.createOffer = async (userId, data) => {
 };
 
 // === UPDATE OFFER ===
-exports.updateOffer = async (userId, data) => {
-  const { listingId, price, stock, description } = data;
+exports.updateOffer = async (userId, offerId, data) => {
+  const { price, stock, description } = data;
 
-  if (!isValidId(listingId)) throw new AppError(400, "Invalid listingId");
+  if (!isValidId(offerId)) throw new AppError(400, "Invalid offerId");
 
   const offer = await OfferSeller.findOne({
-    listing: listingId,
+    _id: offerId,
     seller: userId,
     status: { $in: ["pending", "accepted"] },
   });

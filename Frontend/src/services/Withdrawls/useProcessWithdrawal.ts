@@ -14,7 +14,7 @@ export const useProcessWithdrawal = (onSuccessCallback?: () => void) => {
   >((d) => `${ENDPOINT}/${d.id}/process`, {
     onSuccess: () => {
       toast.success("Withdrawal updated");
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      queryClient.invalidateQueries({ queryKey: ["admin-withdrawals"] });
       onSuccessCallback?.();
     },
     errorFallback: "Action failed",

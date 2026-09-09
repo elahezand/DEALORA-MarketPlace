@@ -26,7 +26,7 @@ export const useModerateComment = (onSuccessCallback?: () => void) => {
     },
     onSuccess: (res) => {
       toast.success(res?.message || "Comment updated");
-      queryClient.invalidateQueries({ queryKey: ["admin-comments-pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/comments/admin"] });
       onSuccessCallback?.();
     },
     onError: () => {

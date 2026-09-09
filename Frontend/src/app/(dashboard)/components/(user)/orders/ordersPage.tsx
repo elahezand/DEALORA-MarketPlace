@@ -5,11 +5,14 @@ import Link from "next/link";
 import { HiChevronRight } from "react-icons/hi";
 import { HiOutlineEye } from "react-icons/hi2";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { IOrder, OrdersResponse } from "@/types/Order";
-import { IPagination } from "@/types/common";
+import { OrdersResponse, OrderStatus } from "@/types/Order";
+import { InfiniteData } from "@tanstack/react-query";
 import TableCard from "../../shared/table/TableCard";
 import { Th, Badge } from "../../shared/table/TableParts";
-
+import { WidgetHeader } from "../../shared/table/WidgeHeader";
+import {
+  HiOutlineChatBubbleLeftRight
+} from "react-icons/hi2";
 type ToneType = "success" | "warning" | "destructive" | "neutral" | "info";
 
 const STATUS_TONE: Record<string, ToneType> = {
@@ -33,25 +36,24 @@ const PAYMENT_STATUS_TONE: Record<string, ToneType> = {
   refunded: "neutral",
 };
 
-const filterOptions = [
-  { id: "all", label: "All Orders", status: null },
-  { id: "created", label: "Created", status: ["created", "pending"] },
-  { id: "processing", label: "Processing", status: ["processing"] },
-  { id: "shipped", label: "Shipped", status: ["shipped"] },
-  { id: "completed", label: "Completed", status: ["completed", "delivered"] },
-  { id: "cancelled", label: "Cancelled", status: ["cancelled", "failed"] },
+const STATUS_TABS: { value: OrderStatus | "all"; label: string }[] = [
+  { value: "all", label: "All Orders" },
+  { value: "created", label: "Created" },
+  { value: "processing", label: "Processing" },
+  { value: "shipped", label: "Shipped" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 interface OrdersPageProps {
-  initialData?: IOrder[];
-  initialPagination?: IPagination;
+  initialData?: InfiniteData<OrdersResponse>;
 }
 
 export default function OrdersPage({
-  initialData = [],
-  initialPagination,
+  initialData,
 }: OrdersPageProps) {
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [status, setStatus] = useState<OrderStatus | "all">("processing");
+  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
 
   const {
     data,
@@ -62,29 +64,19 @@ export default function OrdersPage({
     isError,
   } = useInfiniteGet<OrdersResponse>(
     "/orders/my",
-    {},
+    params,
     {
-      initialData: {
-        pages: [{ data: { data: initialData, pagination: initialPagination } }],
-        pageParams: [null],
-      },
-    }
-  );
+      queryKey: ["/orders/my", status],
+      initialData: status === "processing" ? initialData : undefined
+    })
 
-  const allOrders = (
-    data?.pages.flatMap((page: OrdersResponse) => page?.data?.data ?? []) || []
+
+
+  const orders = (
+    data?.pages.flatMap((page: OrdersResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
-  const selectedFilterConfig = filterOptions.find(
-    (f) => f.id === selectedFilter
-  );
 
-  const orders =
-    selectedFilterConfig?.status === null
-      ? allOrders
-      : allOrders.filter((o) =>
-          selectedFilterConfig?.status?.includes(o.status?.toLowerCase())
-        );
 
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -107,37 +99,35 @@ export default function OrdersPage({
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {filterOptions.map((filter) => (
+      <div className="flex items-center gap-2 flex-wrap">
+        {STATUS_TABS.map((tab) => (
           <button
-            key={filter.id}
-            onClick={() => setSelectedFilter(filter.id)}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium text-sm transition-all ${
-              selectedFilter === filter.id
-                ? "bg-[var(--primary-500)] text-white shadow-lg"
-                : "bg-[var(--background-soft)] text-[var(--foreground-muted)] border border-[var(--border)] hover:bg-[var(--card-solid)]"
-            }`}
+            key={tab.value}
+            type="button"
+            onClick={() => setStatus(tab.value)}
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
+              ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+              : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              }`}
           >
-            {filter.label}
+            {tab.label}
           </button>
         ))}
       </div>
 
       {/* Table Card Structure */}
+      {/* Table Container */}
       <TableCard
+        header={<WidgetHeader
+          icon={HiOutlineChatBubbleLeftRight} title="Orders" href="/dashboard/orders" />}
         isLoading={isLoading}
         isError={isError}
         isEmpty={orders.length === 0}
         errorMessage="Error fetching orders"
-        emptyTitle={
-          allOrders.length === 0 ? "No orders yet" : "No orders found"
-        }
-        emptyMessage={
-          allOrders.length === 0
-            ? "Start shopping to create your first order"
-            : `No orders match the "${selectedFilterConfig?.label}" filter`
-        }
+        emptyTitle="Nothing here"
+        emptyMessage={`No ${status === "all" ? "" : status} Orders right now`}
       >
+
         <thead className="border-b border-[var(--border)] bg-[var(--background-soft)]">
           <tr>
             <Th>Order ID</Th>
@@ -238,9 +228,8 @@ export default function OrdersPage({
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : "group-hover:translate-x-0.5"
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : "group-hover:translate-x-0.5"
+                }`}
             />
           </button>
         </div>

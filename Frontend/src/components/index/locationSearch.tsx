@@ -5,28 +5,28 @@ import { IoSearch, IoLocationOutline, IoChevronDown, IoClose } from "react-icons
 import { useLocation } from "@/services/Location/useGetLocations";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@heroui/react";
+import { log } from "node:console";
 
 export default function LocationSearch() {
   const router = useRouter();
   const { data, isLoading } = useLocation();
-  const cities: { state: string }[] = Array.isArray(data?.cities) ? data.cities : [];
-
-  const [cityOpen, setCityOpen] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  
+  const [stateOpen, setStateOpen] = useState(false);
+  const [selectedState, setSelectedState] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const handleSelectCity = (state: string | null) => {
-    setSelectedCity(state);
-    setCityOpen(false);
+    setSelectedState(state);
+    setStateOpen(false);
   };
 
   const handleSearch = () => {
     startTransition(() => {
       const params = new URLSearchParams();
       if (search.trim()) params.set("q", search.trim());
-      if (selectedCity) params.set("cities", selectedCity);
-      router.push(`/posts?${params.toString()}`);
+      if (selectedState) params.set("state", selectedState);
+      router.push(`/posts?listingType=user_ad&${params.toString()}`);
     });
   };
 
@@ -35,7 +35,7 @@ export default function LocationSearch() {
       className="flex items-stretch w-full bg-transparent overflow-visible transition-all duration-200">
       <div className="relative shrink-0 flex items-center">
         <button
-          onClick={() => setCityOpen((p) => !p)}
+          onClick={() => setStateOpen((p) => !p)}
           disabled={isLoading}
           className="h-full max-h-[46px] flex items-center gap-2 px-4 text-sm font-bold
                      text-[var(--foreground)] border-r border-[var(--border)]
@@ -45,16 +45,16 @@ export default function LocationSearch() {
         >
           <IoLocationOutline className="text-[var(--primary-600)] dark:text-[var(--accent-400)] text-lg shrink-0" />
           <span className="max-w-[90px] truncate text-[var(--foreground-muted)] font-semibold">
-            {selectedCity ?? "Anywhere"}
+            {selectedState ?? "Anywhere"}
           </span>
           <IoChevronDown
-            className={`text-[var(--foreground-subtle)] text-xs transition-transform duration-300 ease-out ${cityOpen ? "rotate-180" : ""}`}
+            className={`text-[var(--foreground-subtle)] text-xs transition-transform duration-300 ease-out ${stateOpen ? "rotate-180" : ""}`}
           />
         </button>
 
-        {cityOpen && (
+        {stateOpen && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setCityOpen(false)} />
+            <div className="fixed inset-0 z-40" onClick={() => setStateOpen(false)} />
             <div
               className="absolute top-[calc(100%+12px)] left-0 w-60
                          bg-[var(--card-solid)] border border-[var(--border-strong)]
@@ -68,7 +68,7 @@ export default function LocationSearch() {
                 onClick={() => handleSelectCity(null)}
                 className={`w-full text-left px-4 py-2.5 text-sm transition-colors font-semibold
                             hover:bg-[var(--background-soft)]
-                            ${!selectedCity ? "text-[var(--primary-600)] dark:text-[var(--accent-400)] bg-[var(--background-soft)]" : "text-[var(--foreground-muted)]"}`}
+                            ${!selectedState ? "text-[var(--primary-600)] dark:text-[var(--accent-400)] bg-[var(--background-soft)]" : "text-[var(--foreground-muted)]"}`}
               >
                 Anywhere in US
               </button>
@@ -83,16 +83,16 @@ export default function LocationSearch() {
                     ))}
                   </div>
                 ) : (
-                  cities.map(({ state }, idx) => (
+                  data?.data.map(({ state }, idx) => (
                     <button
                       key={state ?? idx}
                       onClick={() => handleSelectCity(state)}
                       className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between font-medium
                                   hover:bg-[var(--background-soft)] hover:text-[var(--foreground)]
-                                  ${selectedCity === state ? "text-[var(--primary-600)] dark:text-[var(--accent-400)] font-bold bg-[var(--primary-50)]/30 dark:bg-[var(--primary-950)]/40" : "text-[var(--foreground-muted)]"}`}
+                                  ${selectedState === state ? "text-[var(--primary-600)] dark:text-[var(--accent-400)] font-bold bg-[var(--primary-50)]/30 dark:bg-[var(--primary-950)]/40" : "text-[var(--foreground-muted)]"}`}
                     >
                       <span>{state}</span>
-                      {selectedCity === state && selectedCity !== null && <span className="text-xs text-[var(--primary-600)] dark:text-[var(--accent-400)]">✓</span>}
+                      {selectedState === state && selectedState !== null && <span className="text-xs text-[var(--primary-600)] dark:text-[var(--accent-400)]">✓</span>}
                     </button>
                   ))
                 )}

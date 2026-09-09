@@ -11,7 +11,7 @@ export const useRemoveFavorite = () => {
     (data) => `/wishList/${data.productId}`,
     {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/wishList/my"] });
+        queryClient.invalidateQueries({ queryKey: ["user-wishlist"] });
         toast.success("Removed from favorites.");
       },
       errorFallback: "Failed to remove from favorites.",

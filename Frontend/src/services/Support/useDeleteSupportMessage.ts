@@ -10,7 +10,7 @@ export const useDeleteSupportMessage = () => {
   return useDelete<{ success: boolean; message?: string }, { id: string }>((d) => `${ENDPOINT}/${d.id}`, {
     onSuccess: () => {
       toast.success("Message deleted");
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      queryClient.invalidateQueries({ queryKey: ["admin-support"] });
     },
     errorFallback: "Failed to delete",
   });

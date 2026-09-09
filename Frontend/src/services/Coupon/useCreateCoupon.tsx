@@ -12,7 +12,7 @@ export const useCreateCoupon = (onSuccessCallback?: () => void) => {
   const { mutate, isPending, ...rest } = usePost<CouponMutationResponse, CreateCouponPayload>(ENDPOINT, {
     onSuccess: () => {
       toast.success("Coupon created");
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      queryClient.invalidateQueries({ queryKey: ["/admin/coupon"] });
       onSuccessCallback?.();
     },
     errorFallback: "Failed to create coupon",

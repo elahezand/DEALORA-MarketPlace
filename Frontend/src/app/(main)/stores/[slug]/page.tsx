@@ -21,11 +21,10 @@ export default async function StoreDetailPage({
   const { slug } = await params;
 
   const result = await useServerData<StoreDetailServerResponse>(
-    `/stores/slug/${slug}?limit=20`,
+    `/stores/slug/${slug}`,
     `store-${slug}`,
     60
-  );
-
+  );  
   const store = result?.store;
 
   if (!store) {

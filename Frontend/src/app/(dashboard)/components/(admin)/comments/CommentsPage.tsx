@@ -14,7 +14,6 @@ import { useDeleteComment } from "@/services/Comments/useDeleteComment";
 import { useAnswerComment } from "@/services/Comments/useAnswerComment";
 import { InfiniteData } from "@tanstack/react-query";
 import { CommentStatus, AdminComment, AdminCommentsResponse } from "@/types/CommetTypes";
-import { log } from "util";
 
 const ENDPOINT = "/comments/admin";
 
@@ -37,7 +36,7 @@ export const STATUS_TONE: Record<CommentStatus, "success" | "warning" | "destruc
   deleted: "neutral",
 };
 
-export default function CommentsClient({ initialData }: CommentsClientProps) {  
+export default function CommentsClient({ initialData }: CommentsClientProps) {
   const [status, setStatus] = useState<CommentStatus | "all">("pending");
   const [rejectTarget, setRejectTarget] = useState<AdminComment | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -54,8 +53,10 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminCommentsResponse>(ENDPOINT, params,
-    { queryKey: ["admin-comments-pending"], initialData }
+  } = useInfiniteGet<AdminCommentsResponse>(ENDPOINT, params, {
+    queryKey: ["/comments/admin", status],
+    initialData: status === "pending" ? initialData : undefined,
+  }
   );
 
   const comments: AdminComment[] = (
@@ -80,13 +81,13 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
     setReplyBody("");
   }
 
-  function submitReply(e: React.FormEvent) {    
+  function submitReply(e: React.FormEvent) {
     e.preventDefault();
     if (!replyTarget || !replyBody.trim()) return;
     sendAnswer({ parentId: replyTarget._id, body: replyBody.trim() });
   }
 
-  function handleApprove(c: AdminComment) {    
+  function handleApprove(c: AdminComment) {
     setActioningId(c._id);
     moderate({ id: c._id, status: "approved" });
   }
@@ -139,8 +140,8 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
             type="button"
             onClick={() => setStatus(tab.value)}
             className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
-                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+              : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
               }`}
           >
             {tab.label}
@@ -191,11 +192,11 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
                 <td className="px-6 py-4 text-sm text-[var(--foreground-muted)] truncate max-w-[160px]">
                   {product?.title || "—"}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   <Badge tone={STATUS_TONE[c.status]} label={c.status} />
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                <td className="px-4 py-4">
+                  <div className="flex items-center justify-center gap-1 flex-wrap">
                     {!c.parentId && (
                       <button
                         type="button"

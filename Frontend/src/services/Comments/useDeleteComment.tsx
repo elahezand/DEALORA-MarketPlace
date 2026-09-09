@@ -8,7 +8,7 @@ export const useDeleteComment = () => {
   return useDelete<any, { id: string }>((d) => `/comments/${d.id}`, {
     onSuccess: () => {
       toast.success("Comment deleted");
-      queryClient.invalidateQueries({ queryKey: ["admin-comments-pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/comments/admin"] });
     },
     errorFallback: "Action failed",
   });

@@ -2,12 +2,14 @@ import { useAuthServerData } from "@/utils/hooks/useServerData";
 import MyListingsResponse from "@/types/Listings";
 import ListingsPage from "../../../components/(user)/listings/listingsPage";
 
+export const revalidate = 60;
 export default async function ListingsPageWrapper() {
-  const data = await useAuthServerData<MyListingsResponse>("/listings/my");  
+  const initialListings = await useAuthServerData<MyListingsResponse>("/listings/my?status=pending"); ;  
   return (
     <ListingsPage
-      initialData={data?.data?.data ?? []}
-      initialPagination={data?.data?.pagination}
+     initialData={
+        initialListings ? { pages: [initialListings], pageParams: [null] } : undefined
+      }
     />
   );
 }

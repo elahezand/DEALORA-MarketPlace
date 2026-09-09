@@ -4,11 +4,11 @@ import OrdersPage from "@/app/(dashboard)/components/(user)/orders/ordersPage";
 export const revalidate = 60;
 
 export default async function OrdersPageWrapper() {
-   const data = await useAuthServerData<OrdersResponse>("/orders/my"); 
+  const initialOrders = await useAuthServerData<OrdersResponse>("/orders/my?status=processing");
   return (
     <OrdersPage
-      initialData={data?.data?.data || []}
-      initialPagination={data?.data?.pagination}
-    />
+      initialData={
+        initialOrders ? { pages: [initialOrders], pageParams: [null] } : undefined
+      } />
   );
 }

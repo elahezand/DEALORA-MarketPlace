@@ -50,7 +50,12 @@ export default function OffersClient({ initialData }: OffersClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<OffersResponse>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<OffersResponse>(ENDPOINT, params,
+     {
+      queryKey: ["offers-admin", status],
+      initialData: status === "pending" ? initialData : undefined,
+    });
+
 
   const offers: Offer[] = (
     data?.pages?.flatMap((page: OffersResponse) => page?.data ?? []) || []
@@ -141,7 +146,7 @@ export default function OffersClient({ initialData }: OffersClientProps) {
         </thead>
         <tbody>
           {offers.map((o) => {
-            const product = typeof o.product === "object" ? o.product : null;
+            const product = typeof o.listing === "object" ? o.listing : null;
             const store = typeof o.store === "object" ? o.store : null;
             const seller = typeof o.seller === "object" ? o.seller : null;
             const busy = actioningId === o._id;

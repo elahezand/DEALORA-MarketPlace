@@ -10,7 +10,7 @@ export const useDeleteCoupon = () => {
   return useDelete<{ success: boolean; message: string }, { id: string }>((d) => `${ENDPOINT}/${d.id}`, {
     onSuccess: () => {
       toast.success("Coupon deleted");
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      queryClient.invalidateQueries({ queryKey: ["/admin/coupon"] });
     },
     errorFallback: "Failed to delete coupon",
   });

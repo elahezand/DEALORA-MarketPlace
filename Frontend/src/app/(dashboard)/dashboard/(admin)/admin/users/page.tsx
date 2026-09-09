@@ -5,8 +5,6 @@ import { AdminUsersResponse } from "@/types/User";
 export default async function AdminUsersPage() {
   const initialUsers = await useAuthServerData<AdminUsersResponse>(
     "/users?limit=20",
-    "admin-users",
-    60 * 5
   );  
 
   return (

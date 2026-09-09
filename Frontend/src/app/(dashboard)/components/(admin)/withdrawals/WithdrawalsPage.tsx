@@ -20,7 +20,6 @@ import { useProcessWithdrawal } from "@/services/Withdrawls/useProcessWithdrawal
 
 const STATUS_TABS: { value: WithdrawalStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
   { value: "processing", label: "Processing" },
   { value: "completed", label: "Completed" },
   { value: "rejected", label: "Rejected" },
@@ -45,7 +44,7 @@ interface WithdrawalsClientProps {
 export default function WithdrawalsClient({
   initialData,
 }: WithdrawalsClientProps) {
-  const [status, setStatus] = useState<WithdrawalStatus | "all">("pending");
+  const [status, setStatus] = useState<WithdrawalStatus | "all">("processing");
   const [target, setTarget] = useState<Withdrawal | null>(null);
   const [action, setAction] = useState<"processing" | "completed" | "rejected">(
     "completed"
@@ -62,7 +61,7 @@ export default function WithdrawalsClient({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<WithdrawalsResponse>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<WithdrawalsResponse>(ENDPOINT, params, { queryKey: ["admin-withdrawals",status], initialData });
 
   const withdrawals: Withdrawal[] = (
     data?.pages?.flatMap((page: WithdrawalsResponse) => page?.data ?? []) || []
@@ -107,11 +106,10 @@ export default function WithdrawalsClient({
             key={tab.value}
             type="button"
             onClick={() => setStatus(tab.value)}
-            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${
-              status === tab.value
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
                 ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
                 : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
-            }`}
+              }`}
           >
             {tab.label}
           </button>
@@ -204,9 +202,8 @@ export default function WithdrawalsClient({
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : ""
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : ""
+                }`}
             />
           </button>
         </div>

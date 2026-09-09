@@ -13,7 +13,7 @@ export const useAnswerSupportMessage = (onSuccessCallback?: () => void) => {
     {
       onSuccess: () => {
         toast.success("Reply sent");
-        queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+        queryClient.invalidateQueries({ queryKey: ["admin-support"] });
         onSuccessCallback?.();
       },
       errorFallback: "Failed to send reply",

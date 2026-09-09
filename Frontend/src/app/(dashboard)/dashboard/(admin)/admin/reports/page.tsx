@@ -2,19 +2,19 @@ import { useAuthServerData } from "@/utils/hooks/useServerData";
 import ReportsClient from "@/app/(dashboard)/components/(admin)/reports/ReportsPage";
 import { AdminReportsResponse } from "@/types/Report";
 
+export const revalidate = 60;
+
 export default async function AdminReportsPage() {
   const initialReports = await useAuthServerData<AdminReportsResponse>(
-    "/reports/admin?limit=20",
-    "admin-reports",
-    60 * 5
+    "/reports/admin?status=pending",
   );
 
   return (
     <ReportsClient
-   initialData={
+      initialData={
         initialReports
           ? { pages: [initialReports], pageParams: [null] }
           : undefined
-      }    />
+      } />
   );
 }

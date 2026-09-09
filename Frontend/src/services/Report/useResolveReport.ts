@@ -14,7 +14,7 @@ export const useResolveReport = (onSuccessCallback?: () => void) => {
   >((d) => `${ENDPOINT}/${d.id}/resolve`, {
     onSuccess: () => {
       toast.success("Report updated");
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
       onSuccessCallback?.();
     },
     errorFallback: "Action failed",

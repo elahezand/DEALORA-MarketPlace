@@ -18,7 +18,7 @@ export function useAnswerComment(onSuccessCallback?: () => void) {
     {
       onSuccess: () => {
         toast.success("Reply posted");
-        queryClient.invalidateQueries({ queryKey: ["admin-comments-pending"] });
+        queryClient.invalidateQueries({ queryKey: ["/comments/admin"] });
         onSuccessCallback?.();
       },
       errorFallback: "Failed to post reply",

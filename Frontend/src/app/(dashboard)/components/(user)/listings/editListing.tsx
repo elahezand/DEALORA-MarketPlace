@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { HiOutlineArrowLeft } from "react-icons/hi2";
+import { HiOutlineArrowLeft, HiOutlineXMark, HiOutlinePhoto } from "react-icons/hi2";
 import { useUpdateListing } from "@/services/Listings/useUpdateListing";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { ListingProps } from "@/types/Listings";
+import { getUrl } from "@/utils/helper";
 
 interface EditListingProps {
   listing: ListingProps | null;
@@ -24,6 +26,10 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
   const [shippingType, setShippingType] = useState(listing?.shipping?.type ?? "standard");
   const [shippingCost, setShippingCost] = useState(listing?.shipping?.cost ?? 0);
 
+ 
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [newPreviews, setNewPreviews] = useState<string[]>([]);
+
   const { mutate: updateListing, isPending } = useUpdateListing(listingId);
 
   if (!listing) {
@@ -40,6 +46,27 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
 
   const isOwner = profileLoading || !listing.user || listing.user._id === user?._id;
 
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).slice(0, 10);
+    if (!files.length) return;
+    setNewImages(files);
+    setNewPreviews(files.map((f) => URL.createObjectURL(f)));
+  };
+
+  const removeStagedImage = (index: number) => {
+    const updatedFiles = newImages.filter((_, i) => i !== index);
+    const updatedPreviews = newPreviews.filter((_, i) => i !== index);
+    URL.revokeObjectURL(newPreviews[index]);
+    setNewImages(updatedFiles);
+    setNewPreviews(updatedPreviews);
+  };
+
+  const clearStagedImages = () => {
+    newPreviews.forEach((p) => URL.revokeObjectURL(p));
+    setNewImages([]);
+    setNewPreviews([]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -54,6 +81,7 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
           type: shippingType,
           cost: Number(shippingCost) || 0,
         },
+        ...(newImages.length > 0 && { pics: newImages }),
       },
       {
         onSuccess: () => {
@@ -65,7 +93,7 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-10 max-w-2xl mx-auto w-full">
+    <div className="flex flex-col gap-6 pb-10 mx-auto w-full">
       <div className="flex items-center gap-3">
         <Link
           href="/dashboard/listings"
@@ -89,6 +117,82 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="card rounded-2xl border border-[var(--border)] p-6 flex flex-col gap-5">
+          {/* PHOTOS */}
+          <div className="flex flex-col gap-2.5">
+            <label className="text-sm font-bold text-[var(--foreground)]">Photos</label>
+
+            {newPreviews.length === 0 ? (
+              <>
+                <span className="text-xs text-[var(--foreground-muted)]">
+                  Current photos — upload new ones below to replace this whole gallery.
+                </span>
+                <div className="flex flex-wrap gap-3">
+                  {(listing.images?.length ? listing.images : []).map((img, i) => (
+                    <div
+                      key={i}
+                      className="relative w-20 h-20 rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--background-soft)]"
+                    >
+                      <Image
+                        src={getUrl(img) || ""}
+                        alt={`${listing.title} photo ${i + 1}`}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                  {!listing.images?.length && (
+                    <div className="w-20 h-20 rounded-lg border border-dashed border-[var(--border)] flex items-center justify-center text-[var(--foreground-subtle)]">
+                      <HiOutlinePhoto size={22} />
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="text-xs font-bold text-[var(--destructive)]">
+                  These {newPreviews.length} photo{newPreviews.length === 1 ? "" : "s"} will replace the current gallery when you save.
+                </span>
+                <div className="flex flex-wrap gap-3">
+                  {newPreviews.map((src, i) => (
+                    <div
+                      key={src}
+                      className="relative w-20 h-20 rounded-lg overflow-hidden border border-[var(--border)] group"
+                    >
+                      <Image src={src} alt={`New photo ${i + 1}`} fill unoptimized className="object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeStagedImage(i)}
+                        className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove photo"
+                      >
+                        <HiOutlineXMark size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={clearStagedImages}
+                  className="text-xs font-bold text-[var(--foreground-muted)] hover:text-[var(--foreground)] w-fit"
+                >
+                  Cancel photo change (keep current gallery)
+                </button>
+              </>
+            )}
+
+            <label className="w-fit cursor-pointer text-xs font-bold px-3 py-2 rounded-lg border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors">
+              {newPreviews.length ? "Choose different photos" : "Upload new photos"}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFilesSelected}
+                className="hidden"
+              />
+            </label>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-bold text-[var(--foreground)]">Title</label>
             <input
@@ -167,8 +271,8 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
           </div>
 
           <p className="text-xs text-[var(--foreground-muted)]">
-            Note: images, category, and location aren&apos;t editable here yet — this form updates
-            the listing&apos;s title, description, price, condition, and shipping only.
+            Note: category and location aren&apos;t editable here yet — this form updates
+            the listing&apos;s photos, title, description, price, condition, and shipping.
           </p>
 
           <div className="flex justify-end gap-3 pt-2 border-t border-[var(--border)]">

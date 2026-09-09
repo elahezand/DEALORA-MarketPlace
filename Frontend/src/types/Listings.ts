@@ -1,6 +1,8 @@
 import { IPagination } from "./common";
 import { Offer } from "./Offer";
 
+export type ListingStatus = "pending" | "accepted" | "rejected" ;
+
 export interface CategoryPathItem {
   _id: string;
   title: string;
@@ -23,11 +25,6 @@ export interface ListingProps {
     name: string;
     phone: string
   };
-  store?: {
-    _id: string;
-    name: string;
-  };
-
   title: string;
   slug?: string;
   description: string;
@@ -51,8 +48,6 @@ export interface ListingProps {
   location?: {
     state: string;
     city: string;
-    lat?: number;
-    lng?: number;
   };
 
   variants?: ListingVariant[];
@@ -83,10 +78,9 @@ export interface PublicListingsResponse {
 // Shape returned by GET /listings/my (dashboard "my listings") - nested under data.
 export default interface MyListingsResponse {
   success: boolean;
-  data: {
     data: ListingProps[];
     pagination?: IPagination;
-  };
+  
 }
 export interface InfiniteListingsSectionProps {
     initialData: ListingProps[];

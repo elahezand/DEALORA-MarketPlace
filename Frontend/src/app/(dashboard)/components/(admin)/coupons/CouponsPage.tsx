@@ -11,7 +11,7 @@ import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, inputClass } from "../shared/AdminFormModal";
 import { FormState, Coupon, CouponsResponse, CreateCouponPayload, UpdateCouponPayload } from "@/types/Coupon";
-import { useToggleActiveCoupon,} from "@/services/Coupon/useToggleActiveCoupon";
+import { useToggleActiveCoupon, } from "@/services/Coupon/useToggleActiveCoupon";
 import { useDeleteCoupon } from "@/services/Coupon/useDeleteCoupon";
 import { useCreateCoupon } from "@/services/Coupon/useCreateCoupon";
 import { useUpdateCoupon } from "@/services/Coupon/useUpdateCoupon";
@@ -45,9 +45,7 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
     isLoading,
     isError,
   } = useInfiniteGet<CouponsResponse>(
-    ENDPOINT,
-    { limit: 20 },
-    { initialData }
+    ENDPOINT, { limit: 20 }, { queryKey: ["/admin/coupon"], initialData }
   );
 
   const coupons: Coupon[] = (
@@ -124,7 +122,7 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
       },
       cancel: {
         label: "Cancel",
-        onClick: () => {},
+        onClick: () => { },
       },
     });
   }

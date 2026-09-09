@@ -9,13 +9,13 @@ import {
   HiOutlineEye,
   HiOutlineTrash,
   HiOutlinePencilSquare,
-  HiOutlineQueueList,
+  HiOutlineChatBubbleLeftRight
 } from "react-icons/hi2";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useDeleteListing } from "@/services/Listings/useDeleteListing";
-import { ListingProps } from "@/types/Listings";
-import type MyListingsResponse from "@/types/Listings";
-import { IPagination } from "@/types/common";
+import { InfiniteData } from "@tanstack/react-query";
+import { ListingStatus } from "@/types/Listings";
+import MyListingsResponse from "@/types/Listings";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
@@ -29,28 +29,23 @@ const STATUS_TONE: Record<string, "success" | "warning" | "destructive"> = {
   rejected: "destructive",
   deleted: "destructive",
 };
-
-const filterOptions = [
-  { id: "all", label: "All Listings", status: null },
-  { id: "active", label: "Active", status: ["active", "accepted"] },
-  { id: "pending", label: "Pending Review", status: ["pending"] },
-  { id: "draft", label: "Drafts", status: ["draft"] },
-  { id: "inactive", label: "Inactive", status: ["inactive"] },
-  { id: "rejected", label: "Rejected", status: ["rejected"] },
+const STATUS_TABS: { value: ListingStatus | "all"; label: string }[] = [
+  { value: "all", label: "All", },
+  { value: "accepted", label: "Accepted", },
+  { value: "pending", label: "Pending" },
+  { value: "rejected", label: "Rejected", },
 ];
 
 interface InfiniteListingsSectionProps {
-  initialData: ListingProps[];
-  initialPagination?: IPagination;
+  initialData?: InfiniteData<MyListingsResponse>;
 }
 
-const EMPTY_PAGINATION: IPagination = { limit: 20, nextCursor: null, hasMore: false };
 
 export default function ListingsPage({
   initialData,
-  initialPagination,
 }: InfiniteListingsSectionProps) {
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [status, setStatus] = useState<ListingStatus | "all">("pending");
+  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
 
   const {
     data,
@@ -59,43 +54,37 @@ export default function ListingsPage({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<MyListingsResponse>("/listings/my", {}, {
-    initialData: {
-      pages: [{ success: true, data: { data: initialData, pagination: initialPagination ?? EMPTY_PAGINATION } }],
-      pageParams: [null],
-    },
-  });
+  } = useInfiniteGet<MyListingsResponse>(
+    "/listings/my",
+    params,
+    {
+      queryKey: ["/listings/my", status],
+      initialData: status === "pending" ? initialData : undefined
+    }
 
-  const { mutate: deleteListing, isPending: isDeleting } = useDeleteListing();
-
-const handleDelete = (id: string) => {
-  toast.warning("Are you sure you want to delete this listing?", {
-    description: "This action cannot be undone.",
-    action: {
-      label: "Delete",
-      onClick: () => deleteListing({ id }),
-    },
-    cancel: {
-      label: "Cancel",
-      onClick: () => {},
-    },
-  });
-};
-
-  const allListings = (
-    data?.pages.flatMap((page: MyListingsResponse) => page?.data?.data ?? []) || []
-  ).filter(Boolean);
-
-  const selectedFilterConfig = filterOptions.find(
-    (f) => f.id === selectedFilter
   );
 
-  const listings =
-    selectedFilterConfig?.status === null
-      ? allListings
-      : allListings.filter((l) =>
-          selectedFilterConfig?.status?.includes(l.status)
-        );
+  const listings = (
+    data?.pages?.flatMap(
+      (page: MyListingsResponse) => page?.data ?? []
+    ) || []
+  ).filter(Boolean);
+
+  
+  const { mutate: deleteListing, isPending: isDeleting } = useDeleteListing();
+  const handleDelete = (id: string) => {
+    toast.warning("Are you sure you want to delete this listing?", {
+      description: "This action cannot be undone.",
+      action: {
+        label: "Delete",
+        onClick: () => deleteListing({ id }),
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => { },
+      },
+    });
+  };
 
   return (
     <div className="flex flex-col gap-8 pb-10 w-full">
@@ -117,41 +106,33 @@ const handleDelete = (id: string) => {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {filterOptions.map((filter) => (
+      <div className="flex items-center gap-2 flex-wrap">
+        {STATUS_TABS.map((tab) => (
           <button
-            key={filter.id}
-            onClick={() => setSelectedFilter(filter.id)}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium text-sm transition-all ${
-              selectedFilter === filter.id
-                ? "bg-[var(--primary-500)] text-white shadow-lg"
-                : "bg-[var(--background-soft)] text-[var(--foreground-muted)] border border-[var(--border)] hover:bg-[var(--card-solid)]"
-            }`}
+            key={tab.value}
+            type="button"
+            onClick={() => setStatus(tab.value)}
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
+              ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+              : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              }`}
           >
-            {filter.label}
+            {tab.label}
           </button>
         ))}
       </div>
 
+
       {/* Table Container */}
       <TableCard
-        header={
-          <WidgetHeader
-            icon={HiOutlineQueueList}
-            title="Listings Directory"
-            href="/dashboard/listings"
-          />
-        }
+        header={<WidgetHeader
+          icon={HiOutlineChatBubbleLeftRight} title="Comments" href="/dashboard/listings" />}
         isLoading={isLoading}
         isError={isError}
         isEmpty={listings.length === 0}
-        errorMessage="Error fetching listings"
-        emptyTitle="No listings found"
-        emptyMessage={
-          selectedFilter === "all"
-            ? "Create your first listing to get started"
-            : `No listings match the "${selectedFilterConfig?.label}" filter`
-        }
+        errorMessage="Error fetching comments"
+        emptyTitle="Nothing here"
+        emptyMessage={`No ${status === "all" ? "" : status} Listings right now`}
       >
         <thead className="border-b border-[var(--border)] bg-[var(--background-soft)]">
           <tr>
@@ -164,7 +145,7 @@ const handleDelete = (id: string) => {
           </tr>
         </thead>
         <tbody>
-          {listings.map((listing: ListingProps, index: number) => {
+          {listings.map((listing) => {
             if (!listing) return null;
             const statusKey = listing.status?.toLowerCase() || "inactive";
             const tone = STATUS_TONE[statusKey] ?? "warning";
@@ -175,7 +156,7 @@ const handleDelete = (id: string) => {
 
             return (
               <tr
-                key={listing._id || index + 1}
+                key={listing._id}
                 className="border-b border-[var(--border)] hover:bg-[var(--background-soft)] transition-colors"
               >
                 {/* Title & Image */}
@@ -183,8 +164,8 @@ const handleDelete = (id: string) => {
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-[var(--background-soft)] rounded-lg overflow-hidden flex-shrink-0 border border-[var(--border)]">
                       <img
-                        src={getUrl( listing.images?.[0])
-                        || "/placeholder.png"}
+                        src={getUrl(listing.images?.[0])
+                          || "/placeholder.png"}
                         alt={listing.title}
                         className="w-full h-full object-cover"
                       />
@@ -265,11 +246,10 @@ const handleDelete = (id: string) => {
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage
-                  ? "animate-spin"
-                  : "group-hover:translate-x-0.5"
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage
+                ? "animate-spin"
+                : "group-hover:translate-x-0.5"
+                }`}
             />
           </button>
         </div>

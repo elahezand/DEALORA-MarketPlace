@@ -4,9 +4,7 @@ import { ArticlesResponse } from "@/types/Article";
 
 export default async function AdminArticlesPage() {
   const initialArticles = await useAuthServerData<ArticlesResponse>(
-    "/articles/admin?limit=20",
-    "admin-articles",
-    60 * 5
+    "/articles/admin",
   );
 
   return (

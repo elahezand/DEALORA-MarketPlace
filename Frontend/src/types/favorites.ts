@@ -19,3 +19,5 @@ export default interface FavoritesTypeResponse {
     pagination?: IPagination;
   
 }
+
+

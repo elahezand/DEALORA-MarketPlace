@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { useUpdateListingStatus } from "@/services/Listings/useUpdateListingStatus";
 import { getUrl } from "@/utils/helper"
 
+  const Endpoint = "/listings/admin";
+
 
 type ListingStatus = ListingProps["status"];
 
@@ -47,7 +49,6 @@ export default function ListingsModerationClient({
   const [status, setStatus] = useState<ListingStatus>("pending");
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const endpoint = "/listings/admin";
   const params: QueryParams = { status, limit: 20 };
 
   const {
@@ -57,7 +58,10 @@ export default function ListingsModerationClient({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<PublicListingsResponse>(endpoint, params,{ queryKey: ["listings-moderation"]});
+  } = useInfiniteGet<PublicListingsResponse>(Endpoint, params, {
+    queryKey: ["listings-moderation", status],
+    initialData: status === "pending" ? initialData : undefined,
+  });
 
   const listings: ListingProps[] = (
     data?.pages?.flatMap((page: PublicListingsResponse) => page?.data ?? []) || []

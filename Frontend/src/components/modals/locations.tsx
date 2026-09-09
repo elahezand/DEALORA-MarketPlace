@@ -18,11 +18,11 @@ export default function LocationsModal({ isOpen, setIsOpen }: Props) {
     const searchParams = useSearchParams();
 
     const { data, isLoading } = useLocation()
-    const states = useMemo(() => (data?.cities ?? []).map((d) => d.state), [data]);
+    const states = useMemo(() => (data?.data ?? []).map((d) => d.state), [data]);
 
     const citiesForState = useMemo(() => {
         if (!selectedState) return [];
-        return (data?.cities ?? []).find((d) => d.state === selectedState)?.cities ?? [];
+        return (data?.data ?? []).find((d) => d.state === selectedState)?.cities ?? [];
     }, [data, selectedState]);
 
 

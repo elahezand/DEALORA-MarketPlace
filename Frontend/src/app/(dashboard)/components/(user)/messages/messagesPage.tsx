@@ -2,27 +2,19 @@
 
 import Link from "next/link";
 import { HiOutlineChatBubbleLeftRight, HiChevronRight } from "react-icons/hi2";
-import { useConversations } from "@/services/Chat/useConversations";
+import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
-import { IConversation, ConversationsResponse } from "@/types/Chat";
-import { IPagination } from "@/types/common";
+import { ConversationsResponse } from "@/types/Chat";
+import { InfiniteData } from "@tanstack/react-query";
 import { timeAgo } from "@/utils/timeAgo";
+import { getUrl } from "@/utils/helper";
 
 interface MessagesPageProps {
-  initialData?: IConversation[];
-  initialPagination?: IPagination | null;
+  initialData?: InfiniteData<ConversationsResponse>;
 }
 
-const getMediaUrl = (path?: string | null) => {
-  if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-  return `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
-};
-
 export default function MessagesPage({
-  initialData = [],
-  initialPagination = null,
+  initialData,
 }: MessagesPageProps) {
   const { user } = useGetProfile();
 
@@ -33,8 +25,15 @@ export default function MessagesPage({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useConversations({ initialData, initialPagination });
+  } = useInfiniteGet<ConversationsResponse>(
+    "/chat/conversations",
+    { limit: 20 },
+    {
+      queryKey: ["/chat/conversations"],
+      initialData
+    }
 
+  );
   const conversations = (
     data?.pages.flatMap((page: ConversationsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
@@ -89,8 +88,8 @@ export default function MessagesPage({
             const unread = user?._id
               ? conversation.unreadCount?.[user._id] || 0
               : 0;
-            const avatarUrl = getMediaUrl(otherParticipant?.profilePicture);
-            const listingImage = getMediaUrl(conversation.listing?.images?.[0]);
+            const avatarUrl = getUrl(otherParticipant?.profilePicture);
+            const listingImage = getUrl(conversation.listing?.images?.[0]);
 
             return (
               <Link
@@ -117,11 +116,10 @@ export default function MessagesPage({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p
-                      className={`text-sm truncate ${
-                        unread > 0
-                          ? "font-black text-[var(--foreground)]"
-                          : "font-bold text-[var(--foreground)]"
-                      }`}
+                      className={`text-sm truncate ${unread > 0
+                        ? "font-black text-[var(--foreground)]"
+                        : "font-bold text-[var(--foreground)]"
+                        }`}
                     >
                       {otherParticipant?.username || otherParticipant?.phone || "User"}
                     </p>
@@ -134,11 +132,10 @@ export default function MessagesPage({
 
                   <div className="flex items-center justify-between gap-2 mt-0.5">
                     <p
-                      className={`text-xs truncate ${
-                        unread > 0
-                          ? "font-semibold text-[var(--foreground)]"
-                          : "text-[var(--foreground-muted)]"
-                      }`}
+                      className={`text-xs truncate ${unread > 0
+                        ? "font-semibold text-[var(--foreground)]"
+                        : "text-[var(--foreground-muted)]"
+                        }`}
                     >
                       {conversation.lastMessage?.sender === user?._id ? "You: " : ""}
                       {conversation.lastMessage?.body || "No messages yet"}
@@ -184,9 +181,8 @@ export default function MessagesPage({
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : "group-hover:translate-x-0.5"
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : "group-hover:translate-x-0.5"
+                }`}
             />
           </button>
         </div>

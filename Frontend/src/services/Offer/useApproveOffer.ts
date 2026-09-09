@@ -14,7 +14,7 @@ export const useApproveOffer = (onSuccessCallback?: () => void) => {
   >((d) => `${ENDPOINT}/${d.offerId}/approve`, {
     onSuccess: () => {
       toast.success("Offer updated");
-      queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      queryClient.invalidateQueries({ queryKey: ["offers-admin"] });
       onSuccessCallback?.();
     },
     errorFallback: "Action failed",

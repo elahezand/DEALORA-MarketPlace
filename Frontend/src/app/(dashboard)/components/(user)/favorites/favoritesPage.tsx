@@ -1,17 +1,14 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { toast } from "sonner";
 import { HiChevronRight } from "react-icons/hi";
 import { HiOutlineHeart, HiOutlineEye, HiOutlineTrash } from "react-icons/hi2";
-import qs from "qs";
 import { getUrl } from "@/utils/helper"
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useRemoveFavorite } from "@/services/Favorites/useRemoveFavorite";
 import FavoritesTypeResponse from "@/types/favorites";
-import { IPagination } from "@/types/common";
-import { QueryParams } from "@/types/api/ErrorTypes";
+import { InfiniteData } from "@tanstack/react-query";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge, ViewAction } from "../../shared/table/TableParts";
@@ -19,9 +16,8 @@ import { Th, Badge, ViewAction } from "../../shared/table/TableParts";
 type FavoriteItem = FavoritesTypeResponse["data"][number];
 
 interface InfiniteFavoritesSectionProps {
-  initialData: FavoriteItem[];
-  initialPagination?: IPagination | null;
-  queryString?: string;
+  initialData?: InfiniteData<FavoritesTypeResponse>;
+  
 }
 
 const STATUS_TONE: Record<string, "success" | "warning" | "destructive"> = {
@@ -33,10 +29,7 @@ const STATUS_TONE: Record<string, "success" | "warning" | "destructive"> = {
 
 export default function InfiniteFavoritesSection({
   initialData,
-  initialPagination,
-  queryString = "",
 }: InfiniteFavoritesSectionProps) {
-  const parsedParams = qs.parse(queryString) as QueryParams;
   const {
     data,
     fetchNextPage,
@@ -44,12 +37,12 @@ export default function InfiniteFavoritesSection({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<FavoritesTypeResponse>("/wishList/my", parsedParams, {
-    initialData: {
-      pages: [{ data: initialData, pagination: initialPagination ?? undefined }],
-      pageParams: [null],
-    },
-  });
+  } =
+ useInfiniteGet<FavoritesTypeResponse>(
+    "/wishList/my",
+    { limit: 20 },
+    { queryKey: ["user-wishlist"], initialData }
+  );
 
   const { mutate: deleteFavorite } = useRemoveFavorite();
 

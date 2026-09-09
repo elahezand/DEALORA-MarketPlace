@@ -11,7 +11,7 @@ export const useUpdateCoupon = (onSuccessCallback?: () => void) => {
     return usePatch<CouponMutationResponse, UpdateCouponPayload>((d) => `${ENDPOINT}/${d._id}`, {
         onSuccess: () => {
             toast.success("Coupon updated");
-            queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+            queryClient.invalidateQueries({ queryKey: ["/admin/coupon"] });
             onSuccessCallback?.();
         },
         errorFallback: "Failed to update coupon",

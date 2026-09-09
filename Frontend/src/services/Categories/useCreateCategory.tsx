@@ -22,7 +22,7 @@ export const useCreateCategory = (onSuccessCallback?: () => void) => {
     {
       onSuccess: (res) => {
         toast.success(res.message || "Category created");
-        queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+        queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
         onSuccessCallback?.();
       },
       errorFallback: "Failed to create category",

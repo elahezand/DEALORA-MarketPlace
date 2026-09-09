@@ -57,7 +57,9 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminReportsResponse>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<AdminReportsResponse>(ENDPOINT, params, {  queryKey: ["admin-reports", status],
+    initialData: status === "pending" ? initialData : undefined,
+  });;
 
   const reports: AdminReportRow[] = (
     data?.pages?.flatMap((page: AdminReportsResponse) => page?.data ?? []) || []

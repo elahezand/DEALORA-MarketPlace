@@ -4,16 +4,20 @@ import { toast } from "sonner";
 
 const ENDPOINT = "/notifications";
 
+export interface CreateNotificationPayload {
+  msg: string;
+  user: string;
+}
+
 export const useCreateNotification = (onSuccessCallback?: () => void) => {
   const queryClient = useQueryClient();
 
-  return usePost<any, { msg: string; admin?: string }>(ENDPOINT, {
+  return usePost<unknown, CreateNotificationPayload>(ENDPOINT, {
     onSuccess: () => {
-      toast.success("Note added");
+      toast.success("Notification sent");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
       onSuccessCallback?.();
     },
-    errorFallback: "Failed to add note",
+    errorFallback: "Failed to send notification",
   });
 };
-

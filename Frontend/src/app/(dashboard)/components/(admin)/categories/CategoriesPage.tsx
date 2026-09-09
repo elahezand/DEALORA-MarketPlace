@@ -32,9 +32,7 @@ export default function CategoriesPage({ initialData }: CategoriesPageProps) {
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
 
   const { data, isLoading, isError } = useGet<CategoriesTypeResponse>(
-    ENDPOINT,
-    undefined,
-    { initialData }
+    ENDPOINT, { limit: 20 }, { queryKey: ["admin-categories"], initialData }
   );
   const categoryTree = data?.data ?? [];
   const flatCategories = useMemo(() => flattenCategories(categoryTree), [categoryTree]);
@@ -77,7 +75,7 @@ export default function CategoriesPage({ initialData }: CategoriesPageProps) {
       },
       cancel: {
         label: "Cancel",
-        onClick: () => {},
+        onClick: () => { },
       },
     });
   }

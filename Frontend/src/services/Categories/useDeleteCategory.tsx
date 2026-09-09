@@ -12,7 +12,7 @@ export const useDeleteCategory = (onSettledCallback?: () => void) => {
     {
       onSuccess: (res) => {
         toast.success(res.message || "Category deleted");
-        queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+        queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
       },
       errorFallback: "Failed to delete category",
       onSettled: () => {

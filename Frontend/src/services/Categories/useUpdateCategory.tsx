@@ -22,7 +22,7 @@ export const useUpdateCategory = (onSuccessCallback?: () => void) => {
     {
       onSuccess: (res) => {
         toast.success(res.message || "Category updated");
-        queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+        queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
         onSuccessCallback?.();
       },
       errorFallback: "Unknown Error",

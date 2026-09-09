@@ -78,7 +78,6 @@ const adminMenuGroups: AdminNavGroup[] = [
     label: "System",
     items: [
       { name: "Newsletter", href: "/dashboard/admin/newsletter", icon: HiOutlineEnvelope },
-      { name: "Notifications", href: "/dashboard/admin/notifications", icon: HiOutlineBell },
       { name: "Settings", href: "/dashboard/admin/settings", icon: HiOutlineCog6Tooth },
     ],
   },

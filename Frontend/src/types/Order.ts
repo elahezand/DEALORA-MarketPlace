@@ -64,14 +64,13 @@ export interface IOrder {
 
 
 export interface OrdersResponse {
-  data: {
     data: IOrder[];
     pagination?: {
       hasMore: boolean;
       limit: number;
       nextCursor: string | null;
     };
-  }
+  
 }
 
 export interface AdminOrdersResponse {

@@ -19,7 +19,6 @@ interface StoresClientProps {
 
 export default function StoresClient({ initialData }: StoresClientProps) {
   const [actioningId, setActioningId] = useState<string | null>(null);
-console.log(initialData);
 
   const {
     data,

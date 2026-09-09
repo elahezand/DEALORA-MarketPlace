@@ -16,9 +16,6 @@ export interface CommentItemType {
   pros?: string[];
   cons?: string[];
   recommendation?: "recommended" | "not_recommended" | "no_idea";
-  // True only when the backend matched this review to the reviewer's own
-  // paid order for this listing (see services/comment.js) — never
-  // self-reported by the user.
   verifiedPurchase?: boolean;
   createdAt: string;
   replies?: CommentItemType[];

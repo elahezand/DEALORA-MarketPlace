@@ -8,6 +8,7 @@ import { InfiniteData, MutateOptions } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { IUser, AdminUsersResponse } from "@/types/User";
+import { QueryParams } from "@/types/api/ErrorTypes";
 import { ApiError } from "@/types/api/ErrorTypes";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
@@ -26,6 +27,8 @@ export default function UsersClient({ initialData }: UsersClientProps) {
   const { user: me } = useGetProfile();
   const [actioningId, setActioningId] = useState<string | null>(null);
 
+  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
+
   const {
     data,
     fetchNextPage,
@@ -33,7 +36,7 @@ export default function UsersClient({ initialData }: UsersClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, { limit: 20 }, { queryKey: ["admin-users"], initialData });
+  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, params, { queryKey: ["admin-users"], initialData });
 
   const users: IUser[] = (
     data?.pages?.flatMap((page: AdminUsersResponse) => page?.data ?? []) || []

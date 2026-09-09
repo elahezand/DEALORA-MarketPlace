@@ -61,7 +61,10 @@ export default function TransactionsClient({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminOrdersResponse>(ENDPOINT, params, { initialData });
+  } = useInfiniteGet<AdminOrdersResponse>(ENDPOINT, params,
+      { queryKey: ["admin-orders",status], initialData }
+    );
+  
 
   const allOrders: IOrder[] = (
     data?.pages?.flatMap((page: AdminOrdersResponse) => page?.data?.data ?? []) || []

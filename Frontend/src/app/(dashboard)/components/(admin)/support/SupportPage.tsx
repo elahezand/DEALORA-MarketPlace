@@ -8,6 +8,7 @@ import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
+import { QueryParams } from "@/types/api/ErrorTypes";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, textareaClass } from "../shared/AdminFormModal";
 import { useAnswerSupportMessage } from "@/services/Support/useAnswerSupportMessage";
@@ -25,6 +26,8 @@ export default function SupportClient({ initialData }: SupportClientProps) {
   const [answer, setAnswer] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);
 
+  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
+
   const {
     data,
     fetchNextPage,
@@ -32,10 +35,8 @@ export default function SupportClient({ initialData }: SupportClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<ContactsResponse>(
-    ENDPOINT,
-    { limit: 20 },
-    { initialData }
+  } = useInfiniteGet<ContactsResponse>(ENDPOINT, params,
+    { queryKey: ["admin-support"], initialData }
   );
 
   const allMessages: ContactMessage[] = (
@@ -77,7 +78,7 @@ export default function SupportClient({ initialData }: SupportClientProps) {
       },
       cancel: {
         label: "Cancel",
-        onClick: () => {},
+        onClick: () => { },
       },
     });
   }
@@ -97,11 +98,10 @@ export default function SupportClient({ initialData }: SupportClientProps) {
             key={f}
             type="button"
             onClick={() => setFilter(f)}
-            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors capitalize ${
-              filter === f
-                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
-            }`}
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors capitalize ${filter === f
+              ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+              : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              }`}
           >
             {f}
           </button>
@@ -200,9 +200,8 @@ export default function SupportClient({ initialData }: SupportClientProps) {
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : ""
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : ""
+                }`}
             />
           </button>
         </div>

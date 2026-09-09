@@ -58,7 +58,11 @@ export default function ArticlesClient({ initialData }: ArticlesClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<ArticlesResponse>(ENDPOINT, { limit: 20 }, { initialData });
+  } = useInfiniteGet<ArticlesResponse>(
+    ENDPOINT,
+    { limit: 20 },
+    { queryKey: ["/articles/admin"], initialData }
+  );
 
   const { data: categoriesData } = useGet<CategoriesTypeResponse>("/categories");
   const categories = categoriesData?.data ?? [];

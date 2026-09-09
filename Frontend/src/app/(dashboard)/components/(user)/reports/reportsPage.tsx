@@ -3,8 +3,10 @@
 import { Fragment, useState } from "react";
 import { HiOutlineFlag, HiChevronDown, HiChevronRight } from "react-icons/hi2";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { IReport, ReportsResponse } from "@/types/Report";
-import { IPagination } from "@/types/common";
+import { ReportStatus, ReportsResponse } from "@/types/Report";
+import { InfiniteData } from "@tanstack/react-query";
+import { WidgetHeader } from "../../shared/table/WidgeHeader";
+import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import TableCard from "../../shared/table/TableCard";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { timeAgo } from "@/utils/timeAgo";
@@ -34,27 +36,26 @@ const ACTION_LABELS: Record<string, string> = {
   warning_sent: "Warning sent",
 };
 
-const filterOptions = [
-  { id: "all", label: "All Reports", status: null },
-  { id: "pending", label: "Pending", status: ["pending"] },
-  { id: "reviewed", label: "Reviewed", status: ["reviewed"] },
-  { id: "resolved", label: "Resolved", status: ["resolved"] },
-  { id: "rejected", label: "Rejected", status: ["rejected"] },
+const STATUS_TABS: { value: ReportStatus | "all"; label: string }[] = [
+  { value: "all", label: "All Reports" },
+  { value: "pending", label: "Pending" },
+  { value: "reviewed", label: "Reviewed" },
+  { value: "resolved", label: "Resolved" },
+  { value: "rejected", label: "Rejected" },
 ];
 
 interface ReportsPageProps {
-  initialData?: IReport[];
-  initialPagination?: IPagination | null;
+  initialData?: InfiniteData<ReportsResponse>;
 }
 
-const EMPTY_PAGINATION: IPagination = { limit: 20, nextCursor: null, hasMore: false };
 
 export default function ReportsPage({
-  initialData = [],
-  initialPagination = null,
+  initialData,
 }: ReportsPageProps) {
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [status, setStatus] = useState<ReportStatus | "all">("pending");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
 
   const {
     data,
@@ -65,25 +66,17 @@ export default function ReportsPage({
     isError,
   } = useInfiniteGet<ReportsResponse>(
     "/reports/mine",
-    {},
+    params,
     {
-      initialData: {
-        pages: [{ success: true, data: initialData, pagination: initialPagination ?? EMPTY_PAGINATION }],
-        pageParams: [null],
-      },
+      queryKey: ["/reports/mine", status],
+      initialData: status === "pending" ? initialData : undefined
     }
+
   );
 
-  const allReports = (
+  const reports = (
     data?.pages.flatMap((page: ReportsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
-
-  const selectedFilterConfig = filterOptions.find((f) => f.id === selectedFilter);
-
-  const reports =
-    selectedFilterConfig?.status === null
-      ? allReports
-      : allReports.filter((r) => selectedFilterConfig?.status?.includes(r.status));
 
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -106,34 +99,32 @@ export default function ReportsPage({
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {filterOptions.map((filter) => (
+      <div className="flex items-center gap-2 flex-wrap">
+        {STATUS_TABS.map((tab) => (
           <button
-            key={filter.id}
-            onClick={() => setSelectedFilter(filter.id)}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium text-sm transition-all ${
-              selectedFilter === filter.id
-                ? "bg-[var(--primary-500)] text-white shadow-lg"
-                : "bg-[var(--background-soft)] text-[var(--foreground-muted)] border border-[var(--border)] hover:bg-[var(--card-solid)]"
-            }`}
+            key={tab.value}
+            type="button"
+            onClick={() => setStatus(tab.value)}
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
+              ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+              : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              }`}
           >
-            {filter.label}
+            {tab.label}
           </button>
         ))}
       </div>
 
       {/* Table */}
       <TableCard
+        header={<WidgetHeader
+          icon={HiOutlineChatBubbleLeftRight} title="Orders" href="/dashboard/orders" />}
         isLoading={isLoading}
         isError={isError}
         isEmpty={reports.length === 0}
-        errorMessage="Error fetching your reports"
-        emptyTitle={allReports.length === 0 ? "No reports yet" : "No reports found"}
-        emptyMessage={
-          allReports.length === 0
-            ? "Reports you submit about listings, stores, comments or users will show up here"
-            : `No reports match the "${selectedFilterConfig?.label}" filter`
-        }
+        errorMessage="Error fetching orders"
+        emptyTitle="Nothing here"
+        emptyMessage={`No ${status === "all" ? "" : status} Orders right now`}
       >
         <thead className="border-b border-[var(--border)] bg-[var(--background-soft)]">
           <tr>
@@ -255,9 +246,8 @@ export default function ReportsPage({
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : "group-hover:translate-x-0.5"
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : "group-hover:translate-x-0.5"
+                }`}
             />
           </button>
         </div>

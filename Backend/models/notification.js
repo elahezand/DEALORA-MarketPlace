@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    admin: {
+    user: {
       type: mongoose.Types.ObjectId,
       ref: "User",
       required: false,
@@ -14,6 +14,23 @@ const notificationSchema = new mongoose.Schema(
     see: {
       type: Number,
       default: 0,
+    },
+
+    type: {
+      type: String,
+      enum: [
+        "manual",
+        "order_status",
+        "offer_accepted",
+        "offer_rejected",
+        "listing_approved",
+        "listing_rejected",
+      ],
+      default: "manual",
+    },
+    link: {
+      type: String,
+      default: null,
     },
   },
     {

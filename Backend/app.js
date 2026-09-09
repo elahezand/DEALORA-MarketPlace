@@ -18,7 +18,6 @@ const commentRouter = require("./routes/comment");
 const contactRouter = require("./routes/contact");
 const infoRouter = require("./routes/info");
 const newsletterRouter = require("./routes/newsletter");
-const noteRouter = require("./routes/note");
 const notificationRouter = require("./routes/notification");
 const offerSellerRouter = require("./routes/offerSeller");
 const listingRouter = require("./routes/listing");
@@ -95,7 +94,6 @@ const routes = [
   ["/comments", commentRouter],
   ["/contacts", contactRouter],
   ["/infos", infoRouter],
-  ["/notes", noteRouter],
   ["/newsletters", newsletterRouter],
   ["/notifications", notificationRouter],
   ["/offers", offerSellerRouter],

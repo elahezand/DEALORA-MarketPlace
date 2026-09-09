@@ -2,11 +2,11 @@ const express = require("express");
 const contactRouter = express.Router();
 
 const controller = require("../controllers/contact");
-const { authAdmin,authUser } = require("../middlewares/authMiddleware");
+const { authAdmin, authUser } = require("../middlewares/authMiddleware");
 const validateObjectId = require("../middlewares/objectId");
 const validate = require("../middlewares/validate");
 
-const { createContactSchema } = require("../validators/contact");
+const { createContactSchema, answerContactSchema } = require("../validators/contact");
 const rateLimit = require("express-rate-limit");
 
 // LIMIT for spam protection
@@ -56,6 +56,7 @@ contactRouter.patch(
   authUser,
   authAdmin,
   validateObjectId("id"),
+  validate(answerContactSchema),
   controller.answer
 );
 

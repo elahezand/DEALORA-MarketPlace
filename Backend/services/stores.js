@@ -1,5 +1,7 @@
 const Store = require("../models/store");
 const UserModel = require("../models/user");
+const OfferSeller = require("../models/offerSeller");
+
 const Listing = require("../models/listing");
 const {paginate} = require("../utils/helper");
 const AppError = require("../utils/AppError");
@@ -15,18 +17,24 @@ const getVerifiedStores = async ({ limit, cursor } = {}) => {
   });
 };
 
+
 const getStoreBySlug = async (slug, { cursor, limit } = {}) => {
   const store = await Store.findOne({ slug, isVerified: true })
     .select("name slug logo address meta isVerified")
     .lean();
 
   if (!store) throw new AppError(404, "Store not found");
+  const listingIds = await OfferSeller.find({
+    store: store._id,
+    status: "accepted",
+    stock: { $gt: 0 },
+  }).distinct("listing");
 
   const { data, pagination } = await paginate(Listing, {
     limit: limit || 12,
     cursor,
     filters: {
-      store: store._id,
+      _id: { $in: listingIds },
       listingType: "store_product",
       status: "active",
     },

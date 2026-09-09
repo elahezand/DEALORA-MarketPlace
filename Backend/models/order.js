@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema, Types } = mongoose;
+const notifyUser = require("../utils/notify");
 
 const orderItemSchema = new Schema(
   {
@@ -108,7 +109,57 @@ const orderSchema = new Schema(
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ "payment.authority": 1 });
 
+// Notify the buyer whenever their order's status actually changes.
+orderSchema.pre("save", function () {
+  this._statusChanged = this.isModified("status");
+});
+orderSchema.post("save", async function (doc) {
+  if (!doc._statusChanged) return;
+
+  const shortId = String(doc._id).slice(-6).toUpperCase();
+  await notifyUser(
+    doc.user,
+    `Your order #${shortId} status changed to ${doc.status}`,
+    { type: "order_status", link: `/dashboard/orders/${doc._id}` }
+  );
+});
+
+orderSchema.pre("findOneAndUpdate", async function () {
+  const doc = await this.model.findOne(this.getQuery()).select("status").lean();
+  this._prevStatus = doc?.status;
+});
+orderSchema.post("findOneAndUpdate", async function (doc) {
+  if (!doc) return;
+  const update = this.getUpdate() || {};
+  const newStatus = update.status ?? update.$set?.status;
+  if (!newStatus || newStatus === this._prevStatus) return;
+
+  const shortId = String(doc._id).slice(-6).toUpperCase();
+  await notifyUser(
+    doc.user,
+    `Your order #${shortId} status changed to ${newStatus}`,
+    { type: "order_status", link: `/dashboard/orders/${doc._id}` }
+  );
+});
+
+orderSchema.pre("updateOne", async function () {
+  const doc = await this.model.findOne(this.getQuery()).select("status").lean();
+  this._prevStatus = doc?.status;
+});
+orderSchema.post("updateOne", async function () {
+  const doc = await this.model.findOne(this.getQuery());
+  if (!doc) return;
+  const update = this.getUpdate() || {};
+  const newStatus = update.status ?? update.$set?.status;
+  if (!newStatus || newStatus === this._prevStatus) return;
+
+  const shortId = String(doc._id).slice(-6).toUpperCase();
+  await notifyUser(
+    doc.user,
+    `Your order #${shortId} status changed to ${newStatus}`,
+    { type: "order_status", link: `/dashboard/orders/${doc._id}` }
+  );
+});
+
 const Order = mongoose.models.Order || mongoose.model("Order", orderSchema);
-
-
-module.exports =Order ;
+module.exports = Order;

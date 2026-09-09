@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const { nanoid } = require("nanoid");
+const notifyUser = require("../utils/notify");
 
 const LocationSchema = new Schema(
   {
@@ -12,13 +13,13 @@ const LocationSchema = new Schema(
 
 const VariantSchema = new Schema(
   {
-    attributes: { 
-      type: Map, 
-      of: String, 
-      required: [true, "Variant attributes are required"] 
+    attributes: {
+      type: Map,
+      of: String,
+      required: [true, "Variant attributes are required"]
     },
     sku: { type: String, required: true, trim: true },
-    price: { type: Number, min: 0 }, 
+    price: { type: Number, min: 0 },
     stock: { type: Number, default: 0, min: 0 }
   },
   { _id: true }
@@ -35,8 +36,8 @@ const UnifiedListingSchema = new Schema(
     title: { type: String, required: true, trim: true, maxlength: 150 },
     slug: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
     description: { type: String, required: true, trim: true, maxlength: 3000 },
-    images: { 
-      type: [String], 
+    images: {
+      type: [String],
       default: [],
       validate: [v => Array.isArray(v) && v.length <= 10, "Maximum 10 images allowed"]
     },
@@ -121,9 +122,9 @@ UnifiedListingSchema.pre("save", async function () {
     const cleanTitle = this.title
       .toLowerCase()
       .trim()
-      .replace(/[^\u0600-\u06FFa-z0-9\s-]/g, "") 
-      .replace(/\s+/g, "-"); 
-    this.slug = `${cleanTitle}-${this.shortIdentifier}`; 
+      .replace(/[^\u0600-\u06FFa-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-");
+    this.slug = `${cleanTitle}-${this.shortIdentifier}`;
   }
 });
 
@@ -139,5 +140,45 @@ UnifiedListingSchema.index(
   { title: "text", description: "text" },
   { weights: { title: 10, description: 2 }, name: "ListingTextIndex" }
 );
+
+// Notify the owner when THEIR user_ad listing is actually accepted/rejected
+UnifiedListingSchema.pre("findOneAndUpdate", async function () {
+  const doc = await this.model.findOne(this.getQuery()).select("status owner").lean();
+  this._prevStatus = doc?.status;
+});
+UnifiedListingSchema.post("findOneAndUpdate", async function (doc) {
+  if (!doc || !doc.owner) return;
+  const update = this.getUpdate() || {};
+  const newStatus = update.status ?? update.$set?.status;
+  if (!newStatus || newStatus === this._prevStatus) return;
+  if (!["accepted", "rejected"].includes(newStatus)) return;
+
+  const msg =
+    newStatus === "accepted"
+      ? `Your listing "${doc.title}" was approved!`
+      : `Your listing "${doc.title}" was rejected.`;
+  await notifyUser(doc.owner, msg, {
+    type: newStatus === "accepted" ? "listing_approved" : "listing_rejected",
+    link: "/dashboard/listings",
+  });
+});
+
+UnifiedListingSchema.pre("save", function () {
+  this._statusChanged = this.isModified("status");
+});
+UnifiedListingSchema.post("save", async function (doc) {
+  if (!doc || !doc.owner) return;
+  if (!doc._statusChanged) return;
+  if (!["accepted", "rejected"].includes(doc.status)) return;
+
+  const msg =
+    doc.status === "accepted"
+      ? `Your listing "${doc.title}" was approved!`
+      : `Your listing "${doc.title}" was rejected.`;
+  await notifyUser(doc.owner, msg, {
+    type: doc.status === "accepted" ? "listing_approved" : "listing_rejected",
+    link: "/dashboard/listings",
+  });
+});
 
 module.exports = mongoose.models.Listing || mongoose.model("Listing", UnifiedListingSchema);

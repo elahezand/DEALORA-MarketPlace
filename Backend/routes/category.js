@@ -16,7 +16,6 @@ const {
 /*  PUBLIC  */
 categoryRouter.get(
     "/",
-    cacheMiddleware(300),
     controller.get
 );
 

@@ -5,13 +5,13 @@ const { authAdmin, authUser } = require("../middlewares/authMiddleware");
 const validateObjectIdParam = require("../middlewares/objectId")
 
 const validate = require("../middlewares/validate")
-const { createNotificationSchema } = require("../validators/notification");
+const { createNotificationSchema } = require("../validators/notifications");
 
 notificationRouter.get("/",
     authUser,
-    authAdmin,
     controller.getAll);
 
+// Sending a notification is still admin-to-admin only.
 notificationRouter.post("/", authUser,
     authAdmin,
     validate(createNotificationSchema),
@@ -19,19 +19,16 @@ notificationRouter.post("/", authUser,
 
 notificationRouter.get("/:id",
     authUser,
-    authAdmin,
     validateObjectIdParam("id"),
     controller.get);
 
 notificationRouter.put("/:id",
     authUser,
-    authAdmin,
     validateObjectIdParam("id"),
     controller.seen);
 
 notificationRouter.delete("/:id",
     authUser,
-    authAdmin,
     validateObjectIdParam("id"),
     controller.remove);
 

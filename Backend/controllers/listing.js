@@ -47,12 +47,13 @@ exports.getOne = async (req, res, next) => {
 /* === USER / SELLER === */
 exports.getMyListings = async (req, res, next) => {
   try {
-    const data = await listingService.getMyListings(req.user._id);    
-    res.status(200).json({ success: true, data });
+    const data = await listingService.getMyListings(req.user._id, req.query);
+    res.status(200).json(data );
   } catch (err) {
     next(err);
   }
 };
+
 
 exports.createListing = async (req, res, next) => {
   try {                

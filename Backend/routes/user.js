@@ -10,6 +10,7 @@ const {
   toggleRole,
   toggleBan,
   removeAddress,
+  getAdmins,
   updatedAddress,
 } = require("../controllers/user");
 
@@ -19,13 +20,13 @@ const validateObjectIdParam = require("../middlewares/objectId");
 const validate = require("../middlewares/validate");
 const {
   createUserSchema,
-  updateUserSchema,
   updateMyProfileSchema,
   addressSchema,
 } = require("../validators/user");
 
 // --- Admin Operations ---
 userRouter.get("/", authUser, authAdmin, getAllUsers);
+userRouter.get("/admins", authUser, authAdmin, getAdmins);
 userRouter.post("/", authUser, authAdmin, validate(createUserSchema), postNewUser);
 userRouter.patch("/:id/role", authUser, authAdmin, validateObjectIdParam("id"), toggleRole);
 userRouter.post("/:id/ban", authUser, authAdmin, validateObjectIdParam("id"), toggleBan);

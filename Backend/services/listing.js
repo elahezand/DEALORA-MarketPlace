@@ -139,13 +139,18 @@ async function deleteListing(id, userId) {
 async function getMyListings(userId, query = {}) {
   const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
 
+  const filters = {
+    owner: userId,
+    status: { $ne: "deleted" },
+  };
+  if (query.status && query.status !== "all") {
+    filters.status = query.status;
+  }
+
   return paginate(Listing, {
     limit,
     cursor: query.cursor,
-    filters: {
-      owner: userId,
-      status: { $ne: "deleted" },
-    },
+    filters,
     sort: { createdAt: -1 },
     populate: ["categoryPath"],
   });

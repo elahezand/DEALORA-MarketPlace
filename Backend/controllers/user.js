@@ -18,6 +18,19 @@ exports.getAllUsers = async (req, res, next) => {
   }
 };
 
+exports.getAdmins = async (req, res, next) => {
+  try {
+    const admins = await User.find({ role: "ADMIN" })
+      .select("username phone")
+      .sort({ username: 1 })
+      .lean();
+    res.status(200).json({ data: admins });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 exports.postNewUser = async (req, res, next) => {
   try {
     const { phone, isSeller } = req.parsed.data;

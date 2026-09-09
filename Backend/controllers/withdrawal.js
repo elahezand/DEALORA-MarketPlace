@@ -26,6 +26,8 @@ exports.getMine = async (req, res, next) => {
 /* ADMIN */
 exports.getAll = async (req, res, next) => {
   try {
+    console.log(req.query);
+    
     const result = await withdrawalService.getAllWithdrawals(req.query);
     res.status(200).json({ success: true, ...result });
   } catch (err) {

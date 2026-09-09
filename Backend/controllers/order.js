@@ -44,10 +44,8 @@ exports.verify = async (req, res, next) => {
 exports.getMyOrders = async (req, res, next) => {
   try {
     const data = await orderService.getMyOrders(req.user._id, req.query);
-    res.status(200).json({
-      success: true,
-      data,
-    });
+    res.status(200).json(data,
+    );
   } catch (err) {
     next(err);
   }

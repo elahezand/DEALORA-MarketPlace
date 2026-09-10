@@ -21,7 +21,8 @@ export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const { data } = useGet<AdminNotification[]>("/notifications");
+  const { data: response } = useGet<{ success: boolean; data: AdminNotification[] }>("/notifications");
+  const data = response?.data;
 
   const notifications = (data ?? []).slice(0, 6);
 

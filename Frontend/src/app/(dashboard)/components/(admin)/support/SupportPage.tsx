@@ -40,7 +40,7 @@ export default function SupportClient({ initialData }: SupportClientProps) {
   );
 
   const allMessages: ContactMessage[] = (
-    data?.pages?.flatMap((page: ContactsResponse) => page?.data?.data ?? []) || []
+    data?.pages?.flatMap((page: ContactsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const messages =

@@ -4,8 +4,9 @@ import { IAddress } from "@/types/User";
 import { toast } from "sonner";
 
 export interface IUpdateAddressResponse {
+    success: boolean;
     message: string;
-    address: IAddress;
+    data: IAddress;
 }
 export type UpdateAddressPayload = Partial<IAddress> & {
   id: string;

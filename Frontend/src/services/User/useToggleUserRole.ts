@@ -7,7 +7,7 @@ const ENDPOINT = "/users";
 export const useToggleUserRole = () => {
   const queryClient = useQueryClient();
 
-  return usePatch<{ message: string; role: string[] }, { id: string }>(
+  return usePatch<{ success: boolean; message: string; data: { role: string[] } }, { id: string }>(
     (d) => `${ENDPOINT}/${d.id}/role`,
     {
       onSuccess: (res) => {

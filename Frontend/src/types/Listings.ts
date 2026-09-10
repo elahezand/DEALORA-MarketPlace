@@ -1,5 +1,6 @@
 import { IPagination } from "./common";
 import { Offer } from "./Offer";
+import { CommentItemType } from "./CommetTypes";
 
 export type ListingStatus = "pending" | "accepted" | "rejected" ;
 
@@ -66,16 +67,22 @@ export interface ListingProps {
 }
 
 export interface ListingTypeResponse {
+  success: boolean;
   data: ListingProps;
+  comments?: {
+    data: CommentItemType[];
+    pagination?: IPagination;
+  };
 }
 
-// Shape returned by GET /listings (public browse) - flat, no success wrapper.
+// Shape returned by GET /listings (public browse)
 export interface PublicListingsResponse {
+  success: boolean;
   data: ListingProps[];
   pagination?: IPagination;
 }
 
-// Shape returned by GET /listings/my (dashboard "my listings") - nested under data.
+// Shape returned by GET /listings/my (dashboard "my listings")
 export default interface MyListingsResponse {
   success: boolean;
     data: ListingProps[];

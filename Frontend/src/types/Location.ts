@@ -4,6 +4,7 @@ export interface StateCities {
 }
 
 export interface LocationsPayload {
-  data: StateCities[]; 
+  success: boolean;
+  data: StateCities[];
 }
 

@@ -10,8 +10,8 @@ export const useCheckout = () => {
     return usePost<CheckoutResponse>('/orders/checkout', {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['/cart/me'] });
-            if (data?.paymentUrl) {
-                window.location.href = data.paymentUrl;
+            if (data?.data?.paymentUrl) {
+                window.location.href = data.data.paymentUrl;
             }
         },
         errorFallback: "Checkout failed",

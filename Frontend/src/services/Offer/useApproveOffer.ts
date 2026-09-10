@@ -9,7 +9,7 @@ export const useApproveOffer = (onSuccessCallback?: () => void) => {
   const queryClient = useQueryClient();
 
   return usePatch<
-    { message: string; offer: Offer },
+    { success: boolean; message: string; data: Offer },
     { offerId: string; status: OfferStatus; adminComment?: string }
   >((d) => `${ENDPOINT}/${d.offerId}/approve`, {
     onSuccess: () => {

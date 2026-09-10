@@ -10,9 +10,9 @@ export const useGetProfile = () => {
   );
 
   return {
-    user: data?.user ?? null,       
-    store: (data?.user?.store ?? null) as IStore | null,
-    hasStore: !!data?.user?.store,
+    user: data?.data?.user ?? null,
+    store: (data?.data?.user?.store ?? null) as IStore | null,
+    hasStore: !!data?.data?.user?.store,
     isLoading,
     isError,
     error: isError ? error : null,

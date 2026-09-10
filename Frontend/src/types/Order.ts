@@ -64,23 +64,22 @@ export interface IOrder {
 
 
 export interface OrdersResponse {
+    success: boolean;
     data: IOrder[];
     pagination?: {
       hasMore: boolean;
       limit: number;
       nextCursor: string | null;
     };
-  
+
 }
 
 export interface AdminOrdersResponse {
   success: boolean;
-  data: {
-    data: IOrder[];
-    pagination?: {
-      hasMore: boolean;
-      limit: number;
-      nextCursor: string | null;
-    };
+  data: IOrder[];
+  pagination?: {
+    hasMore: boolean;
+    limit: number;
+    nextCursor: string | null;
   };
 }

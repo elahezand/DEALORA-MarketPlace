@@ -235,7 +235,7 @@ export default function CreateShop() {
           mutate(payload, {
             onSuccess: (createdStore) => {
               setSubmitting(false);
-              const slug = createdStore?.seller?.slug;
+              const slug = createdStore?.data?.slug;
               router.push(slug ? `/dashboard/store/${slug}` : "/dashboard");
             },
             onError: (error) => {

@@ -16,13 +16,11 @@ export interface Coupon {
 
 export interface CouponsResponse {
   success: boolean;
-  data: {
-    data: Coupon[];
-    pagination?: {
-      hasMore: boolean;
-      limit: number;
-      nextCursor: string | null;
-    };
+  data: Coupon[];
+  pagination?: {
+    hasMore: boolean;
+    limit: number;
+    nextCursor: string | null;
   };
 }
 

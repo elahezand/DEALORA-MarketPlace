@@ -67,7 +67,7 @@ export default function TransactionsClient({
   
 
   const allOrders: IOrder[] = (
-    data?.pages?.flatMap((page: AdminOrdersResponse) => page?.data?.data ?? []) || []
+    data?.pages?.flatMap((page: AdminOrdersResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const orders =

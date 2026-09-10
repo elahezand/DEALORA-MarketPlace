@@ -32,7 +32,7 @@ export default function StoresClient({ initialData }: StoresClientProps) {
 );
 
   const stores: AdminStoreRow[] = (
-    data?.pages?.flatMap((page: AdminStoresResponse) => page?.data?.data ?? []) || []
+    data?.pages?.flatMap((page: AdminStoresResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: setVerified } = useVerifyStore();

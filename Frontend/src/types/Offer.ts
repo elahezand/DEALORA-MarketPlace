@@ -5,6 +5,7 @@ export interface  Offer {
   discount?: number;
   finalPrice?: number;
   stock: number;
+  description?: string | null;
   status: OfferStatus;
   adminComment?: string | null;
   createdAt: string;
@@ -16,6 +17,7 @@ export interface  Offer {
 
 
 export interface OffersResponse {
+  success: boolean;
   data: Offer[];
   pagination?: {
     hasMore: boolean;

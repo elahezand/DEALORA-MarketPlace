@@ -85,4 +85,54 @@ export const useGetUserStatsTimeseries = (days = 14) => {
     isError,
   };
 };
- 
+
+/* SELLER */
+interface SellerStats {
+  totalRevenue: number;
+  totalOrders: number;
+  walletBalance: number;
+  pendingOffers: number;
+  acceptedOffers: number;
+}
+
+interface GetSellerStatsResponse {
+  success: boolean;
+  data: SellerStats;
+}
+
+export const useGetSellerStats = () => {
+  const { data, isLoading, isError } = useGet<GetSellerStatsResponse>(
+    "/stats/seller"
+  );
+
+  return {
+    stats: data?.data ?? null,
+    isLoading,
+    isError,
+  };
+};
+
+export interface SellerStatsTimeseries {
+  days: number;
+  labels: string[];
+  revenue: number[];
+  orders: number[];
+}
+
+interface GetSellerTimeseriesResponse {
+  success: boolean;
+  data: SellerStatsTimeseries;
+}
+
+export const useGetSellerStatsTimeseries = (days = 14) => {
+  const { data, isLoading, isError } = useGet<GetSellerTimeseriesResponse>(
+    "/stats/seller/timeseries",
+    { days }
+  );
+
+  return {
+    timeseries: data?.data ?? null,
+    isLoading,
+    isError,
+  };
+};

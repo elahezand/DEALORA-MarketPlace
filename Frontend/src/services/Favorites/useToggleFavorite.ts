@@ -4,7 +4,7 @@ import { usePatch } from "@/utils/hooks/useReactQueryHooks";
 
 export const useToggleFavorite = (productId?: string) => {
   const queryClient = useQueryClient();
-  return usePatch<{ isFavorited: boolean }, { productType: "user_ad" | "store_product" }>(
+  return usePatch<{ success: boolean; data: { isFavorited: boolean } }, { productType: "user_ad" | "store_product" }>(
     () => `/wishList/${productId}/toggle`,
     {
       onSuccess: () => {

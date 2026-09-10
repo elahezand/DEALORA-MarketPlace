@@ -28,10 +28,8 @@ export interface IStore {
 }
 
 export interface StoreResponse {
-    data: {
-        success: boolean;
-        data: IStore;
-    };
+    success: boolean;
+    data: IStore;
 }
 
 export interface AdminStoreRow extends Omit<IStore, "owner"> {
@@ -39,18 +37,26 @@ export interface AdminStoreRow extends Omit<IStore, "owner"> {
 }
 
 export interface AdminStoresResponse {
-    data: {
-        data: AdminStoreRow[];
-        pagination?: IPagination;
-    };
+    success: boolean;
+    data: AdminStoreRow[];
+    pagination?: IPagination;
 }
 
 export interface StoresResponse {
-    data: {
-        success: boolean;
-        data: IStore[];
-        pagination?: IPagination;
-    };
+    success: boolean;
+    data: IStore[];
+    pagination?: IPagination;
+}
+
+// Shape returned by GET /stores/slug/:slug — a single store plus a page of
+// its listings. The backend spreads `{ success, store, data, pagination }`
+// rather than nesting the store under `data`, since the endpoint naturally
+// returns two distinct entities (the store, and its paginated listings).
+export interface StoreDetailResponse {
+    success: boolean;
+    store: IStore;
+    data: ListingProps[];
+    pagination?: IPagination;
 }
 
 export interface StoreProductsResponse {

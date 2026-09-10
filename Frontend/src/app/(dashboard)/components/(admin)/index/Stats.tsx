@@ -8,7 +8,7 @@ import {
   HiOutlineExclamationTriangle,
 } from "react-icons/hi2";
 import { useGetAdminStats, useGetAdminStatsTimeseries } from "@/services/Stats/useGetStats";
-import DonutChart from "../../shared/AnalyticsAreaChart";
+import DonutChart from "../shared/AnalyticsAreaChart";
 import MiniCalendar from "../../shared/MiniCalendar";
 const STAT_CARDS: {
   key: keyof NonNullable<ReturnType<typeof useGetAdminStats>["stats"]>;

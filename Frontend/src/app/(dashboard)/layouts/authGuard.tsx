@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { IUser } from "@/types/User";
 
-type Role = "USER" | "ADMIN" | "SELLER";
+export type Role = "USER" | "ADMIN" | "SELLER";
 interface AuthGuardProps {
   children: (user: IUser) => React.ReactNode;
   requireRole?: Role | Role[];

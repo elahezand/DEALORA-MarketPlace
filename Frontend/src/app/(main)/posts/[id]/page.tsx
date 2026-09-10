@@ -30,9 +30,6 @@ export default async function PostsPage({ params }: { params: Promise<{ id: stri
             : Promise.resolve(null)
     ]);
 
-    const initialComments = commentsRes?.data ?? [];
-    const initialPagination = commentsRes?.pagination ?? undefined;
-
     const similarListings = (similarRes?.data ?? [])
         .filter((item) => item._id !== id)
         .slice(0, 4);
@@ -43,8 +40,9 @@ export default async function PostsPage({ params }: { params: Promise<{ id: stri
             {isStoreProduct && (
                 <Comments
                     listingId={listingData._id}
-                    initialComments={initialComments}
-                    initialPagination={initialPagination}
+                    initialData={
+                        commentsRes ? { pages: [commentsRes], pageParams: [null] } : undefined
+                    }
                 />
             )}
 

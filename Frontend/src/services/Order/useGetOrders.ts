@@ -6,9 +6,9 @@ export const useGetOrdersAdmin = (limit = 5) => {
     `/orders/admin?limit=${limit}`
   );
   return {
-    orders: data?.data?.data ?? [],
-    hasMore: data?.data?.pagination?.hasMore ?? false,
-    nextCursor: data?.data?.pagination?.nextCursor ?? null,
+    orders: data?.data ?? [],
+    hasMore: data?.pagination?.hasMore ?? false,
+    nextCursor: data?.pagination?.nextCursor ?? null,
     isLoading,
     isError,
   };

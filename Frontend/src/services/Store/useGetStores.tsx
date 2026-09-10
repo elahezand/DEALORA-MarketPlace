@@ -7,9 +7,9 @@ export const useGetStores = (limit = 5) => {
   );
 
   return {
-    stores: data?.data?.data ?? [],
-    hasMore: data?.data?.pagination?.hasMore ?? false,
-    nextCursor: data?.data?.pagination?.nextCursor ?? null,
+    stores: data?.data ?? [],
+    hasMore: data?.pagination?.hasMore ?? false,
+    nextCursor: data?.pagination?.nextCursor ?? null,
     isLoading,
     isError,
   };

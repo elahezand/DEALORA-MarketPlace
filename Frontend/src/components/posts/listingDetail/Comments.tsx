@@ -9,6 +9,7 @@ import CommentCard from "./CommentCard";
 import SkeletonComments from "@/components/skeleton/SkeletonComments";
 import { usePostComment } from "@/services/Comments/usePostComment";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import { InfiniteData } from "@tanstack/react-query";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { CommentItemType, CommentsResponse } from "@/types/CommetTypes";
 const AuthModal = dynamic(() => import("../../modals/AuthModal"), { ssr: false });
@@ -17,10 +18,8 @@ type Recommendation = "recommended" | "not_recommended" | "no_idea";
 
 interface CommentsProps {
   listingId: string;
-  initialComments?: CommentItemType[];
-  initialPagination?: CommentsResponse["pagination"];
+  initialData?: InfiniteData<CommentsResponse>;
 }
-
 function TagListInput({
   label,
   placeholder,
@@ -110,7 +109,7 @@ const RECOMMENDATION_OPTIONS: { value: Recommendation; label: string }[] = [
   { value: "not_recommended", label: "👎 Not recommended" },
 ];
 
-export default function Comments({ listingId, initialComments, initialPagination }: CommentsProps) {
+export default function Comments({ listingId, initialData }: CommentsProps) {
   const endpoint = `/comments/listing/${listingId}`;
 
   const {
@@ -119,12 +118,13 @@ export default function Comments({ listingId, initialComments, initialPagination
     hasNextPage,
     isFetchingNextPage,
     isLoading
-  } = useInfiniteGet<CommentsResponse>(endpoint, { page: 1 }, {
-    initialData: initialComments ? {
-      pages: [{ data: initialComments, pagination: initialPagination }],
-      pageParams: [null],
-    } : undefined
-  });
+  }
+    = useInfiniteGet<CommentsResponse>(
+      endpoint,
+      { limit: 20 },
+      { queryKey: ["/comments/listing"], initialData }
+    );
+
 
   const { user } = useGetProfile();
   const { postComment, isPosting } = usePostComment(listingId);
@@ -250,11 +250,10 @@ export default function Comments({ listingId, initialComments, initialPagination
                   key={opt.value}
                   type="button"
                   onClick={() => setRecommendation(opt.value)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                    isSelected
-                      ? "border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)]"
-                      : "border-[var(--border)] bg-[var(--background-soft)] text-[var(--foreground-muted)]"
-                  }`}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${isSelected
+                    ? "border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)]"
+                    : "border-[var(--border)] bg-[var(--background-soft)] text-[var(--foreground-muted)]"
+                    }`}
                 >
                   {opt.label}
                 </button>
@@ -303,11 +302,10 @@ export default function Comments({ listingId, initialComments, initialPagination
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage
-                  ? "animate-spin"
-                  : "group-hover:translate-x-0.5"
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage
+                ? "animate-spin"
+                : "group-hover:translate-x-0.5"
+                }`}
             />
           </button>
         </div>

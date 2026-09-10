@@ -15,7 +15,7 @@ export default function SupportSection() {
   const ref = useRef<HTMLDivElement>(null);
 
   const { data: articlesData, isLoading: isLoadingArticles } = useGetArticles({ limit: 20 });
-  const articles: IArticle[] = articlesData?.pages?.[0]?.data?.data ?? [];
+  const articles: IArticle[] = articlesData?.pages?.[0]?.data ?? [];
 
   const { data: categoriesData, isLoading: isLoadingCategories } =
     useGet<CategoriesTypeResponse>("/categories");

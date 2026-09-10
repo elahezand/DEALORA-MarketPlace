@@ -11,13 +11,11 @@ export interface ContactMessage {
 
 export interface ContactsResponse {
   success: boolean;
-  data: {
-    data: ContactMessage[];
-    pagination?: {
-      hasMore: boolean;
-      limit: number;
-      nextCursor: string | null;
-    };
+  data: ContactMessage[];
+  pagination?: {
+    hasMore: boolean;
+    limit: number;
+    nextCursor: string | null;
   };
 }
 

@@ -68,7 +68,7 @@ export default function ArticlesClient({ initialData }: ArticlesClientProps) {
   const categories = categoriesData?.data ?? [];
 
   const articles: IArticle[] = (
-    data?.pages?.flatMap((page: ArticlesResponse) => page?.data?.data ?? []) || []
+    data?.pages?.flatMap((page: ArticlesResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: createArticle, isPending: isCreating } = useCreateArticle(closeModal);

@@ -6,7 +6,7 @@ import { ICategory } from "@/types/Category";
 export interface IUpdateCategoryResponse {
   success: boolean;
   message: string;
-  category: ICategory;
+  data: ICategory;
 }
 export type UpdateCategoryPayload = Partial<ICategory> & {
   _id: string;

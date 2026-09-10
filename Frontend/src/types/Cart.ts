@@ -44,8 +44,9 @@ export interface CartResponse {
 }
 
 export interface CheckoutResponse {
-  success?: boolean;
-  message?: string;
-  paymentUrl?: string;
-  order?: { _id: string };
+  success: boolean;
+  data: {
+    order: { _id: string };
+    paymentUrl: string | null;
+  };
 }

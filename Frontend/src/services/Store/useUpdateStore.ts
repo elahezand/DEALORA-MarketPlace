@@ -11,7 +11,7 @@ export const useUpdateStore = (onSuccessCallback?: () => void) => {
   const queryClient = useQueryClient();
 
   const { mutate, isPending, ...rest } = usePatch<
-    { ok: boolean },
+    { success: boolean; message: string },
     UpdateStorePayload
   >((data) => `/stores/${data.id}`, {
     onSuccess: () => {

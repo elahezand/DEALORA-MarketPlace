@@ -2,6 +2,7 @@ import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import { IUser } from "@/types/User";
 
 interface PaginateResult<T> {
+  success: boolean;
   data: T[];
   pagination: {
     limit: number;

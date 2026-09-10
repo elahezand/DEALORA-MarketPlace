@@ -22,6 +22,7 @@ export interface CommentItemType {
 }
 
 export interface CommentsResponse {
+  success: boolean;
   data: CommentItemType[];
   pagination?: {
     hasMore: boolean;
@@ -44,6 +45,7 @@ export interface AdminComment {
 }
 
 export interface AdminCommentsResponse {
+  success: boolean;
   data: AdminComment[];
   pagination?: {
     hasMore: boolean;

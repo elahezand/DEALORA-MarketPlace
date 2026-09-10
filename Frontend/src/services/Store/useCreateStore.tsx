@@ -5,8 +5,9 @@ import { IStore } from "@/types/Store";
 export type CreateStorePayload = Omit<IStore, "_id">;
 
 export interface CreateStoreResponse {
+  success: boolean;
   message: string;
-  seller: IStore;
+  data: IStore;
 }
 
 export const useCreateStore = () => {

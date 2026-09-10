@@ -1,6 +1,7 @@
 import { IPagination } from "./common";
 
 export default interface FavoritesTypeResponse {
+    success: boolean;
     data: {
       _id: string;
       product: {

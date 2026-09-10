@@ -7,6 +7,7 @@ export interface NewsletterSubscriber {
 }
 
 export interface NewsletterSubscribersResponse {
+  success: boolean;
   data: NewsletterSubscriber[];
   pagination?: IPagination;
 }

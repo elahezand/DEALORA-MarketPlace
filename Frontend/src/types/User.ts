@@ -30,12 +30,16 @@ export interface IUser {
 }
 
 export interface UserType {
-    user: IUser;
+    success: boolean;
+    data: {
+        user: IUser;
+    };
 }
 export interface AdminUsersResponse {
+    success: boolean;
     data: IUser[];
     pagination?: IPagination;
-  
+
 }
 export type CreateAddressPayload = Omit<IAddress, "_id" | "id">;
 

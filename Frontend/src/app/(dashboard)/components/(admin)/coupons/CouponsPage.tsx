@@ -49,7 +49,7 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
   );
 
   const coupons: Coupon[] = (
-    data?.pages?.flatMap((page: CouponsResponse) => page?.data?.data ?? []) || []
+    data?.pages?.flatMap((page: CouponsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: createCoupon, isPending: isCreating } = useCreateCoupon(closeModal);

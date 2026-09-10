@@ -71,10 +71,10 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
     const toggleFavoriteMutation = useToggleFavorite(data?._id);
 
     useEffect(() => {
-        if (favoriteData?.isFavorited !== undefined) {
-            setSaved(favoriteData.isFavorited);
+        if (favoriteData?.data?.isFavorited !== undefined) {
+            setSaved(favoriteData.data.isFavorited);
         }
-    }, [favoriteData?.isFavorited]);
+    }, [favoriteData?.data?.isFavorited]);
 
     const specs = useMemo(() => {
         if (!data?.specs) return {};
@@ -200,7 +200,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
             { productType },
             {
                 onSuccess: (res) => {
-                    const isFav = res?.isFavorited ?? !saved;
+                    const isFav = res?.data.isFavorited ?? !saved;
                     setSaved(isFav);
                     toast.success(isFav ? "Added to favorites" : "Removed from favorites");
                 },

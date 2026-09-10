@@ -1,4 +1,5 @@
 import { AxiosError } from "axios";
+import { IPagination } from "../common";
 
 export interface ApiValidationError {
   field: string;
@@ -21,7 +22,20 @@ export type QueryParams = Record<
 >;
 
 export type ApiResponse<T> = {
-  data: T;
+  success: boolean;
   message?: string;
-  statusCode?: number;
+  data: T;
+};
+
+/**
+ * Canonical shape for every paginated list endpoint in the backend:
+ * `res.status(200).json({ success: true, data: [...], pagination })`.
+ * Do NOT nest another `data` layer inside `data` — the backend always
+ * returns the array directly at the top level next to `pagination`.
+ */
+export type PaginatedResponse<T> = {
+  success: boolean;
+  message?: string;
+  data: T[];
+  pagination?: IPagination;
 };

@@ -21,10 +21,8 @@ export interface IArticle {
 
 export interface ArticlesResponse {
   success: boolean;
-  data: {
-    data: IArticle[];
-    pagination?: IPagination;
-  };
+  data: IArticle[];
+  pagination?: IPagination;
 }
 
 export interface ArticleResponse {

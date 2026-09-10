@@ -4,8 +4,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { IAddress } from "@/types/User";
 
 export interface ICreateAddressResponse {
+  success: boolean;
   message: string;
-  addresses: IAddress[];
+  data: IAddress[];
 }
 export type CreateAddressPayload = Omit<IAddress, "_id">;
 export const useCreateAddress = () => {

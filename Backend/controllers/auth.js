@@ -109,8 +109,9 @@ exports.send = async (req, res, next) => {
     );
 
     res.status(200).json({
+      success: true,
       message: "OTP sent successfully",
-      remainingTime: formatRemainingTime(OTP_TTL_SECONDS),
+      data: { remainingTime: formatRemainingTime(OTP_TTL_SECONDS) },
     });
   } catch (err) {
     next(err);
@@ -181,8 +182,9 @@ exports.verify = async (req, res, next) => {
     delete userObj.refreshToken;
 
     res.status(200).json({
+      success: true,
       message: "Login successful",
-      user: userObj,
+      data: { user: userObj },
     });
   } catch (err) {
     next(err);
@@ -194,7 +196,7 @@ exports.me = async (req, res) => {
   const user = await req.user.populate("store");
   const userObj = user.toObject();
   delete userObj.refreshToken;
-  return res.status(200).json({ user: userObj });
+  return res.status(200).json({ success: true, data: { user: userObj } });
 };
 /* LOGOUT */
 exports.logout = async (req, res, next) => {
@@ -210,6 +212,7 @@ exports.logout = async (req, res, next) => {
     res.clearCookie("refreshToken");
 
     res.status(200).json({
+      success: true,
       message: "Logged out",
     });
   } catch (err) {
@@ -279,6 +282,7 @@ exports.refreshToken = async (req, res, next) => {
     });
 
     return res.status(200).json({
+      success: true,
       message: "Token refreshed",
     });
   } catch (err) {

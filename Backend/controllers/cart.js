@@ -4,8 +4,8 @@ const cartService = require("../services/cart");
 
 exports.getAdmin = async (req, res, next) => {
   try {
-    const carts = await cartService.getAdminCarts(req.query);
-    res.status(200).json({ success: true, data: carts });
+    const result = await cartService.getAdminCarts(req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (e) {
     next(e);
   }

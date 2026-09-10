@@ -28,6 +28,9 @@ const storeSchema = new mongoose.Schema(
     address: { type: addressSchema, default: () => ({}) },
     phone: { type: String, default: null, },
     isVerified: { type: Boolean, default: false },
+    wallet: {
+      balance: { type: Number, default: 0, min: 0 },
+    },
     meta: {
       ratings: { type: Number, default: 0 },
     },

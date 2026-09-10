@@ -4,7 +4,7 @@ const service = require("../services/offerSeller");
 exports.createOffer = async (req, res, next) => {
   try {
     const offer = await service.createOffer(req.user._id, req.parsed.data);
-    res.status(201).json({ message: "Offer created", offer });
+    res.status(201).json({ success: true, message: "Offer created", data: offer });
   } catch (err) {
     next(err);
   }
@@ -18,7 +18,7 @@ exports.updateOffer = async (req, res, next) => {
       req.params.offerId,
       req.parsed.data
     );
-    res.status(200).json({ message: "Offer updated", offer });
+    res.status(200).json({ success: true, message: "Offer updated", data: offer });
   } catch (err) {
     next(err);
   }
@@ -27,8 +27,8 @@ exports.updateOffer = async (req, res, next) => {
 // GET ALL
 exports.getAllOffers = async (req, res, next) => {
   try {
-    const data = await service.getAll(req.query);
-    res.status(200).json(data);
+    const result = await service.getAll(req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -37,8 +37,8 @@ exports.getAllOffers = async (req, res, next) => {
 // GET MINE
 exports.getMyOffers = async (req, res, next) => {
   try {
-    const data = await service.getMine(req.user._id, req.query);
-    res.status(200).json(data);
+    const result = await service.getMine(req.user._id, req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -48,7 +48,7 @@ exports.getMyOffers = async (req, res, next) => {
 exports.deleteOffer = async (req, res, next) => {
   try {
     await service.remove(req.params.offerId, req.user);
-    res.status(200).json({ message: "Offer deleted" });
+    res.status(200).json({ success: true, message: "Offer deleted" });
   } catch (err) {
     next(err);
   }
@@ -63,7 +63,7 @@ exports.approveOffer = async (req, res, next) => {
       req.parsed.data
     );
 
-    res.status(200).json({ message: "Offer processed", offer });
+    res.status(200).json({ success: true, message: "Offer processed", data: offer });
   } catch (err) {
     next(err);
   }

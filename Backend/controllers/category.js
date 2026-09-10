@@ -43,7 +43,7 @@ exports.post = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: "Category created",
-      category,
+      data: category,
     });
   } catch (e) {
     next(e);
@@ -65,7 +65,7 @@ exports.put = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Updated successfully",
-      category,
+      data: category,
     });
   } catch (e) {
     next(e);

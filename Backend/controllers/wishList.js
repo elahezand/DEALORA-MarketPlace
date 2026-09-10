@@ -2,12 +2,12 @@ const FavoriteServices = require("../services/wishList");
 
 exports.getUserFavorites = async (req, res, next) => {
   try {
-    const favorites = await FavoriteServices.getUserFavorites(
+    const result = await FavoriteServices.getUserFavorites(
       req.user._id,
       req.query
     );
 
-    res.status(200).json(favorites);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -17,7 +17,7 @@ exports.getFavoriteCount = async (req, res, next) => {
   try {
     const count = await FavoriteServices.getFavoriteCount(req.user._id);
 
-    res.status(200).json({ count });
+    res.status(200).json({ success: true, data: { count } });
   } catch (err) {
     next(err);
   }
@@ -31,7 +31,7 @@ exports.addFavorite = async (req, res, next) => {
       req.body.productType
     );
 
-    res.status(201).json(favorite);
+    res.status(201).json({ success: true, message: "Added to favorites", data: favorite });
   } catch (err) {
     next(err);
   }
@@ -58,7 +58,7 @@ exports.toggleFavorite = async (req, res, next) => {
       req.body.productType
     );
 
-    res.status(200).json(result);
+    res.status(200).json({ success: true, data: result });
   } catch (err) {
     next(err);
   }
@@ -71,7 +71,7 @@ exports.isFavorited = async (req, res, next) => {
       req.params.productId
     );
 
-    res.status(200).json({ isFavorited });
+    res.status(200).json({ success: true, data: { isFavorited } });
   } catch (err) {
     next(err);
   }
@@ -84,7 +84,7 @@ exports.checkFavorites = async (req, res, next) => {
       req.query.productIds || []
     );
 
-    res.status(200).json([...favorites]);
+    res.status(200).json({ success: true, data: [...favorites] });
   } catch (err) {
     next(err);
   }
@@ -92,13 +92,13 @@ exports.checkFavorites = async (req, res, next) => {
 
 exports.filterByType = async (req, res, next) => {
   try {
-    const favorites = await FavoriteServices.filterFavoritesByType(
+    const result = await FavoriteServices.filterFavoritesByType(
       req.user._id,
       req.params.type,
       req.query
     );
 
-    res.status(200).json(favorites);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -108,7 +108,7 @@ exports.getPopular = async (req, res, next) => {
   try {
     const products = await FavoriteServices.getPopularProducts(req.query);
 
-    res.status(200).json(products);
+    res.status(200).json({ success: true, data: products });
   } catch (err) {
     next(err);
   }

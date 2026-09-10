@@ -14,7 +14,7 @@ exports.redirectToListing = async (req, res, next) => {
       return next(new AppError(404, "Listing not found"));
     }
 
-    return res.status(200).json({ data: listing });
+    return res.status(200).json({ success: true, data: listing });
   } catch (err) {
     return next(err);
   }

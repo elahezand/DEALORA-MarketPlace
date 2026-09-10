@@ -5,6 +5,7 @@ const Listing = require("../models/listing");
 const Coupon = require("../models/coupon");
 const { paginate } = require("../utils/helper");
 const AppError = require("../utils/AppError");
+const Store = require("../models/store");
 const logger = require("../utils/logger");
 const {
   createPayment,
@@ -96,9 +97,6 @@ const verify = async (authority) => {
   order.payment.paidAt = new Date();
   order.status = "processing";
 
-  // Coupon usage limits are only checked at cart/validation time, so the
-  // actual usage count must be incremented here on successful payment,
-  // otherwise usageLimit is never enforced and a coupon can be reused forever.
   if (order.coupon?.couponRef) {
     await Coupon.updateOne(
       { _id: order.coupon.couponRef },
@@ -140,6 +138,17 @@ const verify = async (authority) => {
         );
       }
     })
+  );
+  const revenueBySeller = new Map();
+  for (const item of order.items) {
+    if (!item.seller) continue;
+    const key = String(item.seller);
+    revenueBySeller.set(key, (revenueBySeller.get(key) || 0) + item.price * item.quantity);
+  }
+  await Promise.all(
+    Array.from(revenueBySeller.entries()).map(([sellerId, amount]) =>
+      Store.updateOne({ _id: sellerId }, { $inc: { "wallet.balance": amount } })
+    )
   );
 
   await order.save();

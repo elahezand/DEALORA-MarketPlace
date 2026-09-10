@@ -4,8 +4,8 @@ const service = require("../services/article");
 
 exports.getAll = async (req, res, next) => {
   try {
-    const data = await service.getPublicArticles(req.query);
-    res.status(200).json({ success: true, data });
+    const result = await service.getPublicArticles(req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -24,8 +24,8 @@ exports.getOne = async (req, res, next) => {
 
 exports.getAllAdmin = async (req, res, next) => {
   try {
-    const data = await service.getAllArticlesAdmin(req.query);
-    res.status(200).json({ success: true, data });
+    const result = await service.getAllArticlesAdmin(req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }

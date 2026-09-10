@@ -4,9 +4,9 @@ const newsletterService = require("../services/newsLetter");
 exports.getAll = async (req, res, next) => {
   try {
     const searchParams = new URLSearchParams(req.query || {});
-    const data = await newsletterService.getAll(searchParams);
+    const result = await newsletterService.getAll(searchParams);
 
-    res.status(200).json(data);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -19,8 +19,9 @@ exports.post = async (req, res, next) => {
     const newsletter = await newsletterService.subscribe(email);
 
     res.status(201).json({
+      success: true,
       message: "Subscribed successfully",
-      newsletter,
+      data: newsletter,
     });
   } catch (err) {
     next(err);

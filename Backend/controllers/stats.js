@@ -35,3 +35,22 @@ exports.getUserTimeseries = async (req, res, next) => {
     next(e);
   }
 };
+
+/* SELLER */
+exports.getSeller = async (req, res, next) => {
+  try {
+    const data = await service.getSellerStats(req.user._id);
+    res.status(200).json({ success: true, data });
+  } catch (e) {
+    next(e);
+  }
+};
+
+exports.getSellerTimeseries = async (req, res, next) => {
+  try {
+    const data = await service.getSellerStatsTimeseries(req.user._id, req.query.days);
+    res.status(200).json({ success: true, data });
+  } catch (e) {
+    next(e);
+  }
+};

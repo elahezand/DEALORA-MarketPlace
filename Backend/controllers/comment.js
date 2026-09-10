@@ -3,8 +3,8 @@ const commentService = require("../services/comment");
 // GET PRODUCT COMMENTS
 exports.getByListing = async (req, res, next) => {
   try {
-    const data = await commentService.getByProduct(req.params.listing, req.query);
-    res.status(200).json(data);
+    const result = await commentService.getByProduct(req.params.listing, req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -13,8 +13,8 @@ exports.getByListing = async (req, res, next) => {
 // ADMIN - GET ALL AND ANSWER
 exports.getAdmin = async (req, res, next) => {
   try {
-    const data = await commentService.getAdmin(req.query);
-    res.status(200).json(data);
+    const result = await commentService.getAdmin(req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -26,8 +26,9 @@ exports.reply = async (req, res, next) => {
       req.params.id,
       req.parsed.data.body
     );
- 
+
     res.status(201).json({
+      success: true,
       message: "Reply posted",
       data: reply,
     });
@@ -45,6 +46,7 @@ exports.moderate = async (req, res, next) => {
     );
 
     res.status(200).json({
+      success: true,
       message: "Moderated successfully",
       data: updated,
     });
@@ -62,6 +64,7 @@ exports.remove = async (req, res, next) => {
     );
 
     res.status(200).json({
+      success: true,
       message: "Deleted",
       data: deleted,
     });
@@ -79,6 +82,7 @@ exports.create = async (req, res, next) => {
     );
 
     res.status(201).json({
+      success: true,
       message: "Comment created",
       data: comment,
     });
@@ -97,6 +101,7 @@ exports.patch = async (req, res, next) => {
     );
 
     res.status(200).json({
+      success: true,
       message: "Comment updated",
       data: updated,
     });
@@ -114,6 +119,7 @@ exports.removeOwn = async (req, res, next) => {
     );
 
     res.status(200).json({
+      success: true,
       message: "Deleted",
       data: deleted,
     });

@@ -4,7 +4,7 @@ const service = require("../services/stores");
 exports.getVerified = async (req, res, next) => {
   try {
     const result = await service.getVerifiedStores(req.query);
-    res.status(200).json(result);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -13,7 +13,7 @@ exports.getVerified = async (req, res, next) => {
 exports.getBySlug = async (req, res, next) => {
   try {
     const result = await service.getStoreBySlug(req.params.slug, req.query);
-    res.status(200).json(result);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -23,7 +23,7 @@ exports.getBySlug = async (req, res, next) => {
 exports.getAll = async (req, res, next) => {
   try {
     const result = await service.getAllStores(req.query);
-    res.status(200).json({ data: result });
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -32,8 +32,8 @@ exports.getAll = async (req, res, next) => {
 /*  SELLER  */
 exports.get = async (req, res, next) => {
   try {
-    const seller = await service.getStoresByOwner(req.user._id);
-    return res.status(200).json({ seller });
+    const stores = await service.getStoresByOwner(req.user._id);
+    return res.status(200).json({ success: true, data: stores });
   } catch (err) {
     return next(err);
   }
@@ -42,7 +42,11 @@ exports.get = async (req, res, next) => {
 exports.create = async (req, res, next) => {
   try {
     const newSeller = await service.createStore(req.user._id, req.parsed.data);
-    return res.status(201).json({ message: "", seller: newSeller });
+    return res.status(201).json({
+      success: true,
+      message: "Store created successfully",
+      data: newSeller,
+    });
   } catch (err) {
     return next(err);
   }
@@ -51,7 +55,7 @@ exports.create = async (req, res, next) => {
 exports.updateStore = async (req, res, next) => {
   try {
     await service.updateStore(req.user._id, req.params.id, req.parsed.data);
-    return res.json({ ok: true });
+    return res.status(200).json({ success: true, message: "Store updated successfully" });
   } catch (err) {
     return next(err);
   }
@@ -77,7 +81,7 @@ exports.verifyStore = async (req, res, next) => {
 exports.deleteStore = async (req, res, next) => {
   try {
     await service.deleteStore(req.user._id, req.params.id);
-    return res.status(200).json({ message: "Seller deleted successfully" });
+    return res.status(200).json({ success: true, message: "Seller deleted successfully" });
   } catch (err) {
     return next(err);
   }

@@ -4,7 +4,7 @@ const service = require("../services/notification");
 exports.getAll = async (req, res, next) => {
   try {
     const data = await service.getAll(req.user._id);
-    res.status(200).json(data);
+    res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
   }
@@ -14,7 +14,7 @@ exports.getAll = async (req, res, next) => {
 exports.get = async (req, res, next) => {
   try {
     const data = await service.get(req.params.id, req.user._id);
-    res.status(200).json(data);
+    res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
   }
@@ -24,7 +24,7 @@ exports.get = async (req, res, next) => {
 exports.post = async (req, res, next) => {
   try {
     const data = await service.create(req.parsed.data);
-    res.status(201).json(data);
+    res.status(201).json({ success: true, message: "Notification created", data });
   } catch (err) {
     next(err);
   }
@@ -34,7 +34,7 @@ exports.post = async (req, res, next) => {
 exports.seen = async (req, res, next) => {
   try {
     const data = await service.markSeen(req.params.id, req.user._id);
-    res.status(200).json(data);
+    res.status(200).json({ success: true, message: "Marked as seen", data });
   } catch (err) {
     next(err);
   }
@@ -44,7 +44,7 @@ exports.seen = async (req, res, next) => {
 exports.remove = async (req, res, next) => {
   try {
     await service.remove(req.params.id, req.user._id);
-    res.status(200).json({ message: "Notification deleted successfully" });
+    res.status(200).json({ success: true, message: "Notification deleted successfully" });
   } catch (err) {
     next(err);
   }

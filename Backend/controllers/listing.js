@@ -1,10 +1,11 @@
 const listingService = require("../services/listing");
+const AppError = require("../utils/AppError");
 
 /* === PUBLIC === */
 exports.getAll = async (req, res, next) => {
   try {
-    const result = await listingService.getAllListings(req.query);    
-    res.status(200).json(result);
+    const result = await listingService.getAllListings(req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -14,7 +15,7 @@ exports.getAll = async (req, res, next) => {
 exports.getAllAdmin = async (req, res, next) => {
   try {
     const result = await listingService.getAllListingsAdmin(req.query);
-    res.status(200).json(result);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -26,19 +27,19 @@ exports.handleSmartSearch = async (req, res, next) => {
     const { prompt, budget } = req.body;
 
     if (!prompt) {
-      return res.status(400).json({ message: "Search prompt is required." });
+      return next(new AppError(400, "Search prompt is required."));
     }
 
     const result = await listingService.smartSearch({ prompt, budget });
-    return res.status(200).json(result);
+    return res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
 };
 exports.getOne = async (req, res, next) => {
   try {
-    const data = await listingService.getListingById(req.params.id, req.query);
-    res.status(200).json(data);
+    const result = await listingService.getListingById(req.params.id, req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -47,8 +48,8 @@ exports.getOne = async (req, res, next) => {
 /* === USER / SELLER === */
 exports.getMyListings = async (req, res, next) => {
   try {
-    const data = await listingService.getMyListings(req.user._id, req.query);
-    res.status(200).json(data );
+    const result = await listingService.getMyListings(req.user._id, req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }
@@ -56,7 +57,7 @@ exports.getMyListings = async (req, res, next) => {
 
 
 exports.createListing = async (req, res, next) => {
-  try {                
+  try {
     const listing = await listingService.createListing(
       req.user._id,
       req.parsed.data,
@@ -74,7 +75,7 @@ exports.createListing = async (req, res, next) => {
 };
 
 exports.updateListing = async (req, res, next) => {
-  try {    
+  try {
     const listing = await listingService.updateListing(
       req.params.id,
       req.user._id,

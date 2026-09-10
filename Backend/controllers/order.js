@@ -1,5 +1,4 @@
 const orderService = require("../services/order");
-
 /* Checkout (Cart → Order) */
 exports.checkout = async (req, res, next) => {
   try {
@@ -43,9 +42,8 @@ exports.verify = async (req, res, next) => {
 /* Get My Orders (User) */
 exports.getMyOrders = async (req, res, next) => {
   try {
-    const data = await orderService.getMyOrders(req.user._id, req.query);
-    res.status(200).json(data,
-    );
+    const result = await orderService.getMyOrders(req.user._id, req.query);
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }

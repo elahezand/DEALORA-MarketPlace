@@ -11,7 +11,7 @@ import {
 
 
 
-export default function StorePanel({isOpen}:any) {
+export default function Store({isOpen}:any) {
     const { store, hasStore, isLoading } = useGetProfile();
 
     return (
@@ -19,7 +19,7 @@ export default function StorePanel({isOpen}:any) {
             {isLoading ? null : hasStore && store ? (
                 isOpen ? (
                     <Link
-                        href="/my-store"
+                        href="/dashboard/seller"
                         className="rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--background-soft)] hover:bg-[var(--border)] transition-all duration-200 shadow-sm w-full p-3 flex items-center gap-3 group"
                     >
                         <div className="w-9 h-9 rounded-lg overflow-hidden bg-[var(--card-solid)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">

@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardShell from "./DashboardShell";
-import { SellerSidebar } from "../components/(seller)/SidebarSeller";
+import { SellerSidebar } from "../components/(seller)/Sidebar";
 export default function SellerDashboardClient({
   children,
 }: {

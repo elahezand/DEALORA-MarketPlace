@@ -25,7 +25,6 @@ export default function NotificationsBell() {
   const data = response?.data;
 
   const notifications = (data ?? []).slice(0, 6);
-
   const unseenCount = (data ?? []).filter(
     (n) => !n.see
   ).length;

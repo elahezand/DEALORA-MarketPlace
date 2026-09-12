@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { ThemeSwitcher } from "@/context/ThemeSwitcher";
 import NotificationsBell from "./NotificationsBell";
 import SendNotificationButton from "./SendNotificationButton";
+import GlobalSearch, { SearchRole } from "./GlobalSearch";
 import { getUrl } from "@/utils/helper";
 import { IUser } from "@/types/User";
 import {
@@ -30,6 +31,9 @@ export function AppHeader({
 
   const isAdmin =
     !!user?.role?.includes("ADMIN");
+  const isSeller =
+    !!user?.role?.includes("SELLER");
+  const searchRole: SearchRole = isAdmin ? "admin" : isSeller ? "seller" : "user";
 
   useEffect(() => {
     const handleKeyDown = (
@@ -87,17 +91,7 @@ export function AppHeader({
             )}
           </button>
 
-          <div className="relative w-full hidden sm:block">
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search listings, orders..."
-            />
-
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center gap-0.5 px-1.5 h-5 rounded border border-[var(--border-strong)] bg-[var(--card-solid)] text-[10px] font-black text-[var(--foreground-subtle)] select-none pointer-events-none">
-              <span>⌘</span>K
-            </kbd>
-          </div>
+          <GlobalSearch inputRef={inputRef} role={searchRole} />
         </div>
 
         {/* Right */}

@@ -12,7 +12,7 @@ import {
   HiOutlineChatBubbleLeftRight,
   HiOutlineFlag,
 } from "react-icons/hi2";
-import StorePanel from "../../../(store)/storePanel/storePanel";
+import StoreAction from "../(seller)/storeAction";
 import { useUnreadConversationsCount } from "@/services/Chat/useUnreadConversationsCount";
 
 interface AppSidebarProps {
@@ -129,7 +129,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
       </div>
 
       {/* Store section */}
-      <StorePanel isOpen={isOpen} />
+      <StoreAction isOpen={isOpen} />
     </aside>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { HiOutlineCreditCard } from "react-icons/hi2";
+import { HiOutlineCreditCard, HiOutlineExclamationTriangle } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
@@ -51,8 +51,13 @@ export default function TransactionsClient({
   initialData,
 }: TransactionsClientProps) {
   const [status, setStatus] = useState<OrderStatus | "all">("all");
+  const [needsActionOnly, setNeedsActionOnly] = useState(false);
 
-  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params: QueryParams = {
+    limit: 20,
+    ...(status !== "all" ? { status } : {}),
+    ...(needsActionOnly ? { needsAdminAction: "true" } : {}),
+  };
 
   const {
     data,
@@ -62,11 +67,11 @@ export default function TransactionsClient({
     isLoading,
     isError,
   } = useInfiniteGet<AdminOrdersResponse>(ENDPOINT, params,
-      { queryKey: ["admin-orders",status], initialData }
+      { queryKey: ["admin-orders", status, needsActionOnly], initialData: needsActionOnly ? undefined : initialData }
     );
   
 
-  const allOrders: IOrder[] = (
+  const allOrders: (IOrder & { hasPendingAdminItems?: boolean })[] = (
     data?.pages?.flatMap((page: AdminOrdersResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
@@ -82,21 +87,36 @@ export default function TransactionsClient({
         </h1>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setStatus(tab.value)}
-            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${
-              status === tab.value
-                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setStatus(tab.value)}
+              className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${
+                status === tab.value
+                  ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+                  : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setNeedsActionOnly((v) => !v)}
+          className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors flex items-center gap-1.5 ${
+            needsActionOnly
+              ? "bg-[var(--warning-500)] text-white border-[var(--warning-500)]"
+              : "border-[var(--warning-500)]/40 text-[var(--warning-500)] hover:bg-[var(--warning-bg)]"
+          }`}
+        >
+          <HiOutlineExclamationTriangle className="w-4 h-4" />
+          Needs My Action
+        </button>
       </div>
 
       <TableCard
@@ -112,7 +132,7 @@ export default function TransactionsClient({
         isEmpty={orders.length === 0}
         errorMessage="Error fetching orders"
         emptyTitle="No orders"
-        emptyMessage="No orders match this filter"
+        emptyMessage={needsActionOnly ? "Nothing needs your attention right now" : "No orders match this filter"}
       >
         <thead className="border-b border-[var(--border)] bg-[var(--background-soft)]">
           <tr>
@@ -131,9 +151,17 @@ export default function TransactionsClient({
               className="border-b border-[var(--border)] hover:bg-[var(--background-soft)] transition-colors"
             >
               <td className="px-6 py-4">
-                <p className="font-bold text-sm text-[var(--foreground)] font-mono">
-                  #{order._id.slice(-8).toUpperCase()}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-sm text-[var(--foreground)] font-mono">
+                    #{order._id.slice(-8).toUpperCase()}
+                  </p>
+                  {order.hasPendingAdminItems && (
+                    <span
+                      title="Contains an item the site needs to ship"
+                      className="w-2 h-2 rounded-full bg-[var(--warning-500)] flex-shrink-0"
+                    />
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 text-sm font-bold text-[var(--foreground)]">
                 ${(order.pricing?.total ?? 0).toLocaleString()}

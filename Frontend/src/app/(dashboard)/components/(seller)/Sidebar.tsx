@@ -30,7 +30,7 @@ const sellerMenuItems: SellerNavItem[] = [
     { name: "My Offers", href: "/dashboard/seller/offers", icon: HiOutlineTag },
     { name: "Orders", href: "/dashboard/seller/orders", icon: HiOutlineClipboardDocumentList },
     { name: "Withdrawals", href: "/dashboard/seller/withdrawals", icon: HiOutlineBanknotes },
-    { name: "Store Settings", href: "/my-store/edit", icon: HiOutlineCog6Tooth },
+    { name: "Store Settings", href: "/dashboard/seller/settings", icon: HiOutlineCog6Tooth },
 ];
 
 export function SellerSidebar({ isOpen }: SellerSidebarProps) {

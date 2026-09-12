@@ -7,11 +7,16 @@ import {
   HiOutlineShoppingBag,
   HiOutlineMapPin,
   HiOutlineCreditCard,
+  HiOutlineTruck,
+  HiOutlineBuildingStorefront,
 } from "react-icons/hi2";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
-import { Badge } from "../../shared/table/TableParts";
-import { OrderStatus, PaymentStatus } from "@/types/Order";
-import { AdminOrderResponse,useUpdateOrder } from "@/services/Order/useUpdateOrder";
+import { Badge, EntityAvatar } from "../../shared/table/TableParts";
+import { AdminFormModal, FormField, inputClass } from "../shared/AdminFormModal";
+import { OrderStatus, PaymentStatus, AdminOrderResponse, IAdminOrderItem } from "@/types/Order";
+import { useUpdateOrder } from "@/services/Order/useUpdateOrder";
+import { useAdminShipItem } from "@/services/Order/useAdminShipItem";
+import { getUrl } from "@/utils/helper";
 
 const STATUS_OPTIONS: OrderStatus[] = [
   "created",
@@ -62,12 +67,14 @@ export default function TransactionDetail({
   const { data, isLoading, isError } = useGet<AdminOrderResponse>(
     endpoint,
     undefined,
-    { initialData }
+    { queryKey: ["admin-order", orderId], initialData }
   );
   const order = data?.data ?? null;
 
   const [status, setStatus] = useState<OrderStatus>("created");
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("pending");
+  const [shipTarget, setShipTarget] = useState<IAdminOrderItem | null>(null);
+  const [trackingCode, setTrackingCode] = useState("");
 
   useEffect(() => {
     if (order) {
@@ -77,6 +84,25 @@ export default function TransactionDetail({
   }, [order]);
 
   const { mutate: updateOrder, isPending } = useUpdateOrder(orderId);
+  const { mutate: shipItem, isPending: isShipping } = useAdminShipItem(() => {
+    setShipTarget(null);
+    setTrackingCode("");
+  });
+
+  function openShip(item: IAdminOrderItem) {
+    setShipTarget(item);
+    setTrackingCode("");
+  }
+
+  function submitShip(e: React.FormEvent) {
+    e.preventDefault();
+    if (!shipTarget) return;
+    shipItem({
+      orderId,
+      itemId: shipTarget._id,
+      trackingCode: trackingCode.trim() || undefined,
+    });
+  }
 
   const formatDate = (date: string | Date) =>
     new Date(date).toLocaleDateString("en-US", {
@@ -117,6 +143,8 @@ export default function TransactionDetail({
   const hasChanges =
     status !== order.status || paymentStatus !== order.paymentStatus;
 
+  const buyer = typeof order.user === "object" ? order.user : null;
+
   return (
     <div className="flex flex-col gap-6 pb-10mx-auto w-full">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -151,29 +179,84 @@ export default function TransactionDetail({
           </span>
         </div>
         <div className="divide-y divide-[var(--border)]">
-          {order.items?.map((item, idx) => (
-            <div
-              key={idx}
-              className="flex items-center justify-between px-5 py-4 gap-3"
-            >
-              <div className="min-w-0">
-                <Link
-                  href={`/listings/${item.product}`}
-                  className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors"
-                >
-                  View product
-                </Link>
-                <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
-                  Qty: {item.quantity}
-                  {item.selectedColor && ` · ${item.selectedColor}`}
-                  {item.selectedSize && ` · ${item.selectedSize}`}
-                </p>
+          {order.items?.map((item, idx) => {
+            const product = typeof item.product === "object" ? item.product : null;
+            const seller = typeof item.seller === "object" ? item.seller : null;
+            const productId = typeof item.product === "object" ? item.product?._id : item.product;
+            const isShipped = item.fulfillment?.status === "shipped";
+
+            return (
+              <div
+                key={item._id ?? idx}
+                className="flex items-center justify-between px-5 py-4 gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <EntityAvatar
+                    src={getUrl(product?.images?.[0])}
+                    alt={product?.title ?? "product"}
+                    fallback={(product?.title ?? "?").slice(0, 2).toUpperCase()}
+                    shape="square"
+                  />
+                  <div className="min-w-0">
+                    <Link
+                      href={`/listings/${productId}`}
+                      className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors truncate block"
+                    >
+                      {product?.title || "View product"}
+                    </Link>
+                    <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
+                      Qty: {item.quantity}
+                      {item.selectedColor && ` · ${item.selectedColor}`}
+                      {item.selectedSize && ` · ${item.selectedSize}`}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {seller ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--foreground-muted)] bg-[var(--background-soft)] px-1.5 py-0.5 rounded">
+                          <HiOutlineBuildingStorefront className="w-3 h-3" />
+                          {seller.name || "Store"}
+                        </span>
+                      ) : item.needsAdminShipment ? (
+                        <span className="text-[10px] font-bold text-[var(--primary-500)] bg-[var(--primary-500)]/10 px-1.5 py-0.5 rounded">
+                          Sold by site
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-[var(--foreground-subtle)] bg-[var(--background-soft)] px-1.5 py-0.5 rounded">
+                          Personal ad
+                        </span>
+                      )}
+                      {item.fulfillment && (
+                        <Badge
+                          tone={isShipped ? "success" : "warning"}
+                          label={isShipped ? "Shipped" : "Pending shipment"}
+                        />
+                      )}
+                    </div>
+                    {isShipped && item.fulfillment?.trackingCode && (
+                      <p className="text-[11px] text-[var(--success-500)] mt-1">
+                        Tracking: {item.fulfillment.trackingCode}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <p className="text-sm font-black text-[var(--foreground)]">
+                    ${(item.price * item.quantity).toLocaleString()}
+                  </p>
+                  {!isShipped && item._id && item.needsAdminShipment && (
+                    <button
+                      type="button"
+                      onClick={() => openShip(item)}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--primary-500)]/30 text-[var(--primary-500)] hover:bg-[var(--primary-500)]/10 transition-colors flex items-center gap-1.5"
+                    >
+                      <HiOutlineTruck className="w-4 h-4" />
+                      Ship
+                    </button>
+                  )}
+                </div>
               </div>
-              <p className="text-sm font-black text-[var(--foreground)] flex-shrink-0">
-                ${(item.price * item.quantity).toLocaleString()}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -215,7 +298,7 @@ export default function TransactionDetail({
             Method: {order.paymentMethod} · Placed {formatDate(order.createdAt)}
           </p>
           <p className="text-xs text-[var(--foreground-muted)]">
-            Buyer ID: <span className="font-mono">{order.user}</span>
+            Buyer: {buyer?.username || "—"} {buyer?.phone ? `· ${buyer.phone}` : ""}
           </p>
         </div>
 
@@ -267,6 +350,11 @@ export default function TransactionDetail({
                 </option>
               ))}
             </select>
+            {status === "shipped" && status !== order.status && (
+              <p className="text-[11px] text-[var(--foreground-muted)]">
+                This will be rejected if any item above is still "Pending shipment".
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-[var(--foreground-muted)]">
@@ -298,6 +386,52 @@ export default function TransactionDetail({
           </button>
         </div>
       </div>
+
+      {/* SHIP ITEM MODAL */}
+      <AdminFormModal
+        isOpen={!!shipTarget}
+        onClose={() => setShipTarget(null)}
+        title="Mark Item as Shipped"
+        icon={HiOutlineTruck}
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setShipTarget(null)}
+              className="text-xs font-bold px-4 h-9 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="admin-ship-item-form"
+              disabled={isShipping}
+              className="btn-primary !w-auto px-5 h-9 text-xs disabled:opacity-50"
+            >
+              {isShipping ? "Saving..." : "Mark as Shipped"}
+            </button>
+          </>
+        }
+      >
+        <form id="admin-ship-item-form" onSubmit={submitShip} className="flex flex-col gap-4">
+          <p className="text-sm text-[var(--foreground)]">
+            Confirm{" "}
+            <span className="font-bold">
+              {typeof shipTarget?.product === "object" ? shipTarget.product.title : "this item"}
+            </span>{" "}
+            has been handed off for delivery.
+          </p>
+          <FormField label="Tracking code (optional)">
+            <input
+              type="text"
+              className={inputClass}
+              value={trackingCode}
+              onChange={(e) => setTrackingCode(e.target.value)}
+              placeholder="e.g. postal tracking number"
+            />
+          </FormField>
+        </form>
+      </AdminFormModal>
     </div>
   );
 }

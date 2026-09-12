@@ -3,6 +3,12 @@ export type OrderStatus = "created" | "processing" | "shipped" | "completed" | "
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 export type PaymentMethod = "cash" | "zarinpal";
 
+export interface IOrderFulfillment {
+  status: "pending" | "shipped";
+  trackingCode: string | null;
+  shippedAt: string | Date | null;
+}
+
 export interface IOrderItem {
   product: string;
   variant: string;
@@ -11,6 +17,11 @@ export interface IOrderItem {
   seller?: string;
   selectedColor?: string;
   selectedSize?: string;
+  fulfillment?: IOrderFulfillment;
+  /** True when no store ever claimed this item via an offer AND it's a
+   *  catalog store_product (not a personal user_ad) — meaning the site
+   *  itself is responsible for shipping it. Computed once at checkout. */
+  needsAdminShipment?: boolean;
 }
 
 export interface ICoupon {
@@ -76,7 +87,60 @@ export interface OrdersResponse {
 
 export interface AdminOrdersResponse {
   success: boolean;
-  data: IOrder[];
+  data: (IOrder & { hasPendingAdminItems?: boolean })[];
+  pagination?: {
+    hasMore: boolean;
+    limit: number;
+    nextCursor: string | null;
+  };
+}
+
+/* ADMIN — GET /orders/admin/:id is populated for the order detail page:
+   product, seller (Store), and buyer info are all real objects, not just
+   ids. */
+export interface IAdminOrderItem extends Omit<IOrderItem, "product" | "seller"> {
+  _id: string;
+  product: { _id: string; title?: string; images?: string[] } | string;
+  seller: { _id: string; name?: string; slug?: string } | string | null;
+}
+
+export interface IAdminOrder extends Omit<IOrder, "items" | "user"> {
+  items: IAdminOrderItem[];
+  user: { _id: string; username?: string; phone?: string } | string;
+}
+
+export interface AdminOrderResponse {
+  success: boolean;
+  data: IAdminOrder;
+}
+
+/* SELLER — GET /orders/seller returns orders scoped down to just this
+   seller's own line items, with `product` and `user` populated. Each item
+   now carries a real `_id` so a specific one can be targeted for shipping
+   (items on a single order can ship on different days). */
+export interface ISellerOrderItem {
+  _id: string;
+  product: { _id: string; title?: string; images?: string[] } | string;
+  variant: string | null;
+  quantity: number;
+  price: number;
+  seller?: string;
+  selectedColor?: string;
+  selectedSize?: string;
+  fulfillment?: IOrderFulfillment;
+}
+
+export interface ISellerOrder extends Omit<IOrder, "items" | "user"> {
+  items: ISellerOrderItem[];
+  user: { _id: string; username?: string; phone?: string } | string;
+  mySubtotal: number;
+  trackingCode?:string,
+  myFulfillmentStatus: "pending" | "partial" | "shipped";
+}
+
+export interface SellerOrdersResponse {
+  success: boolean;
+  data: ISellerOrder[];
   pagination?: {
     hasMore: boolean;
     limit: number;

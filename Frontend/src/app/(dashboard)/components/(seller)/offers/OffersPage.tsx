@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { HiOutlineTag } from "react-icons/hi2";
+import { HiOutlineTag, HiOutlinePlus } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
 import TableCard from "../../shared/table/TableCard";
@@ -10,6 +10,7 @@ import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, inputClass, textareaClass } from "../../(admin)/shared/AdminFormModal";
 import { useUpdateOffer } from "@/services/Offer/useUpdateOffer";
 import { useDeleteOffer } from "@/services/Offer/useDeleteOffer";
+import Link from "next/link";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { OfferStatus, Offer, OffersResponse } from "@/types/Offer";
 import { getUrl } from "@/utils/helper";
@@ -64,7 +65,7 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
     const offers: Offer[] = (
         data?.pages?.flatMap((page: OffersResponse) => page?.data ?? []) || []
     ).filter(Boolean);
-    
+
 
     const { mutate: updateOffer, isPending: isSaving } = useUpdateOffer(() => {
         closeEdit();
@@ -117,6 +118,13 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
                     <p className="menu-section-title mb-1">Seller</p>
                     <h1 className="!text-2xl font-black text-[var(--foreground)] tracking-tight">My Offers</h1>
                 </div>
+                <Link
+                    href="/dashboard/seller/offers/new"
+                    className="btn-primary !w-auto px-5 h-10 text-sm gap-2 flex items-center"
+                >
+                    <HiOutlinePlus className="w-4 h-4" />
+                    <span>Add New Offer</span>
+                </Link>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">

@@ -39,9 +39,16 @@ const cancelOrderSchema = z.object({
     reason: z.string().min(3).max(200).optional(),
 });
 
+// SELLER: mark (their part of) an order as shipped, with an optional
+// tracking code.
+const shipOrderSchema = z.object({
+    trackingCode: z.string().trim().max(100).optional(),
+});
+
 module.exports = {
     checkoutSchema,
     updateOrderAdminSchema,
     updateOrderOwnerSchema,
     cancelOrderSchema,
+    shipOrderSchema,
 };

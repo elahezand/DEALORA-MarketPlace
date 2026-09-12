@@ -4,7 +4,7 @@ const orderRouter = express.Router();
 const controller = require("../controllers/order");
 
 const validateObjectIdParam = require("../middlewares/objectId");
-const { authUser, authAdmin } = require("../middlewares/authMiddleware");
+const { authUser, authAdmin, authSeller } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 
 const {
@@ -12,6 +12,7 @@ const {
     updateOrderAdminSchema,
     updateOrderOwnerSchema,
     cancelOrderSchema,
+    shipOrderSchema,
 } = require("../validators/order");
 
 
@@ -38,6 +39,16 @@ orderRouter.patch(
     controller.patchAdmin
 );
 
+orderRouter.patch(
+    "/admin/:id/items/:itemId/ship",
+    authUser,
+    authAdmin,
+    validateObjectIdParam("id"),
+    validateObjectIdParam("itemId"),
+    validate(shipOrderSchema),
+    controller.adminShipItem
+);
+
 // USER ROUTES 
 orderRouter.post(
     "/checkout",
@@ -53,6 +64,20 @@ orderRouter.get(
 orderRouter.get("/my"
     ,authUser,
     controller.getMyOrders);
+
+// SELLER — orders containing at least one of this seller's items.
+orderRouter.get("/seller",
+    authUser,
+    authSeller,
+    controller.getSeller);
+
+orderRouter.patch("/seller/:id/items/:itemId/ship",
+    authUser,
+    authSeller,
+    validateObjectIdParam("id"),
+    validateObjectIdParam("itemId"),
+    validate(shipOrderSchema),
+    controller.sellerShipItem);
 
 orderRouter.get(
     "/:id",

@@ -3,14 +3,24 @@ const Cart = require("../models/cart");
 const Order = require("../models/order");
 const Listing = require("../models/listing");
 const Coupon = require("../models/coupon");
-const { paginate } = require("../utils/helper");
-const AppError = require("../utils/AppError");
 const Store = require("../models/store");
+const { paginate,escapeRegex } = require("../utils/helper");
+const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 const {
   createPayment,
   verifyPayment,
 } = require("../services/zarinpal");
+const buildOrderIdSearchExpr = (q) => {
+  if (!q || !String(q).trim()) return null;
+  return {
+    $regexMatch: {
+      input: { $toString: "$_id" },
+      regex: escapeRegex(String(q).trim()),
+      options: "i",
+    },
+  };
+};
 
 /* Checkout: Cart → Order */
 const checkout = async (userId, shippingAddress, paymentMethod) => {
@@ -23,13 +33,17 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
     throw new AppError(400, "Cart is empty");
   }
 
-  const orderItems = cart.items.map((item) => ({
-    product: item.product,
-    variant: item.variantId,
-    quantity: item.quantity,
-    price: item.priceSnapshot || 0,
-    seller: item.store || item.offer?.store || null,
-  }));
+  const orderItems = cart.items.map((item) => {
+    const seller = item.store || item.offer?.store || null;
+    return {
+      product: item.product,
+      variant: item.variantId,
+      quantity: item.quantity,
+      price: item.priceSnapshot || 0,
+      seller,
+      needsAdminShipment: !seller && item.product?.listingType === "store_product",
+    };
+  });
 
   const order = await Order.create({
     user: cart.user,
@@ -97,6 +111,7 @@ const verify = async (authority) => {
   order.payment.paidAt = new Date();
   order.status = "processing";
 
+
   if (order.coupon?.couponRef) {
     await Coupon.updateOne(
       { _id: order.coupon.couponRef },
@@ -139,6 +154,7 @@ const verify = async (authority) => {
       }
     })
   );
+
   const revenueBySeller = new Map();
   for (const item of order.items) {
     if (!item.seller) continue;
@@ -154,6 +170,47 @@ const verify = async (authority) => {
   await order.save();
   return order;
 };
+/* Admin Orders */
+const getAllOrders = async (query = {}) => {
+  const { limit, cursor } = query;
+  if (limit && Number(limit) > 100) {
+    const err = new Error("limit must be <= 100");
+    err.status = 400;
+    throw err;
+  }
+
+  const filters = {};
+
+  if (query.needsAdminAction === "true" || query.needsAdminAction === true) {
+    filters.items = {
+      $elemMatch: {
+        needsAdminShipment: true,
+        "fulfillment.status": { $ne: "shipped" },
+      },
+    };
+  }
+
+  const searchExpr = buildOrderIdSearchExpr(query.q);
+  if (searchExpr) {
+    filters.$expr = searchExpr;
+  }
+
+  const result = await paginate(Order, {
+    limit: limit ? Number(limit) : 20,
+    cursor,
+    filters,
+    sort: { createdAt: -1 },
+  });
+
+  const data = result.data.map((order) => ({
+    ...order,
+    hasPendingAdminItems: order.items.some(
+      (item) => item.needsAdminShipment && item.fulfillment?.status !== "shipped"
+    ),
+  }));
+
+  return { data, pagination: result.pagination };
+};
 
 /* User Orders */
 const getMyOrders = async (userId, query = {}) => {
@@ -165,6 +222,10 @@ const getMyOrders = async (userId, query = {}) => {
   if (query.status && query.status !== "all") {
     filters.status = query.status;
   }
+  const searchExpr = buildOrderIdSearchExpr(query.q);
+  if (searchExpr) {
+    filters.$expr = searchExpr;
+  }
 
   return paginate(Order, {
     limit,
@@ -172,6 +233,140 @@ const getMyOrders = async (userId, query = {}) => {
     filters,
     sort: { createdAt: -1 },
   });
+};
+
+/* Seller Orders — orders containing at least one of this seller's items */
+const getSellerOrders = async (userId, query = {}) => {
+  const store = await Store.findOne({ owner: userId }).select("_id").lean();
+  if (!store) {
+    throw new AppError(404, "Store not found");
+  }
+
+  const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
+
+  const filters = {
+    "items.seller": store._id,
+    paymentStatus: "paid",
+  };
+  if (query.status && query.status !== "all") {
+    filters.status = query.status;
+  }
+  const searchExpr = buildOrderIdSearchExpr(query.q);
+  if (searchExpr) {
+    filters.$expr = searchExpr;
+  }
+
+  const result = await paginate(Order, {
+    limit,
+    cursor: query.cursor,
+    filters,
+    sort: { createdAt: -1 },
+    populate: [
+      { path: "user", select: "username phone" },
+      { path: "items.product", select: "title images" },
+    ],
+  });
+
+  const data = result.data.map((order) => {
+    const myItems = order.items.filter(
+      (item) => item.seller && String(item.seller) === String(store._id)
+    );
+    const mySubtotal = myItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    const shippedCount = myItems.filter((item) => item.fulfillment?.status === "shipped").length;
+    const myFulfillmentStatus =
+      shippedCount === 0 ? "pending" : shippedCount === myItems.length ? "shipped" : "partial";
+
+    return { ...order, items: myItems, mySubtotal, myFulfillmentStatus };
+  });
+
+  return { data, pagination: result.pagination };
+};
+
+/* Seller — mark ONE of this seller's items in an order as shipped. */
+const sellerShipItem = async (userId, orderId, itemId, trackingCode) => {
+  const store = await Store.findOne({ owner: userId }).select("_id").lean();
+  if (!store) {
+    throw new AppError(404, "Store not found");
+  }
+
+  const order = await Order.findOne({
+    _id: orderId,
+    "items.seller": store._id,
+  });
+
+  if (!order) {
+    throw new AppError(404, "Order not found");
+  }
+
+  if (order.status === "created" || order.status === "cancelled") {
+    throw new AppError(
+      400,
+      `Order cannot be marked as shipped from status "${order.status}"`
+    );
+  }
+
+  const item = order.items.id(itemId);
+  if (!item || !item.seller || String(item.seller) !== String(store._id)) {
+    throw new AppError(404, "Item not found in this order");
+  }
+
+  if (item.fulfillment?.status === "shipped") {
+    throw new AppError(409, "This item is already marked as shipped");
+  }
+
+  item.fulfillment = {
+    status: "shipped",
+    trackingCode: trackingCode || item.fulfillment?.trackingCode || null,
+    shippedAt: new Date(),
+  };
+
+
+  order.markModified("items");
+  await order.save();
+  return order;
+};
+
+
+const adminShipItem = async (orderId, itemId, trackingCode) => {
+  const order = await Order.findById(orderId);
+  if (!order) {
+    throw new AppError(404, "Order not found");
+  }
+
+  if (order.status === "created" || order.status === "cancelled") {
+    throw new AppError(
+      400,
+      `Order cannot be marked as shipped from status "${order.status}"`
+    );
+  }
+
+  const item = order.items.id(itemId);
+  if (!item) {
+    throw new AppError(404, "Item not found in this order");
+  }
+
+  if (item.fulfillment?.status === "shipped") {
+    throw new AppError(409, "This item is already marked as shipped");
+  }
+
+  if (!item.needsAdminShipment) {
+    throw new AppError(
+      403,
+      "This item belongs to a seller — only they can mark it as shipped"
+    );
+  }
+
+  item.fulfillment = {
+    status: "shipped",
+    trackingCode: trackingCode || item.fulfillment?.trackingCode || null,
+    shippedAt: new Date(),
+  };
+
+  await order.save();
+  return order;
 };
 
 /* User Single Order */
@@ -188,25 +383,13 @@ const getOrderById = async (orderId, userId) => {
   return order;
 };
 
-/* Admin Orders */
-const getAllOrders = async (query = {}) => {
-  const { limit, cursor } = query;
-  if (limit && Number(limit) > 100) {
-    const err = new Error("limit must be <= 100");
-    err.status = 400;
-    throw err;
-  }
-
-  return paginate(Order, {
-    limit: limit ? Number(limit) : 20,
-    cursor,
-    sort: { createdAt: -1 },
-  });
-};
 
 /* Admin Single Order */
 const getOrderByIdAdmin = async (orderId) => {
-  const order = await Order.findById(orderId);
+  const order = await Order.findById(orderId)
+    .populate("user", "username phone")
+    .populate("items.product", "title images")
+    .populate("items.seller", "name slug");
 
   if (!order) {
     throw new AppError(404, "Order not found");
@@ -224,6 +407,19 @@ const updateOrder = async (orderId, data) => {
 
   if (!order) {
     throw new AppError(404, "Order not found");
+  }
+
+  if (data.status === "shipped") {
+    const unshippedCount = order.items.filter(
+      (item) => item.fulfillment?.status !== "shipped"
+    ).length;
+
+    if (unshippedCount > 0) {
+      throw new AppError(
+        409,
+        `Cannot mark as shipped — ${unshippedCount} item(s) haven't been shipped yet`
+      );
+    }
   }
 
   for (const field of ADMIN_UPDATABLE_FIELDS) {
@@ -279,6 +475,9 @@ module.exports = {
   checkout,
   verify,
   getMyOrders,
+  getSellerOrders,
+  sellerShipItem,
+  adminShipItem,
   getOrderById,
   getAllOrders,
   getOrderByIdAdmin,

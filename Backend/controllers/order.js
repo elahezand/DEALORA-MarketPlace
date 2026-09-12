@@ -1,4 +1,5 @@
 const orderService = require("../services/order");
+
 /* Checkout (Cart → Order) */
 exports.checkout = async (req, res, next) => {
   try {
@@ -66,14 +67,60 @@ exports.getMyOrderById = async (req, res, next) => {
   }
 };
 
+/* Get Seller Orders (Seller) */
+exports.getSeller = async (req, res, next) => {
+  try {
+    const result = await orderService.getSellerOrders(req.user._id, req.query);
+    res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* Mark One Item as Shipped (Seller) */
+exports.sellerShipItem = async (req, res, next) => {
+  try {
+    const order = await orderService.sellerShipItem(
+      req.user._id,
+      req.params.id,
+      req.params.itemId,
+      req.parsed.data.trackingCode
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Item marked as shipped",
+      data: order,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* Mark One Item as Shipped (Admin — site-owned items or manual override) */
+exports.adminShipItem = async (req, res, next) => {
+  try {
+    const order = await orderService.adminShipItem(
+      req.params.id,
+      req.params.itemId,
+      req.parsed.data.trackingCode
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Item marked as shipped",
+      data: order,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 /* Admin Get All Orders */
 exports.getAdmin = async (req, res, next) => {
   try {
     const result = await orderService.getAllOrders(req.query);
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
+    res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);
   }

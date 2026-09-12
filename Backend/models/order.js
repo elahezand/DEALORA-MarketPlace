@@ -6,7 +6,7 @@ const orderItemSchema = new Schema(
   {
     product: {
       type: Types.ObjectId,
-      ref: "Product",
+      ref: "Listing",
       required: true,
     },
     variant: {
@@ -35,8 +35,17 @@ const orderItemSchema = new Schema(
       type: String,
       trim: true,
     },
-  },
-  { _id: false }
+    fulfillment: {
+      status: {
+        type: String,
+        enum: ["pending", "shipped"],
+        default: "pending",
+      },
+      trackingCode: { type: String, trim: true, default: null },
+      shippedAt: { type: Date, default: null },
+    },
+    needsAdminShipment: { type: Boolean, default: false },
+  }
 );
 
 const couponSchema = new Schema(

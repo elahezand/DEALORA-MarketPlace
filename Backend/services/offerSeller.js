@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const OfferSeller = require("../models/offerSeller");
 const Store = require("../models/store");
 const Listing = require("../models/listing");
-const {paginate} = require("../utils/helper");
+const {paginate,escapeRegex} = require("../utils/helper");
 const AppError = require("../utils/AppError");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -113,6 +113,12 @@ exports.getMine = async (userId, query = {}) => {
     filters.status = query.status;
   }
 
+  if (query.q && String(query.q).trim()) {
+    const regex = new RegExp(escapeRegex(String(query.q).trim()), "i");
+    const matchingListings = await Listing.find({ title: regex }).select("_id").lean();
+    filters.listing = { $in: matchingListings.map((l) => l._id) };
+  }
+
   return paginate(OfferSeller, {
     limit: query.limit,
     cursor: query.cursor,
@@ -120,7 +126,6 @@ exports.getMine = async (userId, query = {}) => {
     populate: ["listing", "store"],
   });
 };
-
 // === DELETE OFFER ===
 exports.remove = async (offerId, user) => {
   if (!isValidId(offerId)) throw new AppError(400, "Invalid offerId");

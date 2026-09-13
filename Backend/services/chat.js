@@ -18,17 +18,24 @@ const startConversation = async (senderId, data) => {
     throw new AppError(400, "Invalid listingId");
   }
 
-  let conversation = await Conversation.findOne({
-    participants: { $all: [senderId, data.recipientId] },
-    listing: data.listingId || null,
-  });
+  const listing = data.listingId || null;
+  const pairKey = [String(senderId), String(data.recipientId)].sort().join(":");
 
-  if (!conversation) {
-    conversation = await Conversation.create({
-      participants: [senderId, data.recipientId],
-      listing: data.listingId || null,
-    });
-  }
+  // Atomic find-or-create: two concurrent requests to start the same
+  // conversation both hit this single upsert instead of racing a
+  // findOne()-then-create() (which could otherwise create two separate
+  // conversations for the same pair).
+  const conversation = await Conversation.findOneAndUpdate(
+    { pairKey, listing },
+    {
+      $setOnInsert: {
+        participants: [senderId, data.recipientId],
+        pairKey,
+        listing,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
 
   const message = await Message.create({
     conversation: conversation._id,

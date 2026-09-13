@@ -1,4 +1,5 @@
 const commentService = require("../services/comment");
+const invalidateCache = require("../utils/cache");
 
 // GET PRODUCT COMMENTS
 exports.getByListing = async (req, res, next) => {
@@ -27,6 +28,8 @@ exports.reply = async (req, res, next) => {
       req.parsed.data.body
     );
 
+    await invalidateCache(`/api/comments/listing/${reply.listing}*`);
+
     res.status(201).json({
       success: true,
       message: "Reply posted",
@@ -44,6 +47,10 @@ exports.moderate = async (req, res, next) => {
       req.user._id,
       req.parsed.data
     );
+
+    if (updated) {
+      await invalidateCache(`/api/comments/listing/${updated.listing}*`);
+    }
 
     res.status(200).json({
       success: true,
@@ -63,6 +70,10 @@ exports.remove = async (req, res, next) => {
       req.user._id
     );
 
+    if (deleted) {
+      await invalidateCache(`/api/comments/listing/${deleted.listing}*`);
+    }
+
     res.status(200).json({
       success: true,
       message: "Deleted",
@@ -80,6 +91,8 @@ exports.create = async (req, res, next) => {
       req.user._id,
       req.parsed.data
     );
+
+    await invalidateCache(`/api/comments/listing/${comment.listing}*`);
 
     res.status(201).json({
       success: true,
@@ -100,6 +113,8 @@ exports.patch = async (req, res, next) => {
       req.parsed.data
     );
 
+    await invalidateCache(`/api/comments/listing/${updated.listing}*`);
+
     res.status(200).json({
       success: true,
       message: "Comment updated",
@@ -117,6 +132,10 @@ exports.removeOwn = async (req, res, next) => {
       req.user._id,
       req.params.id
     );
+
+    if (deleted) {
+      await invalidateCache(`/api/comments/listing/${deleted.listing}*`);
+    }
 
     res.status(200).json({
       success: true,

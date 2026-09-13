@@ -4,6 +4,7 @@ const Order = require("../models/order");
 const Listing = require("../models/listing");
 const Coupon = require("../models/coupon");
 const Store = require("../models/store");
+const OfferSeller = require("../models/offerSeller");
 const { paginate,escapeRegex } = require("../utils/helper");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
@@ -41,6 +42,7 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
     );
     return {
       product: item.product,
+      offer: item.offer || null,
       variant: item.variantId,
       quantity: item.quantity,
       price: item.priceSnapshot || 0,
@@ -84,10 +86,95 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
   cart.status = "converted";
   await cart.save();
 
+  // Cash-on-delivery has no online payment to verify, so there's no
+  // callback to trigger stock reservation / seller payout later — do it
+  // now, right at checkout, and move the order straight to "processing".
+  if (paymentMethod === "cash") {
+    await finalizeOrder(order);
+    await order.save();
+  }
+
   return {
     order,
     paymentUrl,
   };
+};
+
+/* Reserve stock, credit sellers, and bump coupon usage for an order whose
+   payment has been confirmed (zarinpal verify) or that doesn't require
+   online payment confirmation at all (cash). Mutates `order` in place;
+   caller is responsible for order.save(). */
+const finalizeOrder = async (order) => {
+  order.status = "processing";
+
+  if (order.coupon?.couponRef) {
+    await Coupon.updateOne(
+      { _id: order.coupon.couponRef },
+      { $inc: { usedCount: 1 } }
+    );
+  }
+
+  await Promise.all(
+    order.items.map(async (item) => {
+      let result;
+
+      if (item.offer) {
+        // Offer-based item: the stock that actually belongs to this seller
+        // lives on the OfferSeller doc, not on the shared Listing/variant
+        // stock (which other sellers' offers, or direct sales, also draw
+        // from).
+        result = await OfferSeller.updateOne(
+          { _id: item.offer, stock: { $gte: item.quantity } },
+          { $inc: { stock: -item.quantity } }
+        );
+        await Listing.updateOne(
+          { _id: item.product },
+          { $inc: { "metrics.sold": item.quantity } }
+        );
+      } else if (item.variant) {
+        result = await Listing.updateOne(
+          {
+            _id: item.product,
+            "variants._id": item.variant,
+            "variants.stock": { $gte: item.quantity },
+          },
+          {
+            $inc: {
+              "metrics.sold": item.quantity,
+              "variants.$[elem].stock": -item.quantity,
+            },
+          },
+          {
+            arrayFilters: [{ "elem._id": new Types.ObjectId(item.variant) }],
+          }
+        );
+      } else {
+        // No offer, no variant → this is a user_ad listing. It has no
+        // stock concept, and shouldn't accrue a "sold" count either —
+        // for classified ads only the view count matters, so there's
+        // nothing to update here.
+        return;
+      }
+
+      if (result.modifiedCount === 0) {
+        logger.error(
+          `[order ${order._id}] stock update FAILED for product ${item.product} (offer: ${item.offer || "none"}, variant: ${item.variant || "none"}, qty: ${item.quantity}) - payment was captured but stock could not be reserved; needs manual review/refund.`
+        );
+      }
+    })
+  );
+
+  const revenueBySeller = new Map();
+  for (const item of order.items) {
+    if (!item.seller) continue;
+    const key = String(item.seller);
+    revenueBySeller.set(key, (revenueBySeller.get(key) || 0) + item.price * item.quantity);
+  }
+  await Promise.all(
+    Array.from(revenueBySeller.entries()).map(([sellerId, amount]) =>
+      Store.updateOne({ _id: sellerId }, { $inc: { "wallet.balance": amount } })
+    )
+  );
 };
 
 const verify = async (authority) => {
@@ -114,63 +201,8 @@ const verify = async (authority) => {
   order.paymentStatus = "paid";
   order.payment.refId = result.refId;
   order.payment.paidAt = new Date();
-  order.status = "processing";
 
-
-  if (order.coupon?.couponRef) {
-    await Coupon.updateOne(
-      { _id: order.coupon.couponRef },
-      { $inc: { usedCount: 1 } }
-    );
-  }
-
-  await Promise.all(
-    order.items.map(async (item) => {
-      let result;
-
-      if (item.variant) {
-        result = await Listing.updateOne(
-          {
-            _id: item.product,
-            "variants._id": item.variant,
-            "variants.stock": { $gte: item.quantity },
-          },
-          {
-            $inc: {
-              "metrics.sold": item.quantity,
-              "variants.$[elem].stock": -item.quantity,
-            },
-          },
-          {
-            arrayFilters: [{ "elem._id": new Types.ObjectId(item.variant) }],
-          }
-        );
-      } else {
-        result = await Listing.updateOne(
-          { _id: item.product, stock: { $gte: item.quantity } },
-          { $inc: { "metrics.sold": item.quantity, stock: -item.quantity } }
-        );
-      }
-
-      if (result.modifiedCount === 0) {
-        logger.error(
-          `[order ${order._id}] stock update FAILED for product ${item.product} (variant: ${item.variant || "none"}, qty: ${item.quantity}) - payment was captured but stock could not be reserved; needs manual review/refund.`
-        );
-      }
-    })
-  );
-
-  const revenueBySeller = new Map();
-  for (const item of order.items) {
-    if (!item.seller) continue;
-    const key = String(item.seller);
-    revenueBySeller.set(key, (revenueBySeller.get(key) || 0) + item.price * item.quantity);
-  }
-  await Promise.all(
-    Array.from(revenueBySeller.entries()).map(([sellerId, amount]) =>
-      Store.updateOne({ _id: sellerId }, { $inc: { "wallet.balance": amount } })
-    )
-  );
+  await finalizeOrder(order);
 
   await order.save();
   return order;

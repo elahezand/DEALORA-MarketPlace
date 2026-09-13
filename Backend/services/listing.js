@@ -95,14 +95,27 @@ async function createListing(userId, data, files = []) {
 }
 
 /* === UPDATE === */
-async function updateListing(id, userId, data, files = []) {
+async function updateListing(id, user, data, files = []) {
   if (!isValidId(id)) throw new AppError(400, "Invalid listing id");
 
   const listing = await Listing.findById(id);
   if (!listing) throw new AppError(404, "Listing not found");
 
-  if (listing.listingType === "user_ad" && String(listing.owner) !== String(userId)) {
-    throw new AppError(403, "Unauthorized action");
+  const isAdmin = Array.isArray(user.role)
+    ? user.role.includes("ADMIN")
+    : user.role === "ADMIN";
+
+  if (listing.listingType === "user_ad") {
+    if (String(listing.owner) !== String(user._id) && !isAdmin) {
+      throw new AppError(403, "Unauthorized action");
+    }
+  } else if (listing.listingType === "store_product") {
+    // Store product listings are the shared catalog entry — sellers only
+    // ever attach their own price/stock to it via an OfferSeller offer,
+    // they never edit the listing itself. Only an admin may.
+    if (!isAdmin) {
+      throw new AppError(403, "Only an admin can update a store product listing");
+    }
   }
 
   const updateData = { ...data };
@@ -118,14 +131,24 @@ async function updateListing(id, userId, data, files = []) {
 }
 
 /* === SOFT DELETE === */
-async function deleteListing(id, userId) {
+async function deleteListing(id, user) {
   if (!isValidId(id)) throw new AppError(400, "Invalid listing id");
 
   const listing = await Listing.findById(id);
   if (!listing) throw new AppError(404, "Listing not found");
 
-  if (listing.listingType === "user_ad" && String(listing.owner) !== String(userId)) {
-    throw new AppError(403, "Unauthorized action");
+  const isAdmin = Array.isArray(user.role)
+    ? user.role.includes("ADMIN")
+    : user.role === "ADMIN";
+
+  if (listing.listingType === "user_ad") {
+    if (String(listing.owner) !== String(user._id) && !isAdmin) {
+      throw new AppError(403, "Unauthorized action");
+    }
+  } else if (listing.listingType === "store_product") {
+    if (!isAdmin) {
+      throw new AppError(403, "Only an admin can delete a store product listing");
+    }
   }
 
   listing.status = "deleted";

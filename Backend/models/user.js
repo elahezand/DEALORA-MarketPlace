@@ -63,13 +63,6 @@ const userSchema = new mongoose.Schema(
             default: null,
         },
 
-        favorites: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Product",
-            },
-        ],
-
         refreshToken: {
             type: String,
         },
@@ -97,26 +90,6 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ phone: 1 }, { unique: true });
 userSchema.index({ email: 1 }, { unique: true, sparse: true });
 userSchema.index({ role: 1 });
-
-/*VIRTUALS */
-
-userSchema.virtual("listings", {
-    ref: "Listing",
-    localField: "_id",
-    foreignField: "sellerId",
-});
-
-userSchema.virtual("orders", {
-    ref: "Order",
-    localField: "_id",
-    foreignField: "buyerId",
-});
-
-userSchema.virtual("reviews", {
-    ref: "Review",
-    localField: "_id",
-    foreignField: "userId",
-});
 
 const User =
     mongoose.models.User ||

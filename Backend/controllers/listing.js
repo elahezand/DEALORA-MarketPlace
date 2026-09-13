@@ -78,7 +78,7 @@ exports.updateListing = async (req, res, next) => {
   try {
     const listing = await listingService.updateListing(
       req.params.id,
-      req.user._id,
+      req.user,
       req.parsed.data,
       req.files
     );
@@ -95,7 +95,7 @@ exports.updateListing = async (req, res, next) => {
 
 exports.deleteListing = async (req, res, next) => {
   try {
-    await listingService.deleteListing(req.params.id, req.user._id);
+    await listingService.deleteListing(req.params.id, req.user);
     res.status(200).json({
       success: true,
       message: "Listing soft-deleted successfully",

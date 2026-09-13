@@ -38,7 +38,8 @@ listingRouter.get(
 listingRouter.post(
   "/",
   authUser,
-  upload.array("pics", 10), 
+  upload.array("pics", 10),
+  upload.verifyUploadedImages,
   validate(createListingSchema),
   controller.createListing
 );
@@ -48,6 +49,7 @@ listingRouter.put(
   authUser,
   validateObjectIdParam("id"),
   upload.array("pics", 10),
+  upload.verifyUploadedImages,
   validate(updateListingSchema),
   controller.updateListing
 );

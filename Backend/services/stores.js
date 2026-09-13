@@ -107,8 +107,9 @@ const updateStore = async (userId, storeId, data) => {
     delete safeData[field];
   }
 
-  const merged = { ...existing, ...safeData };
-  await Store.updateOne({ _id: storeId }, { $set: merged }).exec();
+  if (Object.keys(safeData).length === 0) return true;
+
+  await Store.updateOne({ _id: storeId }, { $set: safeData }).exec();
   return true;
 };
 

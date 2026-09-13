@@ -52,12 +52,6 @@ const storeSchema = new mongoose.Schema(
 
 storeSchema.index({ "address.city": 1 });
 
-storeSchema.virtual("offers", {
-  ref: "Offer",
-  localField: "_id",
-  foreignField: "sellers.store",
-});
-
 storeSchema.pre("save", function () {
   if (this.name && !this.slug) {
     this.slug = this.name
@@ -68,6 +62,6 @@ storeSchema.pre("save", function () {
       .replace(/[^a-z0-9\-]/g, "");
   }
 });
-const Store = mongoose.model("Store", storeSchema);
+const Store = mongoose.models.Store || mongoose.model("Store", storeSchema);
 
 module.exports = Store;

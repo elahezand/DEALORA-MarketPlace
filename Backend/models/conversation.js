@@ -10,6 +10,11 @@ const conversationSchema = new Schema(
       validate: [(v) => v.length === 2, "A conversation must have exactly 2 participants"],
     },
 
+    pairKey: {
+      type: String,
+      required: true,
+    },
+
     listing: {
       type: Types.ObjectId,
       ref: "Listing",
@@ -40,8 +45,13 @@ const conversationSchema = new Schema(
   }
 );
 
-// جلوگیری از ساخت دو مکالمه تکراری برای یه آگهی مشخص بین همون دو نفر
-conversationSchema.index({ participants: 1, listing: 1 });
+conversationSchema.pre("validate", function () {
+  if (Array.isArray(this.participants) && this.participants.length === 2) {
+    this.pairKey = this.participants.map(String).sort().join(":");
+  }
+});
+
+conversationSchema.index({ pairKey: 1, listing: 1 }, { unique: true });
 conversationSchema.index({ updatedAt: -1 });
 
 module.exports =

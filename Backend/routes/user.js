@@ -37,6 +37,7 @@ userRouter.put(
   "/me/profile",
   authUser,
   upload.single("avatar"),
+  upload.verifyUploadedImages,
   validate(updateMyProfileSchema),
   putUser
 );

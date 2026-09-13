@@ -9,6 +9,11 @@ const orderItemSchema = new Schema(
       ref: "Listing",
       required: true,
     },
+    offer: {
+      type: Types.ObjectId,
+      ref: "OfferSeller",
+      default: null,
+    },
     variant: {
       type: Types.ObjectId,
       default: null,

@@ -57,21 +57,44 @@ cartSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 cartSchema.index({ user: 1, status: 1 });
 
 
-cartSchema.methods.recalcPricing = function () {
+cartSchema.methods.recalcPricing = async function () {
   const subtotal = this.items.reduce(
     (sum, item) => sum + item.priceSnapshot * item.quantity,
     0
   );
 
   let discount = 0;
-  if (this.coupon?.discountType) {
-    if (this.coupon.discountType === "percent") {
-      discount = (subtotal * (this.coupon.discountValue ?? 0)) / 100;
-      if (this.coupon.maxDiscount) {
-        discount = Math.min(discount, this.coupon.maxDiscount);
+  if (this.coupon?.couponRef) {
+    // Re-validate against the live Coupon doc on every save instead of
+    // trusting the cached discountType/discountValue/maxDiscount fields —
+    // a coupon can expire, be deactivated, or hit its usage limit after
+    // it was applied to this cart.
+    const couponDoc = await mongoose
+      .model("Coupon")
+      .findById(this.coupon.couponRef)
+      .lean();
+
+    const now = new Date();
+    const isValid =
+      !!couponDoc &&
+      couponDoc.isActive &&
+      (!couponDoc.startsAt || couponDoc.startsAt <= now) &&
+      (!couponDoc.expiresAt || couponDoc.expiresAt >= now) &&
+      (couponDoc.usageLimit == null || couponDoc.usedCount < couponDoc.usageLimit);
+
+    if (isValid) {
+      if (couponDoc.type === "percent") {
+        discount = (subtotal * Number(couponDoc.amount || 0)) / 100;
+      } else if (couponDoc.type === "fixed") {
+        discount = Math.min(Number(couponDoc.amount || 0), subtotal);
       }
-    } else if (this.coupon.discountType === "fixed") {
-      discount = Math.min(this.coupon.discountValue ?? 0, subtotal);
+      if (couponDoc.maxDiscount) {
+        discount = Math.min(discount, Number(couponDoc.maxDiscount));
+      }
+    } else {
+      // No longer valid — drop it from the cart so the UI doesn't keep
+      // showing a coupon that silently stopped applying.
+      this.coupon = null;
     }
   }
 
@@ -83,7 +106,7 @@ cartSchema.methods.recalcPricing = function () {
 };
 
 cartSchema.pre("save", async function () {
-  this.recalcPricing();
+  await this.recalcPricing();
 });
 
 const Cart = mongoose.models.Cart || mongoose.model("Cart", cartSchema);

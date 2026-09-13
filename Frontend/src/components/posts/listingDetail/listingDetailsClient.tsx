@@ -132,11 +132,11 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
             setIsAuthOpen(true);
             return;
         }
-        if (!data?.user?._id) {
+        if (!data?.owner?._id) {
             toast.error("Seller information isn't available for this listing right now.");
             return;
         }
-        if (data.user._id === user._id) {
+        if (data.owner._id === user._id) {
             toast.error("This is your own listing.");
             return;
         }
@@ -233,8 +233,8 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                 <ContactSellerModal
                     isOpen={isContactOpen}
                     setIsOpen={setIsContactOpen}
-                    recipientId={data.user?._id || ""}
-                    recipientName={data.user?.name}
+                    recipientId={data.owner?._id || ""}
+                    recipientName={data.owner?.name}
                     listingId={data._id}
                     listingTitle={data.title}
                 />
@@ -384,7 +384,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                     >
                                         <Phone size={15} className="text-[var(--foreground-muted)]" />
                                         <span>
-                                            {phoneRevealed ? (data.user?.phone || "+1...") : "Show Phone Number"}
+                                            {phoneRevealed ? (data.owner?.phone || "+1...") : "Show Phone Number"}
                                         </span>
                                     </button>
                                 </>

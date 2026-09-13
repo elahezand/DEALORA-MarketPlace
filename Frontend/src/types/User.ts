@@ -19,14 +19,10 @@ export interface IUser {
     store?: IStore | null;
     addresses: IAddress[];
     profilePicture?: string | null;
-    favorites: string[];
     refreshToken?: string;
     meta?: Record<string, unknown>;
     createdAt: string;
     updatedAt: string;
-    listings?: unknown[];
-    orders?: unknown[];
-    reviews?: unknown[];
 }
 
 export interface UserType {

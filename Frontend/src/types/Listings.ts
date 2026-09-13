@@ -21,7 +21,7 @@ export interface ListingVariant {
 export interface ListingProps {
   _id: string;
   listingType: "user_ad" | "store_product";
-  user?: {
+  owner?: {
     _id: string;
     name: string;
     phone: string

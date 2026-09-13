@@ -9,7 +9,7 @@ import Link from "next/link";
 import { EntityAvatar } from "../../../shared/table/TableParts";
 import { FormField, inputClass, textareaClass } from "../../../(admin)/shared/AdminFormModal";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
-import { useCreateOffer } from "@/services/Offer/useCreateOffer";
+import { useCreateOffer } from "@/services/Offer/useCreateOffer ";
 import { ListingProps, PublicListingsResponse } from "@/types/Listings";
 import { getUrl } from "@/utils/helper";
 import { toast } from "sonner";

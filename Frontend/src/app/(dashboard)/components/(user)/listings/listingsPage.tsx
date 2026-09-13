@@ -140,7 +140,6 @@ export default function ListingsPage({
             <Th>Price</Th>
             <Th>Status</Th>
             <Th align="center">Views</Th>
-            <Th align="center">Sold</Th>
             <Th align="right">Actions</Th>
           </tr>
         </thead>
@@ -199,13 +198,6 @@ export default function ListingsPage({
                       {listing.metrics?.views ?? 0}
                     </p>
                   </div>
-                </td>
-
-                {/* Sold Count */}
-                <td className="px-6 py-4 text-center">
-                  <p className="text-sm font-bold text-[var(--foreground)]">
-                    {listing.metrics?.sold ?? 0}
-                  </p>
                 </td>
 
                 {/* Actions */}

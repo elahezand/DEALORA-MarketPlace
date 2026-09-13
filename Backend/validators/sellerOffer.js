@@ -10,6 +10,8 @@ const createOfferSchema = z.object({
     listingId: objectId("listingId"),
     price: z.number().nonnegative(),
     stock: z.number().int().min(1),
+    discount: z.number().min(0).max(100).optional(),
+    shipsWithinDays: z.number().int().min(0).max(60).optional(),
     description: z.string().trim().max(500).optional(),
 });
 
@@ -18,11 +20,13 @@ const updateOfferSchema = z
     .object({
         price: z.number().nonnegative().optional(),
         stock: z.number().int().min(1).optional(),
+        discount: z.number().min(0).max(100).optional(),
+        shipsWithinDays: z.number().int().min(0).max(60).optional(),
         description: z.string().trim().max(500).optional(),
     })
     .refine(
-        (data) => data.price !== undefined || data.stock !== undefined || data.description !== undefined,
-        { message: "At least one of price, stock or description must be provided" }
+        (data) => data.price !== undefined || data.stock !== undefined || data.discount !== undefined || data.shipsWithinDays !== undefined || data.description !== undefined,
+        { message: "At least one of price, stock, discount, shipsWithinDays or description must be provided" }
     );
 
 // Sent by the ADMIN when accepting/rejecting a seller's offer.

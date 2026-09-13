@@ -35,12 +35,17 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
 
   const orderItems = cart.items.map((item) => {
     const seller = item.store || item.offer?.store || null;
+    const shipsWithinDays = item.offer?.shipsWithinDays ?? 3;
+    const estimatedShipBy = new Date(
+      Date.now() + shipsWithinDays * 24 * 60 * 60 * 1000
+    );
     return {
       product: item.product,
       variant: item.variantId,
       quantity: item.quantity,
       price: item.priceSnapshot || 0,
       seller,
+      estimatedShipBy,
       needsAdminShipment: !seller && item.product?.listingType === "store_product",
     };
   });
@@ -285,6 +290,20 @@ const getSellerOrders = async (userId, query = {}) => {
   return { data, pagination: result.pagination };
 };
 
+/* Once every item in the order has been shipped, flip the overall
+   order status to "shipped" too, so the buyer gets notified without
+   an admin having to do it manually as a separate step. */
+const maybeMarkOrderShipped = (order) => {
+  if (["shipped", "completed", "cancelled"].includes(order.status)) return;
+
+  const allShipped = order.items.every(
+    (item) => item.fulfillment?.status === "shipped"
+  );
+  if (allShipped) {
+    order.status = "shipped";
+  }
+};
+
 /* Seller — mark ONE of this seller's items in an order as shipped. */
 const sellerShipItem = async (userId, orderId, itemId, trackingCode) => {
   const store = await Store.findOne({ owner: userId }).select("_id").lean();
@@ -323,8 +342,8 @@ const sellerShipItem = async (userId, orderId, itemId, trackingCode) => {
     shippedAt: new Date(),
   };
 
-
   order.markModified("items");
+  maybeMarkOrderShipped(order);
   await order.save();
   return order;
 };
@@ -365,6 +384,8 @@ const adminShipItem = async (orderId, itemId, trackingCode) => {
     shippedAt: new Date(),
   };
 
+  order.markModified("items");
+  maybeMarkOrderShipped(order);
   await order.save();
   return order;
 };
@@ -401,25 +422,15 @@ const getOrderByIdAdmin = async (orderId) => {
 const ADMIN_UPDATABLE_FIELDS = ["paymentStatus", "status", "isDelivered", "deliveredAt"];
 const OWNER_UPDATABLE_FIELDS = ["shippingAddress"];
 
-/* Update Order (Admin — full access, but still whitelisted) */
+/* Update Order (Admin — full access, but still whitelisted).
+   Note: "shipped" is intentionally not in ADMIN_UPDATABLE status options
+   anymore — it's set automatically by maybeMarkOrderShipped() once every
+   item has been shipped by its seller/admin. */
 const updateOrder = async (orderId, data) => {
   const order = await Order.findById(orderId);
 
   if (!order) {
     throw new AppError(404, "Order not found");
-  }
-
-  if (data.status === "shipped") {
-    const unshippedCount = order.items.filter(
-      (item) => item.fulfillment?.status !== "shipped"
-    ).length;
-
-    if (unshippedCount > 0) {
-      throw new AppError(
-        409,
-        `Cannot mark as shipped — ${unshippedCount} item(s) haven't been shipped yet`
-      );
-    }
   }
 
   for (const field of ADMIN_UPDATABLE_FIELDS) {
@@ -471,6 +482,31 @@ const cancelOrder = async (orderId, userId) => {
   return order.save();
 };
 
+/* Buyer confirms they received the order. */
+const confirmDelivery = async (orderId, userId) => {
+  const order = await Order.findOne({
+    _id: orderId,
+    user: userId,
+  });
+
+  if (!order) {
+    throw new AppError(404, "Order not found");
+  }
+
+  if (order.status !== "shipped") {
+    throw new AppError(
+      409,
+      `Order can only be confirmed as received from "shipped" status (currently "${order.status}")`
+    );
+  }
+
+  order.status = "completed";
+  order.isDelivered = true;
+  order.deliveredAt = new Date();
+
+  return order.save();
+};
+
 module.exports = {
   checkout,
   verify,
@@ -484,4 +520,5 @@ module.exports = {
   updateOrder,
   updateOrderByOwner,
   cancelOrder,
+  confirmDelivery,
 };

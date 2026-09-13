@@ -191,3 +191,21 @@ exports.cancel = async (req, res, next) => {
     next(err);
   }
 };
+
+/* Buyer confirms receipt — moves order from "shipped" to "completed" */
+exports.confirmDelivery = async (req, res, next) => {
+  try {
+    const order = await orderService.confirmDelivery(
+      req.params.id,
+      req.user._id
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Order marked as received",
+      data: order,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

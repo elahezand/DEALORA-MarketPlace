@@ -2,14 +2,14 @@ const mongoose = require("mongoose");
 const OfferSeller = require("../models/offerSeller");
 const Store = require("../models/store");
 const Listing = require("../models/listing");
-const {paginate,escapeRegex} = require("../utils/helper");
+const { paginate, escapeRegex } = require("../utils/helper");
 const AppError = require("../utils/AppError");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // === CREATE OFFER ===
 exports.createOffer = async (userId, data) => {
-  const {listingId, price, stock, description } = data;
+  const {listingId, price, stock, discount, shipsWithinDays, description } = data;
   if (!isValidId(listingId)) {
     throw new AppError(400, "Invalid listingId");
   }
@@ -44,6 +44,8 @@ exports.createOffer = async (userId, data) => {
     store: store._id,
     price,
     stock,
+    discount: discount ?? 0,
+    shipsWithinDays,
     description,
     status: "pending",
   });
@@ -51,7 +53,7 @@ exports.createOffer = async (userId, data) => {
 
 // === UPDATE OFFER ===
 exports.updateOffer = async (userId, offerId, data) => {
-  const { price, stock, description } = data;
+  const { price, stock, discount, shipsWithinDays, description } = data;
 
   if (!isValidId(offerId)) throw new AppError(400, "Invalid offerId");
 
@@ -67,6 +69,8 @@ exports.updateOffer = async (userId, offerId, data) => {
 
   if (price !== undefined) offer.price = price;
   if (stock !== undefined) offer.stock = stock;
+  if (discount !== undefined) offer.discount = discount;
+  if (shipsWithinDays !== undefined) offer.shipsWithinDays = shipsWithinDays;
   if (description !== undefined) offer.description = description;
 
   await offer.save();

@@ -23,11 +23,8 @@ const checkoutSchema = z.object({
 // ADMIN: full control over an order's lifecycle/payment state.
 const updateOrderAdminSchema = z.object({
     paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
-
-    status: z.enum(["created", "processing", "shipped", "completed", "cancelled"]).optional(),
-
+    status: z.enum(["created", "processing", "completed", "cancelled"]).optional(),
     isDelivered: z.boolean().optional(),
-
     deliveredAt: z.string().datetime().optional(),
 });
 

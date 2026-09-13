@@ -149,6 +149,12 @@ export default function CartPage() {
                         {offer?.store && (
                           <MetaItem label="Sold by" value={offerStoreName || "Store"} />
                         )}
+                        {typeof offer?.shipsWithinDays === "number" && (
+                          <MetaItem
+                            label="Ships within"
+                            value={`${offer.shipsWithinDays} day${offer.shipsWithinDays === 1 ? "" : "s"}`}
+                          />
+                        )}
                       </div>
                     </div>
 

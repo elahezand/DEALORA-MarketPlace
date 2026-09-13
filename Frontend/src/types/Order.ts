@@ -18,6 +18,9 @@ export interface IOrderItem {
   selectedColor?: string;
   selectedSize?: string;
   fulfillment?: IOrderFulfillment;
+  /** Snapshot taken at checkout from the offer's `shipsWithinDays` (or a
+   *  default) — the date the seller/admin has committed to ship by. */
+  estimatedShipBy?: string | Date | null;
   /** True when no store ever claimed this item via an offer AND it's a
    *  catalog store_product (not a personal user_ad) — meaning the site
    *  itself is responsible for shipping it. Computed once at checkout. */
@@ -114,10 +117,7 @@ export interface AdminOrderResponse {
   data: IAdminOrder;
 }
 
-/* SELLER — GET /orders/seller returns orders scoped down to just this
-   seller's own line items, with `product` and `user` populated. Each item
-   now carries a real `_id` so a specific one can be targeted for shipping
-   (items on a single order can ship on different days). */
+/* SELLER —*/
 export interface ISellerOrderItem {
   _id: string;
   product: { _id: string; title?: string; images?: string[] } | string;
@@ -128,6 +128,7 @@ export interface ISellerOrderItem {
   selectedColor?: string;
   selectedSize?: string;
   fulfillment?: IOrderFulfillment;
+  estimatedShipBy?: string | Date | null;
 }
 
 export interface ISellerOrder extends Omit<IOrder, "items" | "user"> {

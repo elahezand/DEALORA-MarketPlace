@@ -100,4 +100,12 @@ orderRouter.delete(
     controller.cancel
 );
 
+// Buyer confirms they received the order — the only way status becomes "completed".
+orderRouter.patch(
+    "/:id/confirm-delivery",
+    authUser,
+    validateObjectIdParam("id"),
+    controller.confirmDelivery
+);
+
 module.exports = orderRouter;

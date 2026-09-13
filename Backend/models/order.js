@@ -44,6 +44,7 @@ const orderItemSchema = new Schema(
       trackingCode: { type: String, trim: true, default: null },
       shippedAt: { type: Date, default: null },
     },
+    estimatedShipBy: { type: Date, default: null },
     needsAdminShipment: { type: Boolean, default: false },
   }
 );

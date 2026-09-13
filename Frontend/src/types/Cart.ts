@@ -1,5 +1,5 @@
 export interface CartItem {
-  offer?: { _id: string; price?: number; discount?: number; stock?: number; store?: { _id: string; name?: string } | string; finalPrice?: number } | string | null;
+  offer?: { _id: string; price?: number; discount?: number; stock?: number; shipsWithinDays?: number; store?: { _id: string; name?: string } | string; finalPrice?: number } | string | null;
   store?: string | null;
   product: { _id: string; title?: string; images?: string[] } | string;
   variantId?: string | null;

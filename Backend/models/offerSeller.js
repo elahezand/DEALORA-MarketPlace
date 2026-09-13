@@ -44,6 +44,13 @@ const offerSellerSchema = new mongoose.Schema(
       min: 0,
     },
 
+    shipsWithinDays: {
+      type: Number,
+      min: 0,
+      max: 60,
+      default: 3,
+    },
+
     description: {
       type: String,
       trim: true,

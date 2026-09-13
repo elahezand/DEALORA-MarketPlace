@@ -18,10 +18,10 @@ import { useUpdateOrder } from "@/services/Order/useUpdateOrder";
 import { useAdminShipItem } from "@/services/Order/useAdminShipItem";
 import { getUrl } from "@/utils/helper";
 
+
 const STATUS_OPTIONS: OrderStatus[] = [
   "created",
   "processing",
-  "shipped",
   "completed",
   "cancelled",
 ];
@@ -350,9 +350,9 @@ export default function TransactionDetail({
                 </option>
               ))}
             </select>
-            {status === "shipped" && status !== order.status && (
+            {order.status === "shipped" && (
               <p className="text-[11px] text-[var(--foreground-muted)]">
-                This will be rejected if any item above is still "Pending shipment".
+                Set automatically once every item was shipped.
               </p>
             )}
           </div>

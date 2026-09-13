@@ -168,7 +168,6 @@ async function syncStoreScore(storeId) {
   if (!storeId) return;
 
   const Store = mongoose.model("Store");
-
   const [agg] = await Comment.aggregate([
     {
       $match: {

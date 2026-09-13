@@ -10,6 +10,7 @@ import {
   HiOutlineCreditCard,
 } from "react-icons/hi2";
 import { useCancelOrder } from "@/services/Order/useCancelOrder";
+import { useConfirmDelivery } from "@/services/Order/useConfirmDelivery";
 import { Badge } from "../../shared/table/TableParts";
 import { IOrder, OrderStatus, PaymentStatus } from "@/types/Order";
 import { toast } from "sonner";
@@ -32,6 +33,9 @@ const PAYMENT_TONE: Record<PaymentStatus, "success" | "warning" | "destructive" 
 
 const NON_CANCELLABLE: OrderStatus[] = ["shipped", "completed", "cancelled"];
 
+/** How many days after the last item ships before we assume the order */
+const DELIVERY_WINDOW_DAYS = 3;
+
 interface OrderDetailProps {
   initialOrder: IOrder | null;
   orderId: string;
@@ -42,6 +46,7 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
   const [order, setOrder] = useState<IOrder | null>(initialOrder);
 
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
+  const { mutate: confirmDelivery, isPending: isConfirming } = useConfirmDelivery();
 
   const handleCancel = () => {
       toast.warning("Are you sure you want to delete this Order?", {
@@ -66,6 +71,29 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
 
   };
 
+  const handleConfirmDelivery = () => {
+    toast.warning("Confirm you've received this order?", {
+      description: "This closes the order and can't be undone.",
+      action: {
+        label: "Confirm",
+        onClick: () =>
+          confirmDelivery(
+            { id: orderId },
+            {
+              onSuccess: (res) => {
+                if (res?.data) setOrder(res.data);
+                router.refresh();
+              },
+            }
+          ),
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+    });
+  };
+
   if (!order) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -81,6 +109,17 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
   }
 
   const canCancel = !NON_CANCELLABLE.includes(order.status);
+
+  const lastShippedAt = order.items
+    ?.map((item) => item.fulfillment?.shippedAt)
+    .filter((d): d is string | Date => !!d)
+    .map((d) => new Date(d).getTime())
+    .reduce((max, t) => Math.max(max, t), 0);
+
+  const pastDeliveryWindow =
+    order.status === "shipped" &&
+    !!lastShippedAt &&
+    Date.now() - lastShippedAt >= DELIVERY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
   const formatDate = (date: string | Date) =>
     new Date(date).toLocaleDateString("en-US", {
@@ -115,6 +154,27 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
         </div>
       </div>
 
+      {/* Confirm-receipt reminder — only once it's plausibly had time to arrive */}
+      {pastDeliveryWindow && (
+        <div className="card rounded-2xl border border-[var(--info-500)]/30 bg-[var(--info-500)]/5 p-5 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className="font-bold text-sm text-[var(--foreground)]">
+              Has your order arrived?
+            </p>
+            <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
+              It's been {DELIVERY_WINDOW_DAYS}+ days since it shipped. Let us know if you've received it.
+            </p>
+          </div>
+          <button
+            onClick={handleConfirmDelivery}
+            disabled={isConfirming}
+            className="btn-primary !w-auto px-5 h-10 text-sm disabled:opacity-50 flex-shrink-0"
+          >
+            {isConfirming ? "Confirming..." : "I've Received This Order"}
+          </button>
+        </div>
+      )}
+
       {/* Items */}
       <div className="card rounded-2xl border border-[var(--border)] overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--border)]">
@@ -124,26 +184,54 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
           </span>
         </div>
         <div className="divide-y divide-[var(--border)]">
-          {order.items?.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between px-5 py-4 gap-3">
-              <div className="min-w-0">
-                <Link
-                  href={`/listings/${item.product}`}
-                  className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors"
-                >
-                  View product
-                </Link>
-                <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
-                  Qty: {item.quantity}
-                  {item.selectedColor && ` · ${item.selectedColor}`}
-                  {item.selectedSize && ` · ${item.selectedSize}`}
+          {order.items?.map((item, idx) => {
+            const isShipped = item.fulfillment?.status === "shipped";
+            const isDelayed =
+              !isShipped &&
+              !!item.estimatedShipBy &&
+              new Date(item.estimatedShipBy) < new Date();
+            return (
+              <div key={idx} className="flex items-center justify-between px-5 py-4 gap-3">
+                <div className="min-w-0">
+                  <Link
+                    href={`/listings/${item.product}`}
+                    className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors"
+                  >
+                    View product
+                  </Link>
+                  <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
+                    Qty: {item.quantity}
+                    {item.selectedColor && ` · ${item.selectedColor}`}
+                    {item.selectedSize && ` · ${item.selectedSize}`}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <Badge
+                      tone={isShipped ? "success" : isDelayed ? "destructive" : "warning"}
+                      label={isShipped ? "Shipped" : isDelayed ? "Delayed" : "Preparing"}
+                    />
+                    {isShipped && item.fulfillment?.shippedAt && (
+                      <span className="text-[11px] text-[var(--foreground-muted)]">
+                        on {formatDate(item.fulfillment.shippedAt)}
+                      </span>
+                    )}
+                    {isShipped && item.fulfillment?.trackingCode && (
+                      <span className="text-[11px] text-[var(--foreground-muted)] font-mono">
+                        · Tracking: {item.fulfillment.trackingCode}
+                      </span>
+                    )}
+                    {!isShipped && item.estimatedShipBy && (
+                      <span className="text-[11px] text-[var(--foreground-muted)]">
+                        {isDelayed ? "Was expected by" : "Estimated ship by"} {formatDate(item.estimatedShipBy)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm font-black text-[var(--foreground)] flex-shrink-0">
+                  ${(item.price * item.quantity).toLocaleString()}
                 </p>
               </div>
-              <p className="text-sm font-black text-[var(--foreground)] flex-shrink-0">
-                ${(item.price * item.quantity).toLocaleString()}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -206,9 +294,18 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
         </div>
       </div>
 
-      {/* Cancel action */}
-      {canCancel && (
-        <div className="flex justify-end">
+      {/* Actions */}
+      <div className="flex justify-end gap-3">
+        {order.status === "shipped" && !pastDeliveryWindow && (
+          <button
+            onClick={handleConfirmDelivery}
+            disabled={isConfirming}
+            className="btn-primary !w-auto px-5 h-10 text-sm disabled:opacity-50"
+          >
+            {isConfirming ? "Confirming..." : "I've Received This Order"}
+          </button>
+        )}
+        {canCancel && (
           <button
             onClick={handleCancel}
             disabled={isCancelling}
@@ -216,8 +313,8 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
           >
             {isCancelling ? "Cancelling..." : "Cancel Order"}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

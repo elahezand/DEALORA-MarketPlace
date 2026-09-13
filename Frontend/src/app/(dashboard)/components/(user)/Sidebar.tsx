@@ -12,7 +12,7 @@ import {
   HiOutlineChatBubbleLeftRight,
   HiOutlineFlag,
 } from "react-icons/hi2";
-import StoreAction from "../(seller)/storeAction";
+import StoreAction from "./storeAction";
 import { useUnreadConversationsCount } from "@/services/Chat/useUnreadConversationsCount";
 
 interface AppSidebarProps {

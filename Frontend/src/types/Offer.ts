@@ -5,6 +5,7 @@ export interface  Offer {
   discount?: number;
   finalPrice?: number;
   stock: number;
+  shipsWithinDays?: number;
   description?: string | null;
   status: OfferStatus;
   adminComment?: string | null;

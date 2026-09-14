@@ -1,7 +1,10 @@
 import { unstable_cache } from "next/cache";
 import { cookies } from "next/headers";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL =
+  typeof window === "undefined"
+    ? process.env.SERVER_API_URL
+    : process.env.NEXT_PUBLIC_API_URL;
 
 export const useServerData = async <T>(
   endpoint: string,

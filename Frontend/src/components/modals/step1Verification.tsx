@@ -15,9 +15,14 @@ const validationCode = z.object({
 type ValidateCode = z.infer<typeof validationCode>;
 
 // "mm:ss" -> total seconds
-const toSeconds = (mmss: string) => {
-    const [minutes, seconds] = mmss.split(":").map(Number);
-    return (minutes || 0) * 60 + (seconds || 0);
+const toSeconds = (value: string) => {
+    if (!value) return 0;
+    if (value.includes(":")) {
+        const [minutes, seconds] = value.split(":").map(Number);
+        return (minutes || 0) * 60 + (seconds || 0);
+    }
+    const asNumber = Number(value);
+    return isNaN(asNumber) ? 0 : asNumber;
 };
 
 const formatSeconds = (totalSeconds: number) => {
@@ -78,12 +83,19 @@ export const Step1Verification = ({
         verifyCode({ phone, code: data.code });
     }
 
-    const handleResendCode = () => {
-        resendCode(
-            { phone },
-            {onSuccess: (data) => startCountdown(toSeconds(data.remainingTime)) }
-        );
-    };
+const handleResendCode = () => {
+    resendCode(
+        { phone },
+        {
+            onSuccess: (response) => {
+                console.log(response);
+                
+                const secs = toSeconds(response?.data?.remainingTime);
+                startCountdown(secs);
+            }
+        }
+    );
+};
 
     const isResendDisabled = isResending || secondsLeft > 0;
 

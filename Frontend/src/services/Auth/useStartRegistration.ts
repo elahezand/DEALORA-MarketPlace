@@ -3,12 +3,15 @@ import { toast } from "sonner";
 
 export interface StartRegistrationResponse {
   message: string;
-  remainingTime: string;
+  data: {
+    remainingTime: string;
+  };
 }
 
 interface StartRegistrationValues {
   phone: string;
 }
+
 export const useStartRegistration = (
   onSuccess: (remainingTime: string) => void
 ) => {
@@ -16,10 +19,9 @@ export const useStartRegistration = (
     StartRegistrationResponse,
     StartRegistrationValues
   >("/auth/send", {
-    onSuccess: (data) => {
+    onSuccess: (response) => {
       toast.success("Code Sent Succcessfully:)");
-
-      onSuccess(data.remainingTime);
+      onSuccess(response.data.remainingTime);
     },
     errorFallback: "Failed to send code",
   });

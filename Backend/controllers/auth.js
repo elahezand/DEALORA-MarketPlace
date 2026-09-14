@@ -69,7 +69,6 @@ exports.send = async (req, res, next) => {
       logger.debug("[DEV OTP]", code);
     }    
     
-
     try {
       await axios.post(
         "http://ippanel.com/api/select",

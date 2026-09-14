@@ -9,7 +9,7 @@ if (!isProductionMode) {
 }
 async function connectToDB() {
     try {
-        await mongoose.connect(process.env.MONGO_URL)
+        await mongoose.connect(process.env.MONGO_URI)
         logger.info(`MongoDB Connected: ${mongoose.connection.host}`)
     } catch (err) {
         logger.error(`ERROR in mongoose connection: ${err}`)

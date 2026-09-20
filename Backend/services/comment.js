@@ -9,6 +9,8 @@ const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 /*  GET BY PRODUCT  */
 
+// services/comment.js
+
 exports.getByProduct = async (listing, query = {}) => {
   if (!isValidId(listing)) {
     throw new AppError(400, "Invalid listing");
@@ -27,6 +29,7 @@ exports.getByProduct = async (listing, query = {}) => {
     filters: filters,
     populate: "user",
   });
+
   const parentIds = parents.data.map((p) => p._id);
 
   const replies = parentIds.length
@@ -38,22 +41,27 @@ exports.getByProduct = async (listing, query = {}) => {
     }).populate("user")
     : [];
 
-  const map = new Map();
-
-  parents.data.forEach((p) => {
-    const obj = typeof p.toObject === "function" ? p.toObject() : { ...p };
-    obj.replies = [];
-    map.set(String(obj._id), obj);
-  });
-
-  replies.forEach((r) => {
-    const replyObj = typeof r.toObject === "function" ? r.toObject() : r;
-    const parent = map.get(String(replyObj.parentId));
-    if (parent) parent.replies.push(replyObj);
+  const byParent = new Map();
+  for (const reply of replies) {
+    const parentId = String(reply.parentId);
+    if (!byParent.has(parentId)) {
+      byParent.set(parentId, []);
+    }
+    byParent.get(parentId).push(reply);
+  }
+  
+  const data = parents.data.map((parent) => {
+    const plain = typeof parent.toObject === "function"
+      ? parent.toObject()
+      : parent;
+    return {
+      ...plain,
+      replies: byParent.get(String(parent._id)) || [],
+    };
   });
 
   return {
-    data: Array.from(map.values()),
+    data,
     pagination: parents.pagination,
   };
 };

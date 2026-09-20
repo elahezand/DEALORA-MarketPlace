@@ -30,6 +30,9 @@ export default async function PostsPage({ params }: { params: Promise<{ id: stri
             : Promise.resolve(null)
     ]);
 
+    console.log(commentsRes);
+    
+
     const similarListings = (similarRes?.data ?? [])
         .filter((item) => item._id !== id)
         .slice(0, 4);

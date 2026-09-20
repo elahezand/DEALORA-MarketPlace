@@ -65,10 +65,6 @@ cartSchema.methods.recalcPricing = async function () {
 
   let discount = 0;
   if (this.coupon?.couponRef) {
-    // Re-validate against the live Coupon doc on every save instead of
-    // trusting the cached discountType/discountValue/maxDiscount fields —
-    // a coupon can expire, be deactivated, or hit its usage limit after
-    // it was applied to this cart.
     const couponDoc = await mongoose
       .model("Coupon")
       .findById(this.coupon.couponRef)

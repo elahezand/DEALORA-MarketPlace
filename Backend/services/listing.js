@@ -110,9 +110,6 @@ async function updateListing(id, user, data, files = []) {
       throw new AppError(403, "Unauthorized action");
     }
   } else if (listing.listingType === "store_product") {
-    // Store product listings are the shared catalog entry — sellers only
-    // ever attach their own price/stock to it via an OfferSeller offer,
-    // they never edit the listing itself. Only an admin may.
     if (!isAdmin) {
       throw new AppError(403, "Only an admin can update a store product listing");
     }

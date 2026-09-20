@@ -54,6 +54,11 @@ const contactSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+/* ---------- Indexes ---------- */
+
+contactSchema.index({ status: 1, createdAt: -1 });
+contactSchema.index({ email: 1, createdAt: -1 });
+
 const Contact = mongoose.models.Contact || mongoose.model("Contact", contactSchema);
 
 module.exports = Contact

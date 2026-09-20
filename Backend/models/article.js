@@ -26,7 +26,11 @@ const articleSchema = new mongoose.Schema(
 );
 
 articleSchema.index({ isPublished: 1, createdAt: -1 });
-articleSchema.index({ title: "text", excerpt: "text" });
+articleSchema.index(
+  { slug: 1 },
+  { unique: true, partialFilterExpression: { slug: { $type: "string" } } }
+);
+
 
 const Article =
   mongoose.models.Article || mongoose.model("Article", articleSchema);

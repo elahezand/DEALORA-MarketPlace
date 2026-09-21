@@ -1,0 +1,50 @@
+const Info = require("../../models/info");
+const AppError = require("../../utils/AppError");
+async function createInfo(data) {
+  const exists = await Info.findOne({ key: "main" });
+
+  if (exists) {
+    throw new AppError(409, "Info already exists");
+  }
+
+  return Info.create({
+    key: "main",
+    ...data,
+  });
+}
+async function updateInfo(data) {
+  const allowedFields = [
+    "phone",
+    "email",
+    "logo",
+    "address",
+    "socials",
+  ];
+
+  const update = {};
+
+  for (const key of allowedFields) {
+    if (data[key] !== undefined) {
+      update[key] = data[key];
+    }
+  }
+
+  return Info.findOneAndUpdate(
+    { key: "main" },
+    { $set: update },
+    {
+      new: true,
+      runValidators: true,
+      upsert: true,
+    }
+  );
+}
+async function deleteInfo() {
+  throw new AppError(403, "Deleting singleton config is not allowed");
+}
+
+module.exports = {
+  createInfo,
+  updateInfo,
+  deleteInfo,
+};

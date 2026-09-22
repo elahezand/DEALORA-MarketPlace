@@ -9,7 +9,7 @@ async function buildListingDetail(listingData) {
   }
 
   listingData.offers = await OfferSeller.find({
-    product: listingData._id,
+    productId: listingData._id,
     status: "accepted",
     stock: { $gt: 0 },
   })

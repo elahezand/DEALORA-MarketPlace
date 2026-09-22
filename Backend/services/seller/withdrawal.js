@@ -8,7 +8,7 @@ const AppError = require("../../utils/AppError");
 const createWithdrawal = async (userId, data) => {
   const store = await Store.findOne({ owner: userId });
   if (!store) throw new AppError(404, "Store not found");
-  
+
   const updatedStore = await Store.findOneAndUpdate(
     { _id: store._id, "wallet.balance": { $gte: data.amount } },
     { $inc: { "wallet.balance": -data.amount } },
@@ -45,7 +45,9 @@ const getMyWithdrawals = async (userId, query = {}) => {
   if (query.status) filters.status = query.status;
 
   const limit = Math.min(Math.max(Number(query.limit) || 15, 1), 50);
-  return paginate(Withdrawal, { limit, cursor: query.cursor, filters });
+  return paginate(Withdrawal, {
+    limit, cursor: query.cursor, filters, sort: { _id: -1 }
+  });
 };
 
 module.exports = {

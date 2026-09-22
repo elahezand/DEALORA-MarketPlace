@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { MapPinned } from "lucide-react";
 import { getUrl } from "@/utils/helper"
 import { ListingProps } from "@/types/Listings";
+import { getListingPrice } from "@/utils/price";
 
 interface SimilarListingProps {
     listings: ListingProps[];
@@ -53,7 +54,7 @@ export default function SimilarListing({ listings }: SimilarListingProps) {
                                     </p>
 
                                     <p className="text-sm font-bold text-[var(--primary-600)] dark:text-[var(--accent-400)] tabular-nums">
-                                        ${item.price?.toLocaleString() ?? 0}
+                                        ${getListingPrice(item).toLocaleString()}
                                     </p>
                                 </div>
 

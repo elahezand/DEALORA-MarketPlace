@@ -177,11 +177,12 @@ async function syncStoreScore(storeId) {
         rating: { $ne: null },
       },
     },
-    { $group: { _id: null, avgRating: { $avg: "$rating" } } },
+    { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
   ]);
 
   await Store.findByIdAndUpdate(storeId, {
     "meta.ratings": agg ? Math.round(agg.avgRating * 10) / 10 : 0,
+    "meta.reviewsCount": agg ? agg.count : 0,
   });
 }
 

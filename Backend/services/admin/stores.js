@@ -1,5 +1,5 @@
 const Store = require("../../models/store");
-const {paginate} = require("../../utils/helper");
+const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 
 const getAllStores = async ({ limit, cursor }) => {
@@ -11,6 +11,7 @@ const getAllStores = async ({ limit, cursor }) => {
     limit,
     cursor,
     populate: "owner",
+    sort: { _id: -1 }
   });
 };
 

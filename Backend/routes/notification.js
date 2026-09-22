@@ -1,6 +1,7 @@
 const express = require("express");
 const notificationRouter = express.Router();
-const controller = require("../controllers/notification");
+const userController = require("../controllers/user/notification");
+const adminController = require("../controllers/admin/notification");
 const { authAdmin, authUser } = require("../middlewares/authMiddleware");
 const validateObjectIdParam = require("../middlewares/objectId")
 
@@ -9,27 +10,27 @@ const { createNotificationSchema } = require("../validators/notifications");
 
 notificationRouter.get("/",
     authUser,
-    controller.getAll);
+    userController.getAll);
 
 // Sending a notification is still admin-to-admin only.
 notificationRouter.post("/", authUser,
     authAdmin,
     validate(createNotificationSchema),
-    controller.post);
+    adminController.post);
 
 notificationRouter.get("/:id",
     authUser,
     validateObjectIdParam("id"),
-    controller.get);
+    userController.get);
 
 notificationRouter.put("/:id",
     authUser,
     validateObjectIdParam("id"),
-    controller.seen);
+    userController.seen);
 
 notificationRouter.delete("/:id",
     authUser,
     validateObjectIdParam("id"),
-    controller.remove);
+    userController.remove);
 
 module.exports = notificationRouter;

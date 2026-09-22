@@ -8,6 +8,7 @@ import { getUrl } from "@/utils/helper"
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useRemoveFavorite } from "@/services/Favorites/useRemoveFavorite";
 import FavoritesTypeResponse from "@/types/favorites";
+import { getListingPrice } from "@/utils/price";
 import { InfiniteData } from "@tanstack/react-query";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
@@ -129,7 +130,7 @@ export default function InfiniteFavoritesSection({
 
                 {/* Price */}
                 <td className="px-6 py-4 text-sm font-bold text-[var(--foreground)]">
-                  ${product.price?.toLocaleString()}
+                  ${getListingPrice(product).toLocaleString()}
                 </td>
 
                 {/* Status Badge */}
@@ -150,7 +151,7 @@ export default function InfiniteFavoritesSection({
                 {/* Actions */}
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <ViewAction href={`/listings/${product.slug || product._id}`} />
+                    <ViewAction href={`/posts/${product._id}`} />
                     <button
                       onClick={() => handleRemove(product._id)}
                       className="p-2 hover:bg-[var(--destructive-bg)] rounded-lg transition-colors group"

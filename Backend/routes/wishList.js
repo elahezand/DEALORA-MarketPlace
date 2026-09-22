@@ -1,33 +1,34 @@
 const express = require("express");
 const router = express.Router();
 
-const FavoriteController = require("../controllers/wishList");
+const publicController = require("../controllers/public/wishList");
+const userController = require("../controllers/user/wishList");
 const { authUser } = require("../middlewares/authMiddleware");
 
 /* === PUBLIC === */
-router.get("/popular", FavoriteController.getPopular);
+router.get("/popular", publicController.getPopular);
 
 /* === USER === */
-router.get("/my", authUser, FavoriteController.getUserFavorites);
-router.get("/count", authUser, FavoriteController.getFavoriteCount);
-router.get("/check", authUser, FavoriteController.checkFavorites);
-router.get("/type/:type", authUser, FavoriteController.filterByType);
+router.get("/my", authUser, userController.getUserFavorites);
+router.get("/count", authUser, userController.getFavoriteCount);
+router.get("/check", authUser, userController.checkFavorites);
+router.get("/type/:type", authUser, userController.filterByType);
 router.get(
   "/is-favorited/:productId",
   authUser,
-  FavoriteController.isFavorited
+  userController.isFavorited
 );
 
-router.post("/", authUser, FavoriteController.addFavorite);
+router.post("/", authUser, userController.addFavorite);
 router.patch(
   "/:productId/toggle",
   authUser,
-  FavoriteController.toggleFavorite
+  userController.toggleFavorite
 );
 router.delete(
   "/:productId",
   authUser,
-  FavoriteController.removeFavorite
+  userController.removeFavorite
 );
 
 module.exports = router;

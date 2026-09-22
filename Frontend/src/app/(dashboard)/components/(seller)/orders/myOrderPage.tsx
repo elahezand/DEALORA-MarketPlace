@@ -14,6 +14,9 @@ import { QueryParams } from "@/types/api/ErrorTypes";
 import { getUrl } from "@/utils/helper";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 
+const getTrackingCode = (order: ISellerOrder) =>
+    order.items.find((item) => item.fulfillment?.trackingCode)?.fulfillment?.trackingCode ?? "";
+
 const STATUS_TABS: { value: OrderStatus | "all"; label: string }[] = [
     { value: "all", label: "All" },
     { value: "processing", label: "Processing" },
@@ -37,7 +40,7 @@ interface MyOrdersPageProps {
 const ENDPOINT = "/orders/seller"
 
 export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
-    const [status, setStatus] = useState<OrderStatus | "all">("all");
+    const [status, setStatus] = useState<OrderStatus | "all">("processing");
     const [searchQuery, setSearchQuery] = useState("");
     const [viewTarget, setViewTarget] = useState<ISellerOrder | null>(null);
     const [shipTarget, setShipTarget] = useState<ISellerOrder | null>(null);
@@ -94,7 +97,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                 itemsSummary,
                 order.mySubtotal ?? 0,
                 order.status,
-                order.trackingCode ?? "",
+                getTrackingCode(order),
                 new Date(order.createdAt).toLocaleDateString(),
             ];
         });
@@ -127,7 +130,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
     function submitShip(e: React.FormEvent) {
         e.preventDefault();
         if (!shipTarget) return;
-        shipOrder({ orderId: shipTarget._id, trackingCode: trackingCode.trim() || undefined });
+        shipOrder({ order: shipTarget, trackingCode: trackingCode.trim() || undefined });
     }
 
     return (
@@ -293,10 +296,10 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                             </p>
                         </div>
 
-                        {viewTarget.trackingCode && (
+                        {getTrackingCode(viewTarget) && (
                             <div className="text-sm">
                                 <span className="text-[var(--foreground-muted)]">Tracking code: </span>
-                                <span className="font-mono font-bold text-[var(--foreground)]">{viewTarget.trackingCode}</span>
+                                <span className="font-mono font-bold text-[var(--foreground)]">{getTrackingCode(viewTarget)}</span>
                             </div>
                         )}
 
@@ -338,7 +341,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-[var(--foreground)] truncate">{p?.title || "—"}</p>
                                                 <p className="text-xs text-[var(--foreground-muted)]">
-                                                    Qty {item.quantity} × ${item.price?.toLocaleString()}
+                                                    Qty {item.quantity} × ${item.finalPrice.toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>

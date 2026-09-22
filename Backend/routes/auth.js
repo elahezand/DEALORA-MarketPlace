@@ -1,8 +1,10 @@
 const express = require("express");
 const authRouter = express.Router();
 
-const controller = require("../controllers/auth");
-const { authUser } = require("../middlewares/authMiddleware");
+const publicController = require("../controllers/public/auth");
+const userController = require("../controllers/user/auth");
+const { authUser, optionalAuth } = require("../middlewares/authMiddleware");
+const validateObjectIdParam = require("../middlewares/objectId");
 const validate = require("../middlewares/validate");
 
 const {
@@ -41,32 +43,43 @@ authRouter.post(
     "/send",
     otpLimit,
     validate(phoneSchema),
-    controller.send
+    publicController.send
 );
 
 authRouter.post(
     "/verify",
     verifyLimit,
     validate(verifySchema),
-    controller.verify
+    publicController.verify
 );
 
 authRouter.get(
     "/me",
     authUser,
-    controller.me
+    userController.me
 );
 
+// No authUser: logout must work even when the access token has expired
 authRouter.post(
     "/logout",
+    optionalAuth,
+    publicController.logout
+);
+
+/* SESSIONS (active devices) */
+authRouter.get("/sessions", authUser, userController.getSessions);
+authRouter.post("/sessions/logout-others", authUser, userController.logoutOthers);
+authRouter.delete(
+    "/sessions/:id",
     authUser,
-    controller.logout
+    validateObjectIdParam("id"),
+    userController.revokeSession
 );
 
 authRouter.post(
     "/refresh",
     refreshLimit,
-    controller.refreshToken
+    publicController.refreshToken
 );
 
 module.exports = authRouter;

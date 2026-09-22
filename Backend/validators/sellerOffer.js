@@ -7,7 +7,8 @@ const objectId = (field = "ID") =>
     });
 
 const createOfferSchema = z.object({
-    listingId: objectId("listingId"),
+    productId: objectId("product"),
+    variantId: objectId("variantId"),
     price: z.number().nonnegative(),
     stock: z.number().int().min(1),
     discount: z.number().min(0).max(100).optional(),

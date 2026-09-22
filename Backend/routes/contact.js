@@ -1,7 +1,8 @@
 const express = require("express");
 const contactRouter = express.Router();
 
-const controller = require("../controllers/contact");
+const publicController = require("../controllers/public/contact");
+const adminController = require("../controllers/admin/contact");
 const { authAdmin, authUser } = require("../middlewares/authMiddleware");
 const validateObjectId = require("../middlewares/objectId");
 const validate = require("../middlewares/validate");
@@ -21,7 +22,7 @@ contactRouter.post(
   "/",
   contactLimit,
   validate(createContactSchema),
-  controller.post
+  publicController.post
 );
 
 // ADMIN (get all)
@@ -29,7 +30,7 @@ contactRouter.get(
   "/",
   authUser,
   authAdmin,
-  controller.get
+  adminController.get
 );
 
 // ADMIN (get one)
@@ -38,7 +39,7 @@ contactRouter.get(
   authUser,
   authAdmin,
   validateObjectId("id"),
-  controller.getOne
+  adminController.getOne
 );
 
 // ADMIN (delete)
@@ -47,7 +48,7 @@ contactRouter.delete(
   authUser,
   authAdmin,
   validateObjectId("id"),
-  controller.remove
+  adminController.remove
 );
 
 // ADMIN (answer)
@@ -57,7 +58,7 @@ contactRouter.patch(
   authAdmin,
   validateObjectId("id"),
   validate(answerContactSchema),
-  controller.answer
+  adminController.answer
 );
 
 module.exports = contactRouter;

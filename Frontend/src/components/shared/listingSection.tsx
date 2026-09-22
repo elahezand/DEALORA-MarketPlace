@@ -6,6 +6,7 @@ import { HiOutlinePhoto, HiOutlineExclamationTriangle } from "react-icons/hi2";
 import { ListingProps } from "@/types/Listings";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { getUrl } from "@/utils/helper"
+import { getListingPrice } from "@/utils/price";
 import { timeAgo } from "@/utils/timeAgo";
 import { Pagination, EffectFade, Autoplay } from "swiper/modules";
 import "swiper/css";
@@ -166,7 +167,8 @@ export default function ListingsSection({ listings }: Props) {
 
                             <div className="flex flex-col gap-1 pt-2 border-t border-[var(--border)]">
                                 <div className="text-[var(--primary-500)] dark:text-[var(--accent-400)] font-bold text-sm tracking-tight">
-                                    {formatPrice(item.price)}
+                                    {item.listingType === "store_product" && <span className="text-[11px] font-medium text-[var(--foreground-muted)] mr-1">From</span>}
+                                    {formatPrice(getListingPrice(item))}
                                 </div>
                                 <div className="flex items-center justify-between gap-2">
                                     {item.location?.city && (

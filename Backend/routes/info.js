@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const controller = require("../controllers/info");
+const publicController = require("../controllers/public/info");
+const adminController = require("../controllers/admin/info");
 const { authAdmin,authUser } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 
@@ -11,7 +12,7 @@ const {
 } = require("../validators/info");
 
 /* PUBLIC */
-router.get("/", controller.get);
+router.get("/", publicController.get);
 
 /* ADMIN */
 router.post(
@@ -19,7 +20,7 @@ router.post(
   authUser,
   authAdmin,
   validate(createInfoSchema),
-  controller.post
+  adminController.post
 );
 
 router.patch(
@@ -27,14 +28,14 @@ router.patch(
   authUser,
   authAdmin,
   validate(updateInfoSchema),
-  controller.patch
+  adminController.patch
 );
 
 router.delete(
   "/",
   authUser,
   authAdmin,
-  controller.remove
+  adminController.remove
 );
 
 module.exports = router;

@@ -46,6 +46,9 @@ export default function CommentCard({ comment }: { comment: CommentItemType }) {
             </p>
             <p className="text-[11px] text-[var(--foreground-subtle)]">
               {timeAgo(comment.createdAt)}
+              {typeof comment.store === "object" && comment.store?.name && (
+                <> · Bought from <span className="font-semibold text-[var(--foreground-muted)]">{comment.store.name}</span></>
+              )}
             </p>
           </div>
         </div>

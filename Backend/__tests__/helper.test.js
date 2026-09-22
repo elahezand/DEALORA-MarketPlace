@@ -24,12 +24,12 @@ test("buildListingFilters: explicit status overrides the default", async () => {
 
 test("buildListingFilters: price range 'min-max' parses into $gte/$lte", async () => {
   const filters = await buildListingFilters({ price: "100-500" });
-  assert.deepEqual(filters.price, { $gte: 100, $lte: 500 });
+  assert.deepEqual(filters.minPrice, { $gte: 100, $lte: 500 });
 });
 
 test("buildListingFilters: single price value parses into an exact number", async () => {
   const filters = await buildListingFilters({ price: "250" });
-  assert.equal(filters.price, 250);
+  assert.equal(filters.minPrice, 250);
 });
 
 test("buildListingFilters: tags are split and trimmed into $in", async () => {
@@ -39,12 +39,12 @@ test("buildListingFilters: tags are split and trimmed into $in", async () => {
 
 test("buildListingFilters: price 'min-' (max omitted) only sets $gte, never a bogus $lte:0 (regression test)", async () => {
   const filters = await buildListingFilters({ price: "100-" });
-  assert.deepEqual(filters.price, { $gte: 100 });
+  assert.deepEqual(filters.minPrice, { $gte: 100 });
 });
 
 test("buildListingFilters: price '-max' (min omitted) only sets $lte", async () => {
   const filters = await buildListingFilters({ price: "-500" });
-  assert.deepEqual(filters.price, { $lte: 500 });
+  assert.deepEqual(filters.minPrice, { $lte: 500 });
 });
 
 test("buildListingFilters: condition on a user_ad filters Listing.condition directly", async () => {

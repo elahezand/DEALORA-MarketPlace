@@ -46,7 +46,7 @@ async function createListing(user, data, files = []) {
 async function updateListing(id, user, data, files = []) {
   const listing = await findOwnAd(id, user._id);
 
-  const updateData = { ...data };  
+  const updateData = { ...data };
 
   if (files?.length) {
     updateData.images = files.map((f) => `/listings/images/${f.filename}`);
@@ -86,8 +86,8 @@ async function getMyListings(userId, query = {}) {
     limit,
     cursor: query.cursor,
     filters,
-    sort: { createdAt: -1 },
     populate: [{ path: "categoryPath", select: "_id title slug" }],
+    sort: { _id: -1 }
   });
 }
 

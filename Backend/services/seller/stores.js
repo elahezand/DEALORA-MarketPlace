@@ -2,18 +2,16 @@
 const Store = require("../../models/store");
 const UserModel = require("../../models/user");
 const AppError = require("../../utils/AppError");
+const { assertTopLevelCategory } = require("../shared/stores");
 
 /*  SELLER  */
 const getStoresByOwner = async (userId) => {
   const user = await UserModel.findById(userId);
   if (!user) throw new AppError(404, "NOT found");
 
-  const shopsSeller = await Store.find({ owner: userId });
+  const shopsSeller = await Store.find({ owner: userId }).populate("category", "_id title slug");
   return shopsSeller;
 };
-
-// Fields a seller is never allowed to set themselves via the update endpoint.
-const SELLER_RESTRICTED_FIELDS = ["owner", "isVerified", "meta"];
 
 const updateStore = async (userId, storeId, data) => {
   const user = await UserModel.findById(userId);
@@ -27,11 +25,10 @@ const updateStore = async (userId, storeId, data) => {
   }
 
   const safeData = { ...data };
-  for (const field of SELLER_RESTRICTED_FIELDS) {
-    delete safeData[field];
-  }
 
   if (Object.keys(safeData).length === 0) return true;
+
+  if (safeData.category) await assertTopLevelCategory(safeData.category);
 
   await Store.updateOne({ _id: storeId }, { $set: safeData }).exec();
   return true;
@@ -50,8 +47,6 @@ const deleteStore = async (userId, storeId) => {
 
   await Store.findByIdAndDelete(storeId);
 
-  //!delete Products
-  //!delete Products from shoping Card
 
   return true;
 };

@@ -10,11 +10,10 @@ interface VerifiedStoresServerResponse {
 
 export default async function StoresPage() {
   const result = await useServerData<VerifiedStoresServerResponse>(
-    "/stores/verified?limit=24",
+    "/stores/verified",
     "verified-stores",
     60
   );
-
   const initialData = result?.data || [];
   const initialPagination = result?.pagination || null;
 

@@ -12,6 +12,8 @@ import { AdminFormModal, FormField, textareaClass } from "../shared/AdminFormMod
 import { useApproveOffer } from "@/services/Offer/useApproveOffer";
 import { OfferStatus, Offer, OffersResponse } from "@/types/Offer";
 import { QueryParams } from "@/types/api/ErrorTypes";
+import { findVariant, getVariantLabel } from "@/utils/price";
+import { getUrl } from "@/utils/helper";
 
 const STATUS_TABS: { value: OfferStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -51,11 +53,10 @@ export default function OffersClient({ initialData }: OffersClientProps) {
     isLoading,
     isError,
   } = useInfiniteGet<OffersResponse>(ENDPOINT, params,
-     {
+    {
       queryKey: ["offers-admin", status],
-      initialData: status === "pending" ? initialData : undefined,
+      initialData: status === "all" ? initialData : undefined,
     });
-
 
   const offers: Offer[] = (
     data?.pages?.flatMap((page: OffersResponse) => page?.data ?? []) || []
@@ -108,11 +109,10 @@ export default function OffersClient({ initialData }: OffersClientProps) {
             key={tab.value}
             type="button"
             onClick={() => setStatus(tab.value)}
-            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${
-              status === tab.value
-                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
-            }`}
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
+              ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+              : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              }`}
           >
             {tab.label}
           </button>
@@ -139,6 +139,7 @@ export default function OffersClient({ initialData }: OffersClientProps) {
             <Th>Product</Th>
             <Th>Store / Seller</Th>
             <Th>Price</Th>
+            <Th>Discount</Th>
             <Th>Stock</Th>
             <Th>Status</Th>
             <Th align="right">Actions</Th>
@@ -146,10 +147,11 @@ export default function OffersClient({ initialData }: OffersClientProps) {
         </thead>
         <tbody>
           {offers.map((o) => {
-            const product = typeof o.listing === "object" ? o.listing : null;
+            const product = typeof o.productId === "object" ? o.productId : null;
             const store = typeof o.store === "object" ? o.store : null;
-            const seller = typeof o.seller === "object" ? o.seller : null;
+            const seller = store && typeof store.owner === "object" ? store.owner : null;
             const busy = actioningId === o._id;
+            const src = getUrl(product?.images?.[0])
 
             return (
               <tr
@@ -159,14 +161,19 @@ export default function OffersClient({ initialData }: OffersClientProps) {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <EntityAvatar
-                      src={product?.images?.[0]}
+                      src={src}
                       alt={product?.title ?? "product"}
                       fallback={(product?.title ?? "?").slice(0, 2).toUpperCase()}
                       shape="square"
                     />
-                    <p className="font-bold text-sm text-[var(--foreground)] truncate max-w-[160px]">
-                      {product?.title || "—"}
-                    </p>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm text-[var(--foreground)] truncate max-w-[160px]">
+                        {product?.title || "—"}
+                      </p>
+                      <p className="text-xs text-[var(--foreground-muted)] truncate max-w-[160px]">
+                        {getVariantLabel(findVariant(o.productId, o.variantId)) || "—"}
+                      </p>
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -178,7 +185,15 @@ export default function OffersClient({ initialData }: OffersClientProps) {
                   </p>
                 </td>
                 <td className="px-6 py-4 text-sm font-bold text-[var(--foreground)]">
-                  ${o.price?.toLocaleString() ?? 0}
+                  {!!o.discount && o.discount > 0 && (
+                    <span className="block text-xs font-medium text-[var(--foreground-subtle)] line-through">
+                      ${o.price?.toLocaleString() ?? 0}
+                    </span>
+                  )}
+                  ${o.finalPrice.toLocaleString()}
+                </td>
+                <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
+                  {o.discount ? `${o.discount}%` : "—"}
                 </td>
                 <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
                   {o.stock}
@@ -231,9 +246,8 @@ export default function OffersClient({ initialData }: OffersClientProps) {
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : ""
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : ""
+                }`}
             />
           </button>
         </div>

@@ -7,7 +7,7 @@ const helmet = require("helmet");
 const errorHandler = require("./middlewares/errorHandler");
 const AppError = require("./utils/AppError");
 const logger = require("./utils/logger");
-const { redirectToListing } = require("./controllers/shortLink");
+const { redirectToListing } = require("./controllers/public/shortLink");
 
 const authRouter = require("./routes/auth");
 const storeRouter = require("./routes/store");

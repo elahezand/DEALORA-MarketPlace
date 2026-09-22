@@ -88,8 +88,6 @@ const handleResendCode = () => {
         { phone },
         {
             onSuccess: (response) => {
-                console.log(response);
-                
                 const secs = toSeconds(response?.data?.remainingTime);
                 startCountdown(secs);
             }

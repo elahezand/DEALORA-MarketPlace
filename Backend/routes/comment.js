@@ -3,7 +3,9 @@ const { rateLimit, ipKeyGenerator } = require("express-rate-limit");
 
 const router = express.Router();
 
-const controller = require("../controllers/comment");
+const publicController = require("../controllers/public/comment");
+const userController = require("../controllers/user/comment");
+const adminController = require("../controllers/admin/comment");
 const validateObjectId = require("../middlewares/objectId");
 const { authUser, authAdmin } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
@@ -32,7 +34,7 @@ const actionRateLimit = rateLimit({
 });
 
 // ADMIN
-router.get("/admin",authUser, authAdmin, controller.getAdmin);
+router.get("/admin",authUser, authAdmin, adminController.getAdmin);
 
 router.patch(
   "/:id/moderate",
@@ -41,7 +43,7 @@ router.patch(
   actionRateLimit,
   validateObjectId("id"),
   validate(moderateCommentSchema),
-  controller.moderate
+  adminController.moderate
 );
 
 router.delete(
@@ -50,7 +52,7 @@ router.delete(
   authAdmin,
   actionRateLimit,
   validateObjectId("id"),
-  controller.remove
+  adminController.remove
 );
 
 router.post(
@@ -60,7 +62,7 @@ router.post(
   actionRateLimit,
   validateObjectId("id"),
   validate(replySchema),
-  controller.reply
+  adminController.reply
 );
 
 // PUBLIC
@@ -68,7 +70,7 @@ router.get(
   "/listing/:listing",
   validateObjectId("listing"),
   cacheMiddleware(120),
-  controller.getByListing
+  publicController.getByListing
 );
 
 // USER
@@ -77,7 +79,7 @@ router.post(
   authUser,
   commentRateLimit,
   validate(createCommentSchema),
-  controller.create
+  userController.create
 );
 
 router.patch(
@@ -86,7 +88,7 @@ router.patch(
   actionRateLimit,
   validateObjectId("id"),
   validate(updateCommentByOwnerSchema),
-  controller.patch
+  userController.patch
 );
 
 router.delete(
@@ -94,7 +96,7 @@ router.delete(
   authUser,
   actionRateLimit,
   validateObjectId("id"),
-  controller.removeOwn
+  userController.removeOwn
 );
 
 module.exports = router;

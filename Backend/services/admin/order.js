@@ -24,6 +24,7 @@ const getAllOrders = async (query = {}) => {
     limit,
     cursor: query.cursor,
     filters,
+    sort: { _id: -1 }
   });
 
   const data = result.data.map((order) => ({

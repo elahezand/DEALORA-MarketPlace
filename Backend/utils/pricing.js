@@ -36,7 +36,7 @@ async function getOfferFinalPrices(listingId) {
   const OfferSeller = mongoose.models.OfferSeller;
   if (!OfferSeller || !listingId) return [];
   const offers = await OfferSeller.find({
-    listing: listingId,
+    product: listingId,
     status: "accepted",
     stock: { $gt: 0 },
   }).select("price discount").lean();

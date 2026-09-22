@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
@@ -13,17 +12,21 @@ import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { toast } from "sonner";
 import { useUpdateListingStatus } from "@/services/Listings/useUpdateListingStatus";
 import { getUrl } from "@/utils/helper"
+import { getListingPrice } from "@/utils/price";
+import ListingReviewModal from "../shared/ListingReviewModal";
 
-  const Endpoint = "/listings/admin";
-
+const Endpoint = "/listings/admin";
 
 type ListingStatus = ListingProps["status"];
+type StatusTab = ListingStatus | "all";
 
-const STATUS_TABS: { value: ListingStatus; label: string }[] = [
+const STATUS_TABS: { value: StatusTab; label: string }[] = [
+  { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "accepted", label: "Accepted" },
   { value: "rejected", label: "Rejected" },
-  { value: "active", label: "Active" },
+  { value: "deleted", label: "Deleted" },
+
 ];
 
 const STATUS_TONE: Record<
@@ -46,10 +49,11 @@ interface ListingsModerationClientProps {
 export default function ListingsModerationClient({
   initialData,
 }: ListingsModerationClientProps) {
-  const [status, setStatus] = useState<ListingStatus>("pending");
+  const [status, setStatus] = useState<StatusTab>("all");
+  const [reviewId, setReviewId] = useState<string | null>(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const params: QueryParams = { status, limit: 20 };
+  const params: QueryParams = { listingType: "user_ad", status, limit: 20 };
 
   const {
     data,
@@ -74,10 +78,9 @@ export default function ListingsModerationClient({
 
   function handleStatusChange(
     id: string,
-    newStatus: "accepted" | "rejected"
+    newStatus: "accepted" | "rejected" | "deleted"
   ) {
     const statusLabel = newStatus === "accepted" ? "accept" : "reject";
-
     toast.warning(`Are you sure you want to ${statusLabel} this listing?`, {
       description: "This action will change the listing status.",
 
@@ -107,7 +110,7 @@ export default function ListingsModerationClient({
       <div>
         <p className="menu-section-title mb-1">Admin</p>
         <h1 className="!text-2xl font-black text-[var(--foreground)] tracking-tight">
-          Listing Moderation
+          User Ads
         </h1>
       </div>
 
@@ -132,7 +135,7 @@ export default function ListingsModerationClient({
         header={
           <WidgetHeader
             icon={HiOutlineDocumentCheck}
-            title={`${STATUS_TABS.find((t) => t.value === status)?.label} Listings`}
+            title={`${STATUS_TABS.find((t) => t.value === status)?.label} Ads`}
             href="/dashboard/admin/listings"
           />
         }
@@ -141,7 +144,7 @@ export default function ListingsModerationClient({
         isEmpty={listings.length === 0}
         errorMessage="Error fetching listings"
         emptyTitle="Nothing here"
-        emptyMessage={`No ${status} listings right now`}
+        emptyMessage={status === "all" ? "No ads yet" : `No ${status} ads right now`}
       >
         <thead className="border-b border-[var(--border)] bg-[var(--background-soft)]">
           <tr>
@@ -171,20 +174,21 @@ export default function ListingsModerationClient({
                       shape="square"
                     />
                     <div className="min-w-0">
-                      <Link
-                        href={`/listings/${listing._id}`}
-                        className="font-bold text-sm text-[var(--foreground)] hover:text-[var(--primary-500)] truncate block"
+                      <button
+                        type="button"
+                        onClick={() => setReviewId(listing._id)}
+                        className="font-bold text-sm text-[var(--foreground)] hover:text-[var(--primary-500)] truncate block text-left"
                       >
                         {listing.title}
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
-                  {listing.user?.phone || "—"}
+                  {listing.owner?.phone || "—"}
                 </td>
                 <td className="px-6 py-4 text-sm font-bold text-[var(--foreground)]">
-                  ${listing.price?.toLocaleString() ?? 0}
+                  ${getListingPrice(listing).toLocaleString()}
                 </td>
                 <td className="px-6 py-4">
                   <Badge
@@ -194,6 +198,13 @@ export default function ListingsModerationClient({
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReviewId(listing._id)}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--background-soft)] transition-colors"
+                    >
+                      View
+                    </button>
                     <button
                       type="button"
                       disabled={busy || listing.status === "accepted"}
@@ -210,6 +221,24 @@ export default function ListingsModerationClient({
                     >
                       Reject
                     </button>
+                    {/* Delete */}
+                    <button
+                      type="button"
+                      disabled={
+                        busy ||
+                        listing.status ===
+                        "deleted"
+                      }
+                      onClick={() =>
+                        handleStatusChange(
+                          listing._id,
+                          "deleted"
+                        )
+                      }
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -217,6 +246,37 @@ export default function ListingsModerationClient({
           })}
         </tbody>
       </TableCard>
+
+      <ListingReviewModal
+        listingId={reviewId}
+        onClose={() => setReviewId(null)}
+        renderActions={(listing) => (
+          <>
+            <button
+              type="button"
+              disabled={listing.status === "rejected"}
+              onClick={() => {
+                handleStatusChange(listing._id, "rejected");
+                setReviewId(null);
+              }}
+              className="text-xs font-bold px-4 py-2 rounded-lg border border-[var(--destructive)]/30 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] disabled:opacity-40"
+            >
+              Reject
+            </button>
+            <button
+              type="button"
+              disabled={listing.status === "accepted"}
+              onClick={() => {
+                handleStatusChange(listing._id, "accepted");
+                setReviewId(null);
+              }}
+              className="text-xs font-bold px-4 py-2 rounded-lg bg-[var(--success-500)] text-white hover:opacity-90 disabled:opacity-40"
+            >
+              Accept
+            </button>
+          </>
+        )}
+      />
 
       {hasNextPage && (
         <div className="flex justify-center w-full">

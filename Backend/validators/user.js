@@ -33,7 +33,6 @@ const createUserSchema = z.object({
   role: z.array(roleEnum).default(["USER"]),
   addresses: z.array(addressSchema).optional(),
   profilePicture: z.string().url().optional(),
-  refreshToken: z.any().optional()
 });
 
 const updateUserSchema = createUserSchema.partial();

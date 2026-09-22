@@ -44,7 +44,7 @@ interface WithdrawalsClientProps {
 export default function WithdrawalsClient({
   initialData,
 }: WithdrawalsClientProps) {
-  const [status, setStatus] = useState<WithdrawalStatus | "all">("processing");
+  const [status, setStatus] = useState<WithdrawalStatus | "all">("pending");
   const [target, setTarget] = useState<Withdrawal | null>(null);
   const [action, setAction] = useState<"processing" | "completed" | "rejected">(
     "completed"

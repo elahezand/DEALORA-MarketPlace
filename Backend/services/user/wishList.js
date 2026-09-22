@@ -1,6 +1,6 @@
 const Favorite = require("../../models/wishList");
 const Listing = require("../../models/listing");
-const {paginate} = require("../../utils/helper");
+const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 
 async function getUserFavorites(userId, query = {}) {
@@ -12,12 +12,13 @@ async function getUserFavorites(userId, query = {}) {
         filters: {
             user: userId,
         },
-        sort: { createdAt: -1 },
         populate: {
             path: "product",
             select:
                 "title slug price minPrice listingType images status metrics condition shortIdentifier",
         },
+        sort: { _id: -1 }
+
     });
 }
 
@@ -132,12 +133,12 @@ async function filterFavoritesByType(userId, type, query = {}) {
 /* === PUBLIC: MOST-FAVORITED PRODUCTS === */
 
 module.exports = {
-  getUserFavorites,
-  addFavorite,
-  removeFavorite,
-  toggleFavorite,
-  isFavorited,
-  getFavoriteCount,
-  checkFavorites,
-  filterFavoritesByType,
+    getUserFavorites,
+    addFavorite,
+    removeFavorite,
+    toggleFavorite,
+    isFavorited,
+    getFavoriteCount,
+    checkFavorites,
+    filterFavoritesByType,
 };

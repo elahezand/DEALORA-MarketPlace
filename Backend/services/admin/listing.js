@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
 const Listing = require("../../models/listing");
+const OfferSeller = require("../../models/offerSeller");
 const { paginate, buildListingFilters } = require("../../utils/helper");
 const invalidateCache = require("../../utils/cache");
 const AppError = require("../../utils/AppError");
-const { buildListingDetail, findListingForDetail, PROTECTED_FIELDS } = require("../shared/listing");
+const { buildListingDetail, PROTECTED_FIELDS } = require("../shared/listing");
 
 const isValidId = mongoose.Types.ObjectId.isValid;
 
@@ -21,6 +22,7 @@ async function getAllListingsAdmin(query = {}) {
     cursor: query.cursor,
     filters,
     populate: ["categoryPath", "owner"],
+    sort: { _id: -1 } 
   });
 }
 
@@ -34,24 +36,42 @@ async function changeStatus(id, status) {
   if (!allowed.includes(status)) {
     throw new AppError(400, `Invalid status for ${listing.listingType}. Allowed: ${allowed.join(", ")}`);
   }
-
-  // findByIdAndUpdate → the model hook notifies the owner (accepted / rejected)
   const updated = await Listing.findByIdAndUpdate(id, { status }, { new: true });
 
   await invalidateCache("/api/listings*");
   return updated;
 }
 
+const EDITABLE_PRODUCT_STATUSES = ["draft", "active", "inactive"];
+
+const uploadedPaths = (files = []) => files.map((f) => `/listings/images/${f.filename}`);
+
+const pickProductStatus = (status) =>
+  EDITABLE_PRODUCT_STATUSES.includes(status) ? status : undefined;
+
+// a variant that sellers still offer on can't be removed (their offers point to its id)
+async function assertRemovedVariantsHaveNoOffers(listing, nextVariants) {
+  const keptIds = new Set(nextVariants.filter((v) => v._id).map((v) => String(v._id)));
+  const removedIds = listing.variants.map((v) => String(v._id)).filter((id) => !keptIds.has(id));
+  if (!removedIds.length) return;
+
+  const hasOffers = await OfferSeller.exists({
+    product: listing._id,
+    variantId: { $in: removedIds },
+    status: { $in: ["pending", "accepted"] },
+  });
+  if (hasOffers) {
+    throw new AppError(409, "A removed variant still has seller offers. Reject or delete those offers first.");
+  }
+}
+
 async function createStoreProduct(data, files = []) {
   const payload = { ...data };
   PROTECTED_FIELDS.forEach((f) => delete payload[f]);
 
-  if (files?.length) {
-    payload.images = files.map((f) => `/listings/images/${f.filename}`);
-  }
-
+  payload.images = [...(data.images || []), ...uploadedPaths(files)];
   payload.listingType = "store_product";
-  payload.status = "draft";
+  payload.status = pickProductStatus(data.status) || "draft";
 
   const listing = await Listing.create(payload);
   await invalidateCache("/api/listings*");
@@ -67,15 +87,23 @@ async function updateListing(id, data, files = []) {
 
   const updateData = { ...data };
   PROTECTED_FIELDS.forEach((f) => delete updateData[f]);
-  if (listing.listingType === "store_product") delete updateData.price;
-  else delete updateData.variants;
 
-  if (files?.length) {
-    updateData.images = files.map((f) => `/listings/images/${f.filename}`);
+  if (listing.listingType === "store_product") {
+    delete updateData.price;
+    const status = pickProductStatus(data.status);
+    if (status) updateData.status = status;
+    if (updateData.variants) await assertRemovedVariantsHaveNoOffers(listing, updateData.variants);
+  } else {
+    delete updateData.variants;
+  }
+
+  // images = the ones the admin kept + the new uploads
+  if (data.images || files?.length) {
+    updateData.images = [...(data.images ?? listing.images), ...uploadedPaths(files)];
   }
 
   Object.assign(listing, updateData);
-  await listing.save(); 
+  await listing.save();
 
   await invalidateCache("/api/listings*");
   return { listing, needsReview: false };
@@ -99,7 +127,10 @@ async function deleteListing(id) {
 async function getListingPreview(id) {
   if (!isValidId(id)) throw new AppError(400, "Invalid listing id");
 
-  const listingData = await findListingForDetail(id);
+  const listingData = await Listing.findById(id)
+    .populate("categoryPath", "_id title slug")
+    .populate("owner", "_id name username phone")
+    .lean();
   if (!listingData) throw new AppError(404, "Listing not found");
 
   const result = await buildListingDetail(listingData);

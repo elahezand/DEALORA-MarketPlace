@@ -6,7 +6,9 @@ const { buildCartView } = require("../shared/cart");
 
 const getAdminCarts = async (query = {}) => {
   const limit = Math.min(Number(query.limit) || 15, 100);
-  return paginate(Cart, { limit, cursor: query.cursor, populate: "user items.product" });
+  return paginate(Cart, {
+    limit, cursor: query.cursor, populate: "user items.product", sort: { _id: -1 }
+  });
 };
 
 const getCartById = async (id) => {

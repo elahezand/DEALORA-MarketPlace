@@ -12,13 +12,17 @@ const {
 } = require("../middlewares/authMiddleware");
 
 const {
+  getOfferableProducts,
   createOffer,
-  getAllOffers,
   getMyOffers,
   deleteOffer,
-  approveOffer,
   updateOffer,
-} = require("../controllers/offerSeller");
+} = require("../controllers/seller/offerSeller");
+const {
+  getAllOffers,
+  approveOffer,
+  deleteOffer: adminDeleteOffer,
+} = require("../controllers/admin/offerSeller");
 
 const {
   createOfferSchema,
@@ -26,9 +30,17 @@ const {
   approveOfferSchema,
 } = require("../validators/sellerOffer");
 
+// PRODUCTS THE SELLER CAN OFFER ON (SELLER) — only its store's category
+offerSellerRouter.get(
+  "/products",
+  authUser,
+  authSeller,
+  getOfferableProducts
+);
+
 // CREATE OFFER (SELLER)
 offerSellerRouter.post(
-  "/",
+  "/me",
   authUser,
   authSeller,
   validate(createOfferSchema),
@@ -40,7 +52,6 @@ offerSellerRouter.get(
   "/",
   authUser,
   authAdmin,
-  cacheMiddleware(120),
   getAllOffers
 );
 
@@ -49,13 +60,12 @@ offerSellerRouter.get(
   "/me",
   authUser,
   authSeller,
-  cacheMiddleware(120),
   getMyOffers
 );
 
 // UPDATE OFFER (SELLER OWNER)
 offerSellerRouter.patch(
-  "/:offerId",
+  "/me/:offerId",
   authUser,
   authSeller,
   validateObjectIdParam("offerId"),
@@ -73,13 +83,22 @@ offerSellerRouter.patch(
   approveOffer
 );
 
-// DELETE OFFER (SELLER OWNER OR ADMIN)
+// DELETE OFFER (SELLER — own pending offer)
 offerSellerRouter.delete(
-  "/:offerId",
+  "/me/:offerId",
   authUser,
   authSeller,
   validateObjectIdParam("offerId"),
   deleteOffer
+);
+
+// DELETE OFFER (ADMIN — any offer)
+offerSellerRouter.delete(
+  "/admin/:offerId",
+  authUser,
+  authAdmin,
+  validateObjectIdParam("offerId"),
+  adminDeleteOffer
 );
 
 module.exports = offerSellerRouter;

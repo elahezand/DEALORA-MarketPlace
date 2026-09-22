@@ -21,7 +21,9 @@ const metaSchema = z.object({
 }).optional().default({ ratings: 0, reviewsCount: 0 });
 
 const storeSchema = z.object({
-  owner: z.string().refine(v => Types.ObjectId.isValid(v), { message: 'invalid owner id' }),
+  owner: z.string().refine(v => Types.ObjectId.isValid(v), { message: 'invalid owner id' }).optional(),
+
+  category: z.string().refine(v => Types.ObjectId.isValid(v), { message: 'invalid category id' }),
 
   name: z.string().min(1).max(200).transform(s => s.trim()),
 

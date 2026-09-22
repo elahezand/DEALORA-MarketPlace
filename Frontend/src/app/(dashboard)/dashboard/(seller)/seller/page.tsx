@@ -78,7 +78,7 @@ export default function SellerDashboardPage() {
           </h1>
         </div>
         <Link
-          href="/my-store"
+          href="/dashboard/seller/my-store"
           className="text-xs font-bold px-4 h-10 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors flex items-center"
         >
           View store profile

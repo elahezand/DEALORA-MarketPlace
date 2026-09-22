@@ -39,7 +39,6 @@ export default function CartPage() {
     product: getProductId(i),
     variantId: i.variantId,
     quantity: i.quantity,
-    priceSnapshot: i.priceSnapshot,
   });
 
   const handleRemove = (item: CartItem) => {
@@ -90,6 +89,12 @@ export default function CartPage() {
           <ArrowLeft className="w-4 h-4" /> Continue Shopping
         </Link>
       </div>
+
+      {(cart?.data?.removedItems?.length ?? 0) > 0 && (
+        <div className="rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+          {cart?.data?.removedItems?.length} item(s) were removed from your cart because they are no longer available.
+        </div>
+      )}
 
       {items.length === 0 ? (
         <div className="card max-w-md mx-auto p-12 text-center flex flex-col items-center justify-center">
@@ -184,9 +189,17 @@ export default function CartPage() {
                       </div>
 
                       {/* Price */}
-                      <p className="font-bold text-lg text-[var(--foreground)] dark:text-[var(--accent-400)]">
-                        ${(item.priceSnapshot * item.quantity).toFixed(2)}
-                      </p>
+                      <div className="text-right">
+                        {item.discount > 0 && (
+                          <p className="text-xs text-[var(--foreground-subtle)] line-through">
+                            ${(item.price * item.quantity).toFixed(2)}
+                            <span className="ml-1.5 no-underline inline-block text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">{item.discount}% OFF</span>
+                          </p>
+                        )}
+                        <p className="font-bold text-lg text-[var(--foreground)] dark:text-[var(--accent-400)]">
+                          ${(item.finalPrice * item.quantity).toFixed(2)}
+                        </p>
+                      </div>
                     </div>
                   </div>
 

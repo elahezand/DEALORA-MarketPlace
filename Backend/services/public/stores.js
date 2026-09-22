@@ -16,29 +16,30 @@ const getVerifiedStores = async ({ limit, cursor } = {}) => {
 
 const getStoreBySlug = async (slug, { cursor, limit } = {}) => {
   const store = await Store.findOne({ slug, isVerified: true })
-    .select("name slug logo address meta isVerified")
+    .select("name slug logo address meta isVerified category")
+    .populate("category", "_id title slug")
     .lean();
 
   if (!store) throw new AppError(404, "Store not found");
-  const listingIds = await OfferSeller.find({
+
+  const productIds = await OfferSeller.find({
     store: store._id,
     status: "accepted",
     stock: { $gt: 0 },
-  }).distinct("listing");
+  }).distinct("productId");
 
-  const { data, pagination } = await paginate(Listing, {
-    limit: limit || 12,
+  const products = await paginate(Listing, {
+    limit: Math.min(Number(limit) || 12, 48),
     cursor,
     filters: {
-      _id: { $in: listingIds },
+      _id: { $in: productIds },
       listingType: "store_product",
       status: "active",
     },
     sort: { createdAt: -1 },
     select: "title slug minPrice listingType images condition shortIdentifier createdAt",
-  });
-
-  return { store, data, pagination };
+  }); 
+  return { store, ...products };
 };
 
 module.exports = {

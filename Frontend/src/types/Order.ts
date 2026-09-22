@@ -9,29 +9,40 @@ export interface IOrderFulfillment {
   shippedAt: string | Date | null;
 }
 
+export interface IOrderProductSnapshot {
+  title: string;
+  image: string | null;
+  slug: string | null;
+}
+
+export interface IOrderVariantSnapshot {
+  attributes: Record<string, string> | null;
+  sku: string | null;
+}
+
 export interface IOrderItem {
   product: string;
-  variant: string;
+  variantId: string | null;
+  offer?: string | null;
+  store?: string | null;
   quantity: number;
   price: number;
-  seller?: string;
-  selectedColor?: string;
-  selectedSize?: string;
+  discount: number;
+  finalPrice: number;
+  productSnapshot: IOrderProductSnapshot;
+  variantSnapshot: IOrderVariantSnapshot;
+  storeSnapshot: { name: string | null };
   fulfillment?: IOrderFulfillment;
-  /** Snapshot taken at checkout from the offer's `shipsWithinDays` (or a
-   *  default) — the date the seller/admin has committed to ship by. */
   estimatedShipBy?: string | Date | null;
-  /** True when no store ever claimed this item via an offer AND it's a
-   *  catalog store_product (not a personal user_ad) — meaning the site
-   *  itself is responsible for shipping it. Computed once at checkout. */
   needsAdminShipment?: boolean;
 }
 
 export interface ICoupon {
+  couponId: string;
   code: string;
-  discountType: "fixed" | "percent";
-  discountValue: number;
-  maxDiscount?: number;
+  type: "fixed" | "percent";
+  amount: number;
+  maxDiscount?: number | null;
 }
 
 export interface IPricing {
@@ -76,7 +87,6 @@ export interface IOrder {
   updatedAt: string | Date;
 }
 
-
 export interface OrdersResponse {
     success: boolean;
     data: IOrder[];
@@ -101,10 +111,10 @@ export interface AdminOrdersResponse {
 /* ADMIN — GET /orders/admin/:id is populated for the order detail page:
    product, seller (Store), and buyer info are all real objects, not just
    ids. */
-export interface IAdminOrderItem extends Omit<IOrderItem, "product" | "seller"> {
+export interface IAdminOrderItem extends Omit<IOrderItem, "product" | "store"> {
   _id: string;
   product: { _id: string; title?: string; images?: string[] } | string;
-  seller: { _id: string; name?: string; slug?: string } | string | null;
+  store: { _id: string; name?: string; slug?: string } | string | null;
 }
 
 export interface IAdminOrder extends Omit<IOrder, "items" | "user"> {
@@ -121,12 +131,14 @@ export interface AdminOrderResponse {
 export interface ISellerOrderItem {
   _id: string;
   product: { _id: string; title?: string; images?: string[] } | string;
-  variant: string | null;
+  variantId: string | null;
   quantity: number;
   price: number;
-  seller?: string;
-  selectedColor?: string;
-  selectedSize?: string;
+  discount: number;
+  finalPrice: number;
+  store?: string | null;
+  productSnapshot: IOrderProductSnapshot;
+  variantSnapshot: IOrderVariantSnapshot;
   fulfillment?: IOrderFulfillment;
   estimatedShipBy?: string | Date | null;
 }
@@ -135,7 +147,6 @@ export interface ISellerOrder extends Omit<IOrder, "items" | "user"> {
   items: ISellerOrderItem[];
   user: { _id: string; username?: string; phone?: string } | string;
   mySubtotal: number;
-  trackingCode?:string,
   myFulfillmentStatus: "pending" | "partial" | "shipped";
 }
 

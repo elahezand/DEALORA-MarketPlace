@@ -26,11 +26,16 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
   const [shippingType, setShippingType] = useState(listing?.shipping?.type ?? "standard");
   const [shippingCost, setShippingCost] = useState(listing?.shipping?.cost ?? 0);
 
- 
+
   const [newImages, setNewImages] = useState<File[]>([]);
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
 
-  const { mutate: updateListing, isPending } = useUpdateListing(listingId);
+  const { mutate: updateListing, isPending } = useUpdateListing(
+    listingId,
+    () => {
+      router.push("/dashboard/listings");
+    }
+  );
 
   if (!listing) {
     return (
@@ -44,14 +49,30 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
   }
 
 
-  const isOwner = profileLoading || !listing.user || listing.user._id === user?._id;
+  const isOwner = profileLoading || !listing.owner || listing.owner._id === user?._id;
 
-  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []).slice(0, 10);
-    if (!files.length) return;
-    setNewImages(files);
-    setNewPreviews(files.map((f) => URL.createObjectURL(f)));
+  const handleFilesSelected = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = e.target.files;
+
+    if (!files) return;
+
+    const fileArr = Array.from(files);
+    const updatedFiles = [...newImages, ...fileArr].slice(0, 10);
+
+    const updatedPreviews = updatedFiles.map((file) =>
+      URL.createObjectURL(file)
+    );
+
+    newPreviews.forEach((url) => URL.revokeObjectURL(url));
+
+    setNewImages(updatedFiles);
+    setNewPreviews(updatedPreviews);
+
+    e.target.value = "";
   };
+
 
   const removeStagedImage = (index: number) => {
     const updatedFiles = newImages.filter((_, i) => i !== index);
@@ -83,12 +104,6 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
         },
         ...(newImages.length > 0 && { pics: newImages }),
       },
-      {
-        onSuccess: () => {
-          router.push("/dashboard/listings");
-          router.refresh();
-        },
-      }
     );
   };
 

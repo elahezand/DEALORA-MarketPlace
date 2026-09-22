@@ -6,6 +6,7 @@ import AddNewAddress from "@/components/shared/address/AddNewAddress";
 import { AddressCard } from "@/components/shared/address/AddressCard";
 import { PersonalInfoForm } from "@/app/(dashboard)/components/shared/PersonalInfoForm";
 import { IAddress } from "@/types/User";
+import { ActiveSessionsCard } from "@/app/(dashboard)/components/shared/settings/ActiveSessionsCard";
 
 export default function SettingsPage() {
   const { user } = useGetProfile();
@@ -54,6 +55,8 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      <ActiveSessionsCard />
     </div>
   );
 }

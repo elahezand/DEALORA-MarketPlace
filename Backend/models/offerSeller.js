@@ -1,15 +1,9 @@
 const mongoose = require("mongoose");
 const notifyUser = require("../utils/notify");
+const { calcFinalPrice, syncListingMinPrice } = require("../utils/pricing");
 
 const offerSellerSchema = new mongoose.Schema(
   {
-    seller: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
-    },
-
     store: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Store",
@@ -17,18 +11,22 @@ const offerSellerSchema = new mongoose.Schema(
       index: true,
     },
 
-    listing: {
+    productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Listing",
       required: true,
       index: true,
     },
 
+    variantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: [true, "variantId is required"],
+    },
+
     price: {
       type: Number,
       required: true,
       min: 0,
-      index: true,
     },
 
     discount: {
@@ -36,6 +34,12 @@ const offerSellerSchema = new mongoose.Schema(
       min: 0,
       max: 100,
       default: 0,
+    },
+
+    finalPrice: {
+      type: Number,
+      min: 0,
+      index: true,
     },
 
     stock: {
@@ -60,7 +64,7 @@ const offerSellerSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected"],
+      enum: ["pending", "accepted", "rejected","deleted"],
       default: "pending",
       index: true,
     },
@@ -73,47 +77,39 @@ const offerSellerSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true, getters: true },
-    toObject: { virtuals: true, getters: true },
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
-offerSellerSchema.virtual("finalPrice").get(function () {
-  const price = Number(this.price || 0);
-  const discount = Number(this.discount || 0);
-  return Math.round((price - (price * discount) / 100) * 100) / 100;
+// finalPrice = price - price * discount / 100
+offerSellerSchema.pre("validate", function () {
+  this.finalPrice = calcFinalPrice(this.price, this.discount);
 });
 
-//SyncPrice
-async function syncMinPrice(listingId) {
-  const offers = await mongoose.model("OfferSeller").find({
-    listing: listingId,
-    status: "accepted",
-    stock: { $gt: 0 },
-  });
-  if (!offers.length) {
-    return;
-  }
-
-  const minFinalPrice = Math.min(...offers.map((o) => o.finalPrice));
-  await mongoose.model("Listing").findByIdAndUpdate(listingId, { price: minFinalPrice });
-}
+// ⭐ this.listing → this.product
+const syncMinPrice = (productId) => syncListingMinPrice(productId);
 offerSellerSchema.post("save", async function () {
-  await syncMinPrice(this.listing);
+  await syncMinPrice(this.product);
 });
 offerSellerSchema.post("findOneAndUpdate", async function () {
   const doc = await this.model.findOne(this.getQuery());
-  if (doc) await syncMinPrice(doc.listing);
+  if (doc) await syncMinPrice(doc.product);
 });
 offerSellerSchema.post("updateOne", async function () {
   const doc = await this.model.findOne(this.getQuery());
-  if (doc) await syncMinPrice(doc.listing);
+  if (doc) await syncMinPrice(doc.product);
 });
 offerSellerSchema.post("findOneAndDelete", async function (doc) {
-  if (doc) await syncMinPrice(doc.listing);
+  if (doc) await syncMinPrice(doc.product);
 });
 
-// Notify the seller when an admin actually accepts/rejects their offer.
+async function getStoreOwnerId(storeId) {
+  if (!storeId) return null;
+  const store = await mongoose.model("Store").findById(storeId).select("owner").lean();
+  return store?.owner || null;
+}
+
 offerSellerSchema.pre("save", function () {
   this._statusChanged = this.isModified("status");
 });
@@ -125,9 +121,11 @@ offerSellerSchema.post("save", async function (doc) {
     doc.status === "accepted"
       ? "Your offer was accepted!"
       : "Your offer was rejected.";
-  await notifyUser(doc.seller, msg, {
+  const ownerId = await getStoreOwnerId(doc.store);
+  if (!ownerId) return;
+  await notifyUser(ownerId, msg, {
     type: doc.status === "accepted" ? "offer_accepted" : "offer_rejected",
-    link: "/dashboard/offers",
+    link: "/dashboard/seller/offers",
   });
 });
 offerSellerSchema.pre("findOneAndUpdate", async function () {
@@ -145,9 +143,11 @@ offerSellerSchema.post("findOneAndUpdate", async function (doc) {
     newStatus === "accepted"
       ? "Your offer was accepted!"
       : "Your offer was rejected.";
-  await notifyUser(doc.seller, msg, {
+  const ownerId = await getStoreOwnerId(doc.store);
+  if (!ownerId) return;
+  await notifyUser(ownerId, msg, {
     type: newStatus === "accepted" ? "offer_accepted" : "offer_rejected",
-    link: "/dashboard/offers",
+    link: "/dashboard/seller/offers",
   });
 });
 offerSellerSchema.pre("updateOne", async function () {
@@ -166,15 +166,17 @@ offerSellerSchema.post("updateOne", async function () {
     newStatus === "accepted"
       ? "Your offer was accepted!"
       : "Your offer was rejected.";
-  await notifyUser(doc.seller, msg, {
+  const ownerId = await getStoreOwnerId(doc.store);
+  if (!ownerId) return;
+  await notifyUser(ownerId, msg, {
     type: newStatus === "accepted" ? "offer_accepted" : "offer_rejected",
-    link: "/dashboard/offers",
+    link: "/dashboard/seller/offers",
   });
 });
 
-offerSellerSchema.index({ listing: 1, status: 1 });
-offerSellerSchema.index({ seller: 1, status: 1 });
-offerSellerSchema.index({ listing: 1, status: 1, stock: 1 });
+offerSellerSchema.index({ store: 1, status: 1 });
+offerSellerSchema.index({ product: 1, status: 1, stock: 1 });
+offerSellerSchema.index({ product: 1, variantId: 1, status: 1 });
 
 const Offer =
   mongoose.models.OfferSeller || mongoose.model("OfferSeller", offerSellerSchema);

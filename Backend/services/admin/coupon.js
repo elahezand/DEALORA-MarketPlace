@@ -1,5 +1,5 @@
 const Coupon = require("../../models/coupon");
-const {paginate} = require("../../utils/helper");
+const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 
 const getCoupons = async (query = {}) => {
@@ -8,7 +8,9 @@ const getCoupons = async (query = {}) => {
   if (query.type) filter.type = query.type;
 
   const limit = Math.min(Number(query.limit) || 15, 100);
-  return paginate(Coupon, { limit, cursor: query.cursor, filters: filter });
+  return paginate(Coupon, {
+    limit, cursor: query.cursor, filters: filter, sort: { _id: -1 }
+  });
 };
 
 const getCouponById = async (id) => {

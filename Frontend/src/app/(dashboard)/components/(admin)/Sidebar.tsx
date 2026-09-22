@@ -8,6 +8,7 @@ import {
   HiOutlineUsers,
   HiOutlineBuildingStorefront,
   HiOutlineDocumentCheck,
+  HiOutlineCube,
   HiOutlineCreditCard,
   HiOutlineChartBar,
   HiOutlineArrowLeft,
@@ -51,7 +52,8 @@ const adminMenuGroups: AdminNavGroup[] = [
     label: "Catalog",
     items: [
       { name: "Categories", href: "/dashboard/admin/categories", icon: HiOutlineRectangleGroup },
-      { name: "Pending Listings", href: "/dashboard/admin/listings", icon: HiOutlineDocumentCheck },
+      { name: "Products", href: "/dashboard/admin/products", icon: HiOutlineCube },
+      { name: "User Ads", href: "/dashboard/admin/listings", icon: HiOutlineDocumentCheck },
       { name: "Seller Offers", href: "/dashboard/admin/offers", icon: HiOutlineTag },
     ],
   },

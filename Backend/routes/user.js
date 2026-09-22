@@ -2,17 +2,19 @@ const express = require("express");
 const userRouter = express.Router();
 
 const {
-  getAllUsers,
   createAddress,
-  postNewUser,
   putUser,
+  removeAddress,
+  updatedAddress,
+} = require("../controllers/user/user");
+const {
+  getAllUsers,
+  postNewUser,
   removeUser,
   toggleRole,
   toggleBan,
-  removeAddress,
   getAdmins,
-  updatedAddress,
-} = require("../controllers/user");
+} = require("../controllers/admin/user");
 
 const { authAdmin, authUser } = require("../middlewares/authMiddleware");
 const upload = require("../utils/multer");

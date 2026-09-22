@@ -17,11 +17,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Shared in-flight refresh promise. When several requests fail with 401 at
-// the same time, they all await this single promise instead of each firing
-// its own POST /auth/refresh — the backend rotates the refresh token on every
-// call, so parallel refresh calls could race and invalidate one another,
-// logging the user out even though their session was actually still valid.
+
 let refreshPromise: Promise<unknown> | null = null;
 
 const refreshAccessToken = () => {

@@ -14,7 +14,7 @@ const isPublicListing = (listing) => PUBLIC_STATUS_BY_TYPE[listing?.listingType]
 /* === GET ALL (PUBLIC) === */
 async function getAllListings(query = {}) {
   const filters = await buildListingFilters(query);
-  const maxLimit = query.listingType ? 99 : 21;
+  const maxLimit = query.listingType ? 21 : 10;
   const limit = Math.min(query.limit ? Number(query.limit) : maxLimit, maxLimit);
 
   return paginate(Listing, {
@@ -25,6 +25,7 @@ async function getAllListings(query = {}) {
       { path: "categoryPath", select: "_id title slug" },
       { path: "owner", select: PUBLIC_OWNER_FIELDS },
     ],
+    sort: { _id: -1 }
   });
 }
 

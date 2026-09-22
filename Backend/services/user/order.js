@@ -122,7 +122,7 @@ const getMyOrders = async (userId, query = {}) => {
     limit,
     cursor: query.cursor,
     filters,
-    sort: { createdAt: -1 },
+    sort: { _id: -1 }
   });
 };
 

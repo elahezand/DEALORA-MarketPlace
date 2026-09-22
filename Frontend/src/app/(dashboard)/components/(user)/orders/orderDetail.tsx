@@ -14,6 +14,7 @@ import { useConfirmDelivery } from "@/services/Order/useConfirmDelivery";
 import { Badge } from "../../shared/table/TableParts";
 import { IOrder, OrderStatus, PaymentStatus } from "@/types/Order";
 import { toast } from "sonner";
+import { getOrderItemVariantLabel } from "@/utils/orderItem";
 
 const STATUS_TONE: Record<OrderStatus, "success" | "warning" | "destructive" | "neutral" | "info"> = {
   created: "neutral",
@@ -29,7 +30,6 @@ const PAYMENT_TONE: Record<PaymentStatus, "success" | "warning" | "destructive" 
   failed: "destructive",
   refunded: "neutral",
 };
-
 
 const NON_CANCELLABLE: OrderStatus[] = ["shipped", "completed", "cancelled"];
 
@@ -194,15 +194,15 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
               <div key={idx} className="flex items-center justify-between px-5 py-4 gap-3">
                 <div className="min-w-0">
                   <Link
-                    href={`/listings/${item.product}`}
+                    href={`/posts/${item.product}`}
                     className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors"
                   >
-                    View product
+                    {item.productSnapshot.title}
                   </Link>
                   <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
                     Qty: {item.quantity}
-                    {item.selectedColor && ` · ${item.selectedColor}`}
-                    {item.selectedSize && ` · ${item.selectedSize}`}
+                    {getOrderItemVariantLabel(item) && ` · ${getOrderItemVariantLabel(item)}`}
+                    {item.storeSnapshot.name && ` · ${item.storeSnapshot.name}`}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1.5">
                     <Badge
@@ -227,7 +227,7 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
                   </div>
                 </div>
                 <p className="text-sm font-black text-[var(--foreground)] flex-shrink-0">
-                  ${(item.price * item.quantity).toLocaleString()}
+                  ${(item.finalPrice * item.quantity).toLocaleString()}
                 </p>
               </div>
             );

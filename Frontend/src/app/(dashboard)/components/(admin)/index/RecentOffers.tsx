@@ -46,10 +46,10 @@ export default function RecentOffers() {
       <tbody>
         {offers.map((offer) => {
           const product = typeof offer.product === "object" ? offer.product : null;
-          const listing = typeof offer.listing === "object" ? offer.listing : null;
-          const title = product?.title || listing?.title || "—";
-          const image = product?.images?.[0] || listing?.images?.[0] || null;
-          const seller = typeof offer.seller === "object" ? offer.seller : null;
+          const title = product?.title || "—";
+          const image = product?.images?.[0] || null;
+          const store = typeof offer.store === "object" ? offer.store : null;
+          const seller = store && typeof store.owner === "object" ? store.owner : null;
           const tone = STATUS_TONE[offer.status] ?? "warning";
           const label = offer.status.charAt(0).toUpperCase() + offer.status.slice(1);
 
@@ -70,7 +70,7 @@ export default function RecentOffers() {
                 {seller?.username || seller?.phone || "—"}
               </td>
               <td className="px-6 py-4 text-sm font-bold text-[var(--foreground)]">
-                {new Intl.NumberFormat("en-US").format(offer.finalPrice ?? offer.price)} Toman
+                {new Intl.NumberFormat("en-US").format(offer.finalPrice)} Toman
               </td>
               <td className="px-6 py-4">
                 <Badge tone={tone} label={label} />

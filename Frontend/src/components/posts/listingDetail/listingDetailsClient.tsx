@@ -19,6 +19,7 @@ import { Offer } from "@/types/Offer";
 import { useAddToCart } from "@/services/Cart/useAddToCart";
 import { useToggleFavorite } from "@/services/Favorites/useToggleFavorite";
 import { useIsFavorited } from "@/services/Favorites/useIsFavorited";
+import { getVariantFinalPrice, getVariantLabel } from "@/utils/price";
 
 import { toast } from "sonner";
 import {
@@ -102,11 +103,21 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
         ? [data.location.city, data.location.state].filter(Boolean).join(", ")
         : null;
 
-    const basePrice = isStoreProduct && selectedVariant ? selectedVariant.price : data.price;
-    const formattedPrice = (basePrice || 0).toLocaleString();
-
     const defaultOffer = data?.offers?.[0] || null;
     const defaultVariant = data?.variants?.[0] || null;
+
+    // user_ad → listing.price | store_product → selected variant (price / discount / finalPrice)
+    const activeVariant = selectedVariant || defaultVariant;
+    const basePrice = isStoreProduct ? getVariantFinalPrice(activeVariant) : (data.price ?? 0);
+    const originalPrice = isStoreProduct ? (activeVariant?.price ?? basePrice) : basePrice;
+    const variantDiscount = isStoreProduct ? (activeVariant?.discount ?? 0) : 0;
+    const hasVariantDiscount = variantDiscount > 0 && originalPrice > basePrice;
+    const formattedPrice = (basePrice || 0).toLocaleString();
+
+    // Sellers' offers are per variant → only show offers for the selected variant
+    const variantOffers: Offer[] = (data.offers || []).filter(
+        (offer: Offer) => !!activeVariant?._id && offer.variantId === activeVariant._id
+    );
 
     const currentVariantStock = isStoreProduct
         ? (selectedVariant?.stock ?? defaultVariant?.stock ?? defaultOffer?.stock ?? 0)
@@ -155,8 +166,9 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
             ? data?.offers?.find((offer: Offer) => offer._id === offerId)
             : undefined;
 
-        const targetVariant =
-            selectedVariant || data?.variants?.[0];
+        const targetVariant = selectedOffer
+            ? data?.variants?.find((v) => v._id === selectedOffer.variantId)
+            : selectedVariant || data?.variants?.[0];
         if (!data?._id) {
             setCartError("Product id is missing.");
             return;
@@ -169,14 +181,8 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
 
         const itemPayload = {
             product: data._id,
-            variantId: targetVariant._id,
+            variantId: selectedOffer?.variantId ?? targetVariant._id,
             quantity: 1,
-            priceSnapshot:
-                selectedOffer?.price ??
-                targetVariant?.price ??
-                data.price ??
-                0,
-
             ...(selectedOffer?._id && {
                 offer: selectedOffer._id,
             }),
@@ -320,7 +326,9 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                                         : "border-[var(--border)] hover:bg-[var(--background-soft)]"
                                                         }`}
                                                 >
-                                                    {attrLabel} {v.stock === 0 && <span className="text-red-500">(Out of stock)</span>}
+                                                    {attrLabel}
+                                                    <span className="ml-1 opacity-70 tabular-nums">· ${getVariantFinalPrice(v).toLocaleString()}</span>
+                                                    {v.stock === 0 && <span className="text-red-500"> (Out of stock)</span>}
                                                 </button>
                                             );
                                         })}
@@ -328,10 +336,20 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                 </div>
                             )}
 
-                            <div className="border-t border-[var(--border)] pt-5 flex items-baseline gap-2">
+                            <div className="border-t border-[var(--border)] pt-5 flex items-baseline gap-2 flex-wrap">
+                                {hasVariantDiscount && (
+                                    <span className="text-sm font-semibold text-[var(--foreground-subtle)] line-through tabular-nums">
+                                        ${originalPrice.toLocaleString()}
+                                    </span>
+                                )}
                                 <span className="text-3xl font-extrabold tracking-tight text-[var(--primary-600)] dark:text-[var(--accent-400)] tabular-nums">
                                     ${formattedPrice}
                                 </span>
+                                {hasVariantDiscount && (
+                                    <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
+                                        {variantDiscount}% OFF
+                                    </span>
+                                )}
                                 <span className="text-[12px] font-medium text-[var(--foreground-subtle)] uppercase tracking-wider">
                                     {isStoreProduct ? "Inc. VAT" : "negotiable"}
                                 </span>
@@ -401,7 +419,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold text-[var(--foreground)] truncate m-0 p-0 leading-tight">
                                     {isStoreProduct
-                                        ? `${data.offers?.length || 0} seller${data.offers?.length === 1 ? "" : "s"} available`
+                                        ? `${variantOffers.length} seller${variantOffers.length === 1 ? "" : "s"} available${activeVariant ? ` for ${getVariantLabel(activeVariant)}` : ""}`
                                         : "Verified seller"}
                                 </p>
                                 <p className="text-[11px] font-medium text-[var(--foreground-subtle)] m-0 p-0 leading-normal">
@@ -416,15 +434,15 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
             {/* LOWER SECTION: Offers, Description, Specifications, Protection Notice, Map */}
             <div className="grid grid-cols-1 gap-6 mt-6">
                 {/* OFFERS (STORE PRODUCT ONLY) */}
-                {isStoreProduct && data.offers && data.offers.length > 0 && (
+                {isStoreProduct && variantOffers.length > 0 && (
                     <div className="card p-6 space-y-4 w-full">
-                        <SectionHeading icon={<StoreIcon size={16} className="text-[var(--primary-500)] dark:text-[var(--accent-400)]" />} title="Other Sellers & Offers" />
+                        <SectionHeading icon={<StoreIcon size={16} className="text-[var(--primary-500)] dark:text-[var(--accent-400)]" />} title={`Other Sellers & Offers${activeVariant ? ` — ${getVariantLabel(activeVariant)}` : ""}`} />
                         <div className="divide-y divide-[var(--border)]">
-                            {data.offers.map((offer: Offer) => {
+                            {variantOffers.map((offer: Offer) => {
                                 const storeName = typeof offer.store === "object" ? offer.store?.name : undefined;
                                 const storeRating = typeof offer.store === "object" ? offer.store?.meta?.ratings : undefined;
                                 const storeReviewsCount = typeof offer.store === "object" ? offer.store?.meta?.reviewsCount : undefined;
-                                const displayPrice = offer.finalPrice ?? offer.price;
+                                const displayPrice = offer.finalPrice;
                                 return (
                                     <div key={offer._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
                                         <div className="flex flex-col">
@@ -443,6 +461,9 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="text-right">
+                                                {!!offer.discount && offer.discount > 0 && (
+                                                    <span className="block text-xs font-medium text-[var(--foreground-subtle)] line-through">${offer.price.toLocaleString()}</span>
+                                                )}
                                                 <span className="block text-base font-extrabold text-[var(--foreground)]">${displayPrice.toLocaleString()}</span>
                                                 {!!offer.discount && offer.discount > 0 && (
                                                     <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
@@ -452,7 +473,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                                             </div>
                                             <button
                                                 onClick={() => handleAddToCart(offer._id)}
-                                                disabled={addToCartMutation.isPending || offer.stock === 0 || !(selectedVariant?._id || defaultVariant?._id)}
+                                                disabled={addToCartMutation.isPending || offer.stock === 0}
                                                 className="h-9 px-4 text-xs font-bold rounded-lg btn-secondary bg-[var(--background-soft)] border-[var(--border)] hover:bg-[var(--border)] flex items-center gap-1.5"
                                             >
                                                 {addToCartMutation.isPending && <Loader2 size={12} className="animate-spin" />}

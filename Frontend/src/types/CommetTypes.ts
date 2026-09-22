@@ -17,6 +17,7 @@ export interface CommentItemType {
   cons?: string[];
   recommendation?: "recommended" | "not_recommended" | "no_idea";
   verifiedPurchase?: boolean;
+  store?: { _id: string; name: string; slug?: string } | string | null;
   createdAt: string;
   replies?: CommentItemType[];
 }

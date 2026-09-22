@@ -1,8 +1,8 @@
 const express = require("express");
 const locationsRouter = express.Router();
-const controller = require("../controllers/locations");
+const publicController = require("../controllers/public/locations");
 
 locationsRouter.get("/",
-    controller.getAll);
+    publicController.getAll);
 
 module.exports = locationsRouter;

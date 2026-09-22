@@ -42,7 +42,7 @@ interface ReportsClientProps {
 }
 
 export default function ReportsClient({ initialData }: ReportsClientProps) {
-  const [status, setStatus] = useState<ReportStatus | "all">("all");
+  const [status, setStatus] = useState<ReportStatus | "all">("pending");
   const [target, setTarget] = useState<AdminReportRow | null>(null);
   const [resolveStatus, setResolveStatus] = useState<"reviewed" | "resolved" | "rejected">("resolved");
   const [actionTaken, setActionTaken] = useState<ReportActionTaken>("none");

@@ -2,6 +2,7 @@
 export interface StoreFormValues {
     name: string;
     phone: string;
+    category: string;
     logo: string;
     owner: string;
     address: {

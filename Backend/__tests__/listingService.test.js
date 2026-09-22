@@ -65,9 +65,15 @@ test("the user service refuses to create a store product", async () => {
   );
 });
 
-test("the admin service creates store products as draft", async () => {
-  await adminService.createStoreProduct({ title: "iPhone", status: "active" });
+test("the admin service creates store products as draft unless a valid status is chosen", async () => {
+  await adminService.createStoreProduct({ title: "iPhone" });
   assert.equal(created.listingType, "store_product");
+  assert.equal(created.status, "draft");
+
+  await adminService.createStoreProduct({ title: "iPhone", status: "active" });
+  assert.equal(created.status, "active");
+
+  await adminService.createStoreProduct({ title: "iPhone", status: "accepted" });
   assert.equal(created.status, "draft");
 });
 

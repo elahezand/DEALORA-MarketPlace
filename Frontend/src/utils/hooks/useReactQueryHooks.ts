@@ -55,7 +55,7 @@ const showErrorToast = (error: unknown, fallback: string) => {
   let message = fallback;
   if (Array.isArray(responseData?.errors) && responseData.errors.length > 0) {
     message = responseData.errors
-      .map((item) => item?.message)
+      .map((item) => `${item?.message}, ${item?.field}`)
       .filter(Boolean)
       .join(" | ");
   } else if (responseData?.message) {

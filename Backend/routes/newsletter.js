@@ -1,7 +1,8 @@
 const express = require("express");
 const newsLetterRouter = express.Router();
 
-const controller = require("../controllers/newsletter");
+const publicController = require("../controllers/public/newsletter");
+const adminController = require("../controllers/admin/newsletter");
 const { authAdmin ,authUser} = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 
@@ -12,14 +13,14 @@ newsLetterRouter.get(
   "/",
   authUser,
   authAdmin,
-  controller.getAll
+  adminController.getAll
 );
 
 // POST subscribe (public)
 newsLetterRouter.post(
   "/",
   validate(createNewsletterSchema),
-  controller.post
+  publicController.post
 );
 
 module.exports = newsLetterRouter;

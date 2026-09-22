@@ -63,10 +63,6 @@ const userSchema = new mongoose.Schema(
             default: null,
         },
 
-        refreshToken: {
-            type: String,
-        },
-
         meta: {
             type: mongoose.Schema.Types.Mixed,
             default: {},

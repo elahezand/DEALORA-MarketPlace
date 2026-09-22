@@ -13,11 +13,14 @@ import { StoreFormValues } from "@/types/storeFormValues";
 import { storeStepSchemas } from "@/validations/storeSchema";
 import { MotionDiv } from "@/utils/providers/MotionWrapper";
 import { useRouter } from "next/navigation";
+import { useGet } from "@/utils/hooks/useReactQueryHooks";
+import { CategoriesTypeResponse } from "@/types/Category";
 import { ZodError } from "zod";
 
 const initialValues: StoreFormValues = {
   name: "",
   phone: "",
+  category: "",
   logo: "",
   address: {
     province: "",
@@ -34,7 +37,7 @@ const initialValues: StoreFormValues = {
 
 const steps = ["Basic Info", "Address", "Logo", "Review"];
 const stepFields: (keyof StoreFormValues | string)[][] = [
-  ["name", "phone"],
+  ["name", "phone", "category"],
   [
     "address.province",
     "address.city",
@@ -75,6 +78,10 @@ export default function CreateShop() {
   const [isLocating, setIsLocating] = useState(false);
 
   const { user, isLoading: isProfileLoading } = useGetProfile();
+
+  // the store sells in one main category (a category without a parent)
+  const { data: categoriesRes } = useGet<CategoriesTypeResponse>("/categories");
+  const mainCategories = categoriesRes?.data ?? [];
 
   const validateStep = (values: StoreFormValues) => {
     try {
@@ -218,6 +225,7 @@ export default function CreateShop() {
           const payload = {
             name: values.name,
             phone: values.phone,
+            category: values.category,
             logo: values.logo ,
             address: {
               province: values.address.province,
@@ -236,7 +244,7 @@ export default function CreateShop() {
             onSuccess: (createdStore) => {
               setSubmitting(false);
               const slug = createdStore?.data?.slug;
-              router.push(slug ? `/dashboard/store/${slug}` : "/dashboard");
+              router.push("/dashboard/seller/my-store");
             },
             onError: (error) => {
               setSubmitting(false);
@@ -261,6 +269,7 @@ export default function CreateShop() {
         }) => {
           const nameError = useFieldError(errors, touched, "name");
           const phoneError = useFieldError(errors, touched, "phone");
+          const categoryError = useFieldError(errors, touched, "category");
           const provinceError = useFieldError(errors, touched, "address.province");
           const cityError = useFieldError(errors, touched, "address.city");
           const streetError = useFieldError(errors, touched, "address.street");
@@ -310,6 +319,34 @@ export default function CreateShop() {
                       onBlur={handleBlur}
                     />
                     <FieldError message={phoneError} />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="storeCategory"
+                      className="text-xs font-bold uppercase tracking-wider ml-1 text-[var(--label-color)]"
+                    >
+                      What does your store sell?
+                    </label>
+                    <select
+                      id="storeCategory"
+                      name="category"
+                      value={values.category}
+                      className="h-12 px-4 rounded-xl transition duration-200 w-full"
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                    >
+                      <option value="">Choose a category...</option>
+                      {mainCategories.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.title}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-[var(--foreground-muted)] ml-1">
+                      You can only make offers on products in this category.
+                    </p>
+                    <FieldError message={categoryError} />
                   </div>
                 </div>
               )}

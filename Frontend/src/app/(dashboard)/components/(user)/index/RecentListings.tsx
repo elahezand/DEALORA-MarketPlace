@@ -1,6 +1,7 @@
 "use client";
 
 import { ListingProps } from "@/types/Listings";
+import { getListingPrice } from "@/utils/price";
 import { HiOutlineTag, HiOutlineEye } from "react-icons/hi2";
 import AdminTableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
@@ -83,7 +84,7 @@ export default function RecentListings({ initialData = [] }: RecentListingsProps
             </td>
             <td className="px-6 py-4 text-right">
               <span className="text-sm font-black text-[var(--foreground)]">
-                ${listing.price?.toLocaleString()}
+                ${getListingPrice(listing).toLocaleString()}
               </span>
             </td>
           </tr>

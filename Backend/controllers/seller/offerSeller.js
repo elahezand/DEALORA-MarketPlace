@@ -1,4 +1,13 @@
 const sellerOfferSellerService = require("../../services/seller/offerSeller");
+
+const getOfferableProducts = async (req, res, next) => {
+  try {
+    const result = await sellerOfferSellerService.getOfferableProducts(req.user._id, req.query);
+    res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+};
 const createOffer = async (req, res, next) => {
   try {
     const offer = await sellerOfferSellerService.createOffer(req.user._id, req.parsed.data);
@@ -38,6 +47,7 @@ const deleteOffer = async (req, res, next) => {
 };
 
 module.exports = {
+  getOfferableProducts,
   createOffer,
   getMyOffers,
   updateOffer,

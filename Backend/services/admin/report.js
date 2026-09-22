@@ -15,6 +15,7 @@ const getAllReports = async (query = {}) => {
     cursor: query.cursor,
     filters,
     populate: [{ path: "reporter", select: "username phone" }],
+    sort: { _id: -1 }
   });
 };
 

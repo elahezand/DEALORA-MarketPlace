@@ -21,6 +21,7 @@ const getAdmin = async (query = {}) => {
       { path: "listing", select: "title" },
       { path: "parentId", select: "body" },
     ],
+    sort: { _id: -1 }
   });
 };
 

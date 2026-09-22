@@ -24,6 +24,7 @@ const getByProduct = async (listing, query = {}) => {
     cursor: query.cursor,
     filters: filters,
     populate: { path: "user", select: PUBLIC_USER_FIELDS },
+    sort: { _id: -1 }
   });
 
   const parentIds = parents.data.map((p) => p._id);

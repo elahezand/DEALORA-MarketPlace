@@ -1,6 +1,9 @@
 const express = require("express");
 const storeRouter = express.Router();
-const controller = require("../controllers/store");
+const publicController = require("../controllers/public/store");
+const userController = require("../controllers/user/store");
+const sellerController = require("../controllers/seller/store");
+const adminController = require("../controllers/admin/store");
 const { authUser, authSeller, authAdmin } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate")
 const validateObjectIdParam = require("../middlewares/objectId")
@@ -10,45 +13,45 @@ const cacheMiddleware = require("../middlewares/cache");
 /*  PUBLIC  */
 storeRouter.get("/verified",
     cacheMiddleware(300),
-    controller.getVerified);
+    publicController.getVerified);
 
 storeRouter.get("/slug/:slug",
     cacheMiddleware(300),
-    controller.getBySlug);
+    publicController.getBySlug);
 
 storeRouter.get("/",
     authUser,
     authAdmin,
-    controller.getAll);
+    adminController.getAll);
 
 storeRouter.get("/:id",
     authUser,
     authSeller,
-    controller.get);
+    sellerController.get);
 
 storeRouter.post("/",
     authUser,
     validate(storeSchema),
-    controller.create);
+    userController.create);
 
 storeRouter.patch("/:id",
     authUser,
     authSeller,
     validateObjectIdParam("id"),
     validate(storeUpdateSchema),
-    controller.updateStore);
+    sellerController.updateStore);
 
 storeRouter.delete("/:id",
     authUser,
     authSeller,
     validateObjectIdParam("id"),
-    controller.deleteStore)
+    sellerController.deleteStore)
 
 /* ADMIN */
 storeRouter.patch("/:id/verify",
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    controller.verifyStore);
+    adminController.verifyStore);
 
 module.exports = storeRouter;

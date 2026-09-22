@@ -2,42 +2,45 @@ const express = require("express");
 const statsRouter = express.Router();
 const { authUser, authAdmin, authSeller } = require("../middlewares/authMiddleware");
 
-const controller = require("../controllers/stats");
+const publicController = require("../controllers/public/stats");
+const userController = require("../controllers/user/stats");
+const sellerController = require("../controllers/seller/stats");
+const adminController = require("../controllers/admin/stats");
 const cacheMiddleware = require("../middlewares/cache");
 
-statsRouter.get("/", cacheMiddleware(300), controller.getPublic);
+statsRouter.get("/", cacheMiddleware(300), publicController.getPublic);
 
 /*  ADMIN ONLY  */
 statsRouter.get("/admin",
     authUser,
     authAdmin,
     cacheMiddleware(60),
-    controller.getAdmin);
+    adminController.getAdmin);
 
 statsRouter.get("/admin/timeseries",
     authUser,
     authAdmin,
     cacheMiddleware(60),
-    controller.getAdminTimeseries);
+    adminController.getAdminTimeseries);
 
 /*  USER  */
 statsRouter.get("/me/timeseries",
     authUser,
     cacheMiddleware(60),
-    controller.getUserTimeseries);
+    userController.getUserTimeseries);
 
 /*Seller*/
 statsRouter.get("/seller",
     authUser,
     authSeller,
     cacheMiddleware(60),
-    controller.getSeller);
+    sellerController.getSeller);
 
 statsRouter.get("/seller/timeseries",
     authUser,
     authSeller,
     cacheMiddleware(60),
-    controller.getSellerTimeseries);
+    sellerController.getSellerTimeseries);
 
 
 module.exports = statsRouter;

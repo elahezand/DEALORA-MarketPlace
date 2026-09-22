@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Report = require("../../models/report");
-const {paginate} = require("../../utils/helper");
+const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 
 const isValidId = mongoose.Types.ObjectId.isValid;
@@ -32,7 +32,9 @@ const getMyReports = async (reporterId, query = {}) => {
   if (query.status) filters.status = query.status;
 
   const limit = Math.min(Math.max(Number(query.limit) || 15, 1), 50);
-  return paginate(Report, { limit, cursor: query.cursor, filters });
+  return paginate(Report, {
+    limit, cursor: query.cursor, filters, sort: { _id: -1 }
+  });
 };
 
 module.exports = {

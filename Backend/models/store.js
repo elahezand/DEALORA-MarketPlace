@@ -23,6 +23,7 @@ const storeSchema = new mongoose.Schema(
       index: true,
     },
     name: { type: String, required: true, trim: true, maxlength: 200 },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", default: null, index: true },
     slug: { type: String, lowercase: true, trim: true, index: true },
     logo: { type: String, default: null },
     address: { type: addressSchema, default: () => ({}) },
@@ -33,6 +34,7 @@ const storeSchema = new mongoose.Schema(
     },
     meta: {
       ratings: { type: Number, default: 0 },
+      reviewsCount: { type: Number, default: 0 },
     },
   },
   {

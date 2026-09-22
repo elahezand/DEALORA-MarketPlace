@@ -8,7 +8,7 @@ export const useDeleteListing = () => {
     (data) => `/listings/${data.id}`,
     {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/listings/my"] });
+        queryClient.invalidateQueries({ queryKey: ["my-listings"] });
         toast.success("Listing deleted successfully!");
       },
       errorFallback: "Failed to delete listing.",

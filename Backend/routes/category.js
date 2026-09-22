@@ -1,7 +1,8 @@
 const express = require("express");
 const categoryRouter = express.Router();
 
-const controller = require("../controllers/category");
+const publicController = require("../controllers/public/category");
+const adminController = require("../controllers/admin/category");
 const cacheMiddleware = require("../middlewares/cache");
 
 const { authAdmin, authUser } = require("../middlewares/authMiddleware");
@@ -16,19 +17,19 @@ const {
 /*  PUBLIC  */
 categoryRouter.get(
     "/",
-    controller.get
+    publicController.get
 );
 
 categoryRouter.get(
     "/slug/:slug",
     cacheMiddleware(300),
-    controller.getBySlug
+    publicController.getBySlug
 );
 
 categoryRouter.get(
     "/:id",
     validateObjectIdParam("id"),
-    controller.getOne
+    publicController.getOne
 );
 
 /*  ADMIN  */
@@ -38,7 +39,7 @@ categoryRouter.post(
     authUser,
     authAdmin,
     validate(CategorySchema),
-    controller.post
+    adminController.post
 );
 
 categoryRouter.put(
@@ -47,7 +48,7 @@ categoryRouter.put(
     authAdmin,
     validateObjectIdParam("id"),
     validate(UpdateCategorySchema),
-    controller.put
+    adminController.put
 );
 
 categoryRouter.delete(
@@ -55,7 +56,7 @@ categoryRouter.delete(
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    controller.remove
+    adminController.remove
 );
 
 module.exports = categoryRouter;

@@ -17,6 +17,7 @@ export interface IStore {
     owner: string;
     name: string;
     slug?: string;
+    category?: string | { _id: string; title: string; slug: string } | null;
     logo?: string | null;
     address?: IStoreAddress;
     phone?: string | null;
@@ -48,10 +49,6 @@ export interface StoresResponse {
     pagination?: IPagination;
 }
 
-// Shape returned by GET /stores/slug/:slug — a single store plus a page of
-// its listings. The backend spreads `{ success, store, data, pagination }`
-// rather than nesting the store under `data`, since the endpoint naturally
-// returns two distinct entities (the store, and its paginated listings).
 export interface StoreDetailResponse {
     success: boolean;
     store: IStore;

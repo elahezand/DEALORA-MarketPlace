@@ -21,7 +21,7 @@ interface SupportClientProps {
 }
 
 export default function SupportClient({ initialData }: SupportClientProps) {
-  const [filter, setFilter] = useState<"all" | "pending" | "answered">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "answered">("pending");
   const [target, setTarget] = useState<ContactMessage | null>(null);
   const [answer, setAnswer] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);

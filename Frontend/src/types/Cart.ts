@@ -1,3 +1,8 @@
+/**
+ * One cart item as returned by GET /cart/me.
+ * The backend stores only product / variantId / offer / quantity; everything else
+ * (prices, store, variant name) is calculated with the CURRENT prices on every read.
+ */
 export interface CartItem {
   offer?: { _id: string; price?: number; discount?: number; stock?: number; shipsWithinDays?: number; store?: { _id: string; name?: string } | string; finalPrice?: number } | string | null;
   store?: string | null;
@@ -8,15 +13,12 @@ export interface CartItem {
     sku?: string | null;
   };
   quantity: number;
-  priceSnapshot: number;
-}
-
-export interface CartCoupon {
-  couponRef?: string | null;
-  code?: string;
-  discountType?: "fixed" | "percent";
-  discountValue?: number;
-  maxDiscount?: number;
+  /** unit price before discount (server snapshot) */
+  price: number;
+  /** percent 0-100 */
+  discount: number;
+  /** unit price the user pays */
+  finalPrice: number;
 }
 
 export interface CartPricing {
@@ -30,7 +32,11 @@ export interface ICart {
   _id: string;
   user: string;
   items: CartItem[];
-  coupon: CartCoupon | null;
+  /** applied coupon (the cart only stores a reference to it) */
+  coupon: { _id: string; code: string } | null;
+  shippingCost?: number;
+  /** items that were removed because they're no longer available (offer rejected, out of stock, ...) */
+  removedItems?: { reason: string; offerId?: string; productId?: string }[];
   pricing: CartPricing;
   status: "active" | "abandoned" | "converted";
   expiresAt?: string | null;

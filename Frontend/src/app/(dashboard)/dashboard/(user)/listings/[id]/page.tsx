@@ -8,7 +8,7 @@ export default async function EditListingPageWrapper({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-    const res = await useAuthServerData<ListingTypeResponse>(`/listings/${id}`);
+    const res = await useAuthServerData<ListingTypeResponse>(`/listings/${id}/preview`);
     const listing = res?.data ?? null;
   
 

@@ -1,6 +1,6 @@
 "use client";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
-import { AdminSecuritySection } from "./AdminSecuritySection";
+import { ActiveSessionsCard } from "@/app/(dashboard)/components/shared/settings/ActiveSessionsCard";
 import { SiteInfoSection } from "./SiteInfoSection";
 import { PersonalInfoForm } from "@/app/(dashboard)/components/shared/PersonalInfoForm";
 import { SiteInfo } from "@/services/Settings/useUpdateSiteInfo";
@@ -31,7 +31,7 @@ export default function AdminSettingsClient({
 
       <SiteInfoSection initialData={initialSiteInfo} />
 
-      <AdminSecuritySection />
+      <ActiveSessionsCard />
     </div>
   );
 }

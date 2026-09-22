@@ -28,11 +28,11 @@ const getSellerOrders = async (userId, query = {}) => {
     limit,
     cursor: query.cursor,
     filters,
-    sort: { createdAt: -1 },
     populate: [
       { path: "user", select: "username phone" },
       { path: "items.product", select: "title images" },
     ],
+    sort: { _id: -1 }
   });
 
   const data = result.data.map((order) => {

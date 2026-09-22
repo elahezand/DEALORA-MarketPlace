@@ -17,7 +17,7 @@ import { OrderStatus, PaymentStatus, AdminOrderResponse, IAdminOrderItem } from 
 import { useUpdateOrder } from "@/services/Order/useUpdateOrder";
 import { useAdminShipItem } from "@/services/Order/useAdminShipItem";
 import { getUrl } from "@/utils/helper";
-
+import { getOrderItemVariantLabel } from "@/utils/orderItem";
 
 const STATUS_OPTIONS: OrderStatus[] = [
   "created",
@@ -180,8 +180,8 @@ export default function TransactionDetail({
         </div>
         <div className="divide-y divide-[var(--border)]">
           {order.items?.map((item, idx) => {
-            const product = typeof item.product === "object" ? item.product : null;
-            const seller = typeof item.seller === "object" ? item.seller : null;
+            const sellerName = item.storeSnapshot.name;
+            const title = item.productSnapshot.title;
             const productId = typeof item.product === "object" ? item.product?._id : item.product;
             const isShipped = item.fulfillment?.status === "shipped";
 
@@ -192,28 +192,27 @@ export default function TransactionDetail({
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <EntityAvatar
-                    src={getUrl(product?.images?.[0])}
-                    alt={product?.title ?? "product"}
-                    fallback={(product?.title ?? "?").slice(0, 2).toUpperCase()}
+                    src={getUrl(item.productSnapshot.image)}
+                    alt={title}
+                    fallback={title.slice(0, 2).toUpperCase()}
                     shape="square"
                   />
                   <div className="min-w-0">
                     <Link
-                      href={`/listings/${productId}`}
+                      href={`/posts/${productId}`}
                       className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors truncate block"
                     >
-                      {product?.title || "View product"}
+                      {title}
                     </Link>
                     <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
                       Qty: {item.quantity}
-                      {item.selectedColor && ` · ${item.selectedColor}`}
-                      {item.selectedSize && ` · ${item.selectedSize}`}
+                      {getOrderItemVariantLabel(item) && ` · ${getOrderItemVariantLabel(item)}`}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1">
-                      {seller ? (
+                      {sellerName ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--foreground-muted)] bg-[var(--background-soft)] px-1.5 py-0.5 rounded">
                           <HiOutlineBuildingStorefront className="w-3 h-3" />
-                          {seller.name || "Store"}
+                          {sellerName}
                         </span>
                       ) : item.needsAdminShipment ? (
                         <span className="text-[10px] font-bold text-[var(--primary-500)] bg-[var(--primary-500)]/10 px-1.5 py-0.5 rounded">
@@ -241,7 +240,7 @@ export default function TransactionDetail({
 
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <p className="text-sm font-black text-[var(--foreground)]">
-                    ${(item.price * item.quantity).toLocaleString()}
+                    ${(item.finalPrice * item.quantity).toLocaleString()}
                   </p>
                   {!isShipped && item._id && item.needsAdminShipment && (
                     <button
@@ -417,7 +416,7 @@ export default function TransactionDetail({
           <p className="text-sm text-[var(--foreground)]">
             Confirm{" "}
             <span className="font-bold">
-              {typeof shipTarget?.product === "object" ? shipTarget.product.title : "this item"}
+              {shipTarget?.productSnapshot.title ?? "this item"}
             </span>{" "}
             has been handed off for delivery.
           </p>

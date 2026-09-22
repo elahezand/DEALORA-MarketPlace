@@ -5,9 +5,11 @@ const AppError = require("./AppError");
 const Offer = require("../models/offerSeller");
 const Listing = require("../models/listing");
 const logger = require("../utils/logger");
-
+const { round2, variantFinalPrice } = require("./pricing");
 
 const isValidId = mongoose.Types.ObjectId.isValid;
+
+/* ═══════════════════════════ PAGINATION ═══════════════════════════ */
 
 const paginate = async (
   Model,
@@ -28,29 +30,16 @@ const paginate = async (
   const query = { ...filters };
 
   if (cursor) {
-    query[sortKey] = sortOrder === 1
-      ? { $gt: cursor }
-      : { $lt: cursor };
+    query[sortKey] = sortOrder === 1 ? { $gt: cursor } : { $lt: cursor };
   }
 
-  let dbQuery = Model.find(query)
-    .sort(sort)
-    .limit(limit)
-    .lean();
+  let dbQuery = Model.find(query).sort(sort).limit(limit).lean();
 
-  if (populate) {
-    dbQuery = dbQuery.populate(populate);
-  }
-
-  if (select) {
-    dbQuery = dbQuery.select(select);
-  }
+  if (populate) dbQuery = dbQuery.populate(populate);
+  if (select) dbQuery = dbQuery.select(select);
 
   const data = await dbQuery;
-  const nextCursor =
-    data.length === limit
-      ? data[data.length - 1][sortKey]
-      : null;
+  const nextCursor = data.length === limit ? data[data.length - 1][sortKey] : null;
 
   return {
     data,
@@ -61,9 +50,26 @@ const paginate = async (
     },
   };
 };
+
 function escapeRegex(text) {
-  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  return String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
+
+/* Persian / Arabic text normalization for search:
+   ۰-۹ and ٠-٩ → 0-9, Arabic ي/ك → Persian ی/ک, remove diacritics. */
+function normalizeSearchText(str) {
+  return String(str)
+    .toLowerCase()
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[\u064B-\u065F]/g, "")
+    .trim();
+}
+
+/* ═══════════════════════════ LISTING FILTERS ═══════════════════════════ */
+
 async function buildListingFilters(query, { isAdmin = false } = {}) {
   const filters = {};
   const andConditions = [];
@@ -74,8 +80,9 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
   }
 
   const PUBLIC_STATUSES = ["accepted", "active"];
-  if (isAdmin && query.status) {
-    filters.status = query.status;
+  if (isAdmin) {
+    // admin: one status, or "all" / nothing = every status except deleted
+    filters.status = query.status && query.status !== "all" ? query.status : { $ne: "deleted" };
   } else if (query.status && PUBLIC_STATUSES.includes(query.status)) {
     filters.status = query.status;
   } else if (query.listingType === "user_ad") {
@@ -91,79 +98,65 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     });
   }
 
-  // 2. Photos Filter -- matches Listing.images: [String]
+  // 2. Photos Filter
   if (query.hasPhoto === "true") {
     filters["images.0"] = { $exists: true };
   }
 
-  // 3. SKU Filter -- matches Listing.variants[].sku
+  // 3. SKU Filter
   if (query.sku) {
-    filters["variants.sku"] = query.sku;
+    filters["variants.sku"] = String(query.sku);
   }
 
   // 4. Category Filter
   if (query.category) {
-    const categoryDoc = await Category.findOne({ slug: query.category })
-      .select("_id")
-      .lean();
-    if (categoryDoc) {
-      filters.categoryPath = categoryDoc._id;
-    } else {
-      // Unknown slug -> no results, rather than silently ignoring the filter.
-      filters.categoryPath = null;
-    }
+    const categoryDoc = await Category.findOne({ slug: query.category }).select("_id").lean();
+    filters.categoryPath = categoryDoc ? categoryDoc._id : null;
   } else if (query.categoryId && isValidId(query.categoryId)) {
     filters.categoryPath = new mongoose.Types.ObjectId(query.categoryId);
   }
 
-  // 5. Price Range Filter -- matches Listing.price: Number
+  // 5. Price Range Filter — on Listing.minPrice (user_ad = price, store_product = cheapest variant/offer)
   if (query.price) {
-    if (query.price.includes("-")) {
-      const [minStr, maxStr] = query.price.split("-");
+    const priceStr = String(query.price);
+    if (priceStr.includes("-")) {
+      const [minStr, maxStr] = priceStr.split("-");
       const min = minStr === "" ? undefined : Number(minStr);
       const max = maxStr === "" ? undefined : Number(maxStr);
 
       const priceFilter = {};
       if (min !== undefined && !isNaN(min)) priceFilter.$gte = min;
       if (max !== undefined && !isNaN(max)) priceFilter.$lte = max;
-      if (Object.keys(priceFilter).length > 0) filters.price = priceFilter;
+      if (Object.keys(priceFilter).length > 0) filters.minPrice = priceFilter;
     } else {
-      const p = Number(query.price);
-      if (!isNaN(p)) filters.price = p;
-    }
-  }
-  if (query.tags) {
-    const tagsArray = String(query.tags)
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    if (tagsArray.length > 0) {
-      filters.tags = { $in: tagsArray };
+      const p = Number(priceStr);
+      if (!isNaN(p)) filters.minPrice = p;
     }
   }
 
-  // 6. Condition Filter ("new" / "used")
+  // 6. Tags
+  if (query.tags) {
+    const tagsArray = String(query.tags).split(",").map((t) => t.trim()).filter(Boolean);
+    if (tagsArray.length > 0) filters.tags = { $in: tagsArray };
+  }
+
+  // 7. Condition ("new" / "used")
   if (query.condition && ["new", "used"].includes(query.condition)) {
     filters.condition = query.condition;
   }
-  // 7. Rating Filter
+
+  // 8. Rating
   if (query.rating && query.listingType !== "user_ad") {
     const minRating = Number(query.rating);
-    if (!isNaN(minRating)) {
-      filters["metrics.score"] = { $gte: minRating };
-    }
+    if (!isNaN(minRating)) filters["metrics.score"] = { $gte: minRating };
   }
 
-  // 8. Location Filters
+  // 9. Location
   if (query.state) {
     filters["location.state"] = { $regex: new RegExp(escapeRegex(query.state), "i") };
   }
-
   if (query.cities) {
-    const citiesArray = String(query.cities)
-      .split(",")
-      .map((c) => c.trim())
-      .filter(Boolean);
+    const citiesArray = String(query.cities).split(",").map((c) => c.trim()).filter(Boolean);
     if (citiesArray.length > 0) {
       filters["location.city"] = {
         $in: citiesArray.map((c) => new RegExp(`^${escapeRegex(c)}$`, "i")),
@@ -173,12 +166,12 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     filters["location.city"] = { $regex: new RegExp(escapeRegex(query.city), "i") };
   }
 
-  // 9. Variants attributes (color, size)
-  for (const [key, value] of Object.entries(query)) {
-    if (["color", "size"].includes(key)) {
-      filters[`variants.attributes.${key}`] = value;
-    }
+  // 10. Variant attributes (color, size)
+  for (const key of ["color", "size"]) {
+    if (query[key]) filters[`variants.attributes.${key}`] = String(query[key]);
   }
+
+  // 11. Specs (JSON)
   if (query.filter) {
     let parsedFilter;
     try {
@@ -186,252 +179,318 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
     } catch {
       throw new AppError(400, "Invalid 'filter' query parameter: must be valid JSON");
     }
-    for (const [key, value] of Object.entries(parsedFilter)) {
+    for (const [key, value] of Object.entries(parsedFilter || {})) {
+      if (!/^[\w\u0600-\u06FF -]+$/.test(key)) continue;
       filters[`specs.${key}`] = String(value);
     }
   }
-  // 10. Advanced Smart Search Query (q)
+
+  // 12. Text search (q)
   if (query.q) {
-    const normalizeText = (str) => {
-      return str
-        .toLowerCase()
-        .replace(/[0-9]/g, (d) => "0123456789".indexOf(d))
-        .replace(/[\u064B-\u065F]/g, "")
-        .trim();
-    };
+    const cleanQuery = normalizeSearchText(query.q).slice(0, 100);
+    if (cleanQuery) {
+      const compactQuery = cleanQuery.replace(/\s+/g, "");
+      const tokens = cleanQuery.split(/\s+/).filter(Boolean);
 
-    const cleanQuery = normalizeText(query.q);
-    const compactQuery = cleanQuery.replace(/\s+/g, "");
-    const tokens = cleanQuery.split(/\s+/).filter(Boolean);
-
-    const searchConditions = [];
-
-    searchConditions.push({ title: { $regex: new RegExp(escapeRegex(cleanQuery), "i") } });
-
-    if (compactQuery !== cleanQuery) {
-      searchConditions.push({ title: { $regex: new RegExp(escapeRegex(compactQuery), "i") } });
+      const searchConditions = [
+        { title: { $regex: new RegExp(escapeRegex(cleanQuery), "i") } },
+      ];
+      if (compactQuery !== cleanQuery) {
+        searchConditions.push({ title: { $regex: new RegExp(escapeRegex(compactQuery), "i") } });
+      }
+      if (tokens.length > 1) {
+        searchConditions.push({
+          $and: tokens.map((token) => ({ title: { $regex: new RegExp(escapeRegex(token), "i") } })),
+        });
+      }
+      andConditions.push({ $or: searchConditions });
     }
-
-    if (tokens.length > 1) {
-      const allTokensCondition = tokens.map((token) => ({
-        title: { $regex: new RegExp(escapeRegex(token), "i") },
-      }));
-      searchConditions.push({ $and: allTokensCondition });
-    }
-
-    andConditions.push({ $or: searchConditions });
   }
 
-  if (andConditions.length > 0) {
-    filters.$and = andConditions;
-  }
+  if (andConditions.length > 0) filters.$and = andConditions;
 
   return filters;
 }
 
-
+/* ═══════════════════════════ CART ═══════════════════════════ */
 const itemKey = (item) => {
   const offerId = item.offer || item.offerId || "";
   return `${String(offerId)}::${String(item.product || "")}::${String(item.variantId || "")}`;
 };
-const getVariantSnapshot = (listing, variantId) => {
+
+const findVariant = (listing, variantId) => {
   if (!variantId || !listing?.variants?.length) return null;
-
-  const variant = typeof listing.variants.id === "function"
+  return typeof listing.variants.id === "function"
     ? listing.variants.id(variantId)
-    : listing.variants.find((v) => String(v._id) === String(variantId));
+    : listing.variants.find((v) => String(v._id) === String(variantId)) || null;
+};
 
+const getVariantSnapshot = (listing, variantId) => {
+  const variant = findVariant(listing, variantId);
   if (!variant) return null;
   const attributes = variant.attributes instanceof Map
     ? Object.fromEntries(variant.attributes)
     : variant.attributes || null;
-
   return { attributes, sku: variant.sku };
 };
 
-const calculateCartTotals = async (items, couponDoc = null, shippingCost = 0) => {
+const productInfoOf = (listing) => ({
+  _id: listing._id,
+  title: listing.title,
+  slug: listing.slug,
+  images: listing.images || [],
+});
+
+const getCouponProblem = (couponDoc) => {
+  if (!couponDoc) return "Coupon not found";
+  const now = new Date();
+  if (!couponDoc.isActive) return "Coupon is inactive";
+  if (couponDoc.startsAt && couponDoc.startsAt > now) return "Coupon has not started yet";
+  if (couponDoc.expiresAt && couponDoc.expiresAt < now) return "Coupon has expired";
+  if (couponDoc.usageLimit != null && couponDoc.usedCount >= couponDoc.usageLimit) {
+    return "Coupon usage limit reached";
+  }
+  return null;
+};
+
+const calcCouponDiscount = (couponDoc, subtotal) => {
+  if (!couponDoc || getCouponProblem(couponDoc)) return 0;
+  let discount = 0;
+  if (couponDoc.type === "percent") {
+    discount = (subtotal * Number(couponDoc.amount || 0)) / 100;
+  } else if (couponDoc.type === "fixed") {
+    discount = Number(couponDoc.amount || 0);
+  }
+  if (couponDoc.maxDiscount) discount = Math.min(discount, Number(couponDoc.maxDiscount));
+  return round2(Math.min(discount, subtotal));
+};
+
+const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0) => {
   const normalizedItems = [];
+  const skippedItems = [];
   let subtotal = 0;
-  const skippedItems = []; 
 
-  const offerItems = items.filter((item) => item.offer || item.offerId);
-  const directItems = items.filter((item) => !(item.offer || item.offerId));
 
-  // ── 1) OFFER-BASED ITEMS (bought through a seller's accepted offer) ──
-  const offerIds = [...new Set(offerItems.map((item) => item.offer || item.offerId).filter(Boolean))];
+  const items = mergeCartItems([], rawItems || []);
 
-  const offers = await Offer.find({
-    _id: { $in: offerIds },
-  }).populate("listing", "_id title images variants");
+  const offerItems = items.filter((item) => item.offer);
+  const directItems = items.filter((item) => !item.offer);
 
-  const offerMap = new Map(offers.map((o) => [String(o._id), o]));
+  /*  SELLER OFFERS */
+  const offerIds = [...new Set(offerItems.map((i) => String(i.offer)))].filter(isValidId);
 
-  for (const item of offerItems) {
-    const offerId = item.offer || item.offerId;
-    const offer = offerMap.get(String(offerId));
+  const offers = offerIds.length
+    ? await Offer.find({ _id: { $in: offerIds } })
+      .populate("product", "_id title slug images variants listingType status")
+      .populate("store", "_id name")
+    : [];
 
-    if (!offer) {
-      skippedItems.push({ offerId, reason: "offer_not_found" });
-      continue;
+  offerItems.forEach((item) => {
+    const found = offers.find((o) => String(o._id) === String(item.offer));
+    if (!found) {
+      skippedItems.push({ offerId: item.offer, reason: "offer_not_found" });
     }
+  });
+
+  offers.forEach((offer) => {
+    const offerId = offer._id;
+    const item = offerItems.find((i) => String(i.offer) === String(offer._id));
+
     if (offer.status !== "accepted") {
       skippedItems.push({ offerId, reason: "offer_not_accepted", status: offer.status });
-      continue;
+      return;
+    }
+    if (!offer.product) {
+      skippedItems.push({ offerId, reason: "offer_missing_product_ref" });
+      return;
+    }
+    if (offer.product.status !== "active") {
+      skippedItems.push({ offerId, reason: "product_not_available", status: offer.product.status });
+      return;
     }
     if (!(offer.stock > 0)) {
       skippedItems.push({ offerId, reason: "offer_out_of_stock", stock: offer.stock });
-      continue;
+      return;
     }
     if (offer.stock < item.quantity) {
       skippedItems.push({ offerId, reason: "insufficient_stock", stock: offer.stock, requested: item.quantity });
-      continue;
-    }
-    if (!item.variantId) {
-      skippedItems.push({ offerId, reason: "missing_variant_id" });
-      continue;
-    }
-    if (!offer.listing) {
-      skippedItems.push({ offerId, reason: "offer_missing_product_ref" });
-      continue;
+      return;
     }
 
-    const price = offer.finalPrice;
-    subtotal += price * item.quantity;
+    const offerVariantId = offer.variantId ? String(offer.variantId) : null;
+    if (!offerVariantId) {
+      skippedItems.push({ offerId, reason: "offer_missing_variant" });
+      return;
+    }
+    if (item.variantId && String(item.variantId) !== offerVariantId) {
+      skippedItems.push({ offerId, reason: "variant_mismatch" });
+      return;
+    }
+    const variantSnapshot = getVariantSnapshot(offer.product, offerVariantId);
+    if (!variantSnapshot) {
+      skippedItems.push({ offerId, reason: "variant_not_found" });
+      return;
+    }
+
+    const finalPrice = offer.finalPrice;
+    subtotal += finalPrice * item.quantity;
+
+    const storeId = offer.store?._id || offer.store || null;
 
     normalizedItems.push({
+      product: offer.product._id,
+      variantId: offerVariantId,
       offer: offer._id,
-      store: offer.store,
-      product: offer.listing._id,
-      variantId: item.variantId,
-      variantSnapshot: getVariantSnapshot(offer.listing, item.variantId),
+      store: storeId,
       quantity: item.quantity,
-      priceSnapshot: price,
+      price: offer.price,
+      discount: offer.discount || 0,
+      finalPrice,
+      variantSnapshot,
+      listingType: offer.product.listingType || "store_product",
+      shipsWithinDays: offer.shipsWithinDays ?? 3,
+      productInfo: productInfoOf(offer.product),
+      offerInfo: {
+        _id: offer._id,
+        price: offer.price,
+        discount: offer.discount || 0,
+        finalPrice,
+        stock: offer.stock,
+        shipsWithinDays: offer.shipsWithinDays,
+        store: storeId ? { _id: storeId, name: offer.store?.name } : null,
+      },
     });
-  }
+  });
 
-  // ── 2) DIRECT ITEMS (no seller offer exists yet — buy at the listing's own price) ──
-  const directProductIds = [...new Set(directItems.map((item) => item.product).filter(Boolean))];
-  const listings = directProductIds.length
-    ? await Listing.find({ _id: { $in: directProductIds } })
-    : [];
-  const listingMap = new Map(listings.map((l) => [String(l._id), l]));
+  /* ── 2) BOUGHT FROM THE SITE (variant price) ── */
+  const productIds = [...new Set(directItems.map((i) => String(i.product || "")))].filter(isValidId);
+  const listings = productIds.length ? await Listing.find({ _id: { $in: productIds } }) : [];
 
-  for (const item of directItems) {
+  directItems.forEach((item) => {
     if (!item.product) {
       skippedItems.push({ reason: "missing_product_id" });
-      continue;
+      return;
     }
-
-    const listing = listingMap.get(String(item.product));
-    if (!listing) {
+    const found = listings.find((l) => String(l._id) === String(item.product));
+    if (!found) {
       skippedItems.push({ productId: item.product, reason: "product_not_found" });
-      continue;
     }
+  });
+
+  listings.forEach((listing) => {
+    const itemsOfListing = directItems.filter(
+      (i) => String(i.product) === String(listing._id)
+    );
+
     if (!["active", "accepted"].includes(listing.status)) {
-      skippedItems.push({ productId: item.product, reason: "product_not_available", status: listing.status });
-      continue;
+      itemsOfListing.forEach((item) => {
+        skippedItems.push({ productId: item.product, reason: "product_not_available", status: listing.status });
+      });
+      return;
     }
 
-    let price = listing.price;
+    itemsOfListing.forEach((item) => {
+      let price = listing.listingType === "user_ad" ? listing.price : null;
+      let discount = 0;
+      let finalPrice = price;
 
-    if (listing.variants && listing.variants.length > 0) {
-      if (!item.variantId) {
-        skippedItems.push({ productId: item.product, reason: "missing_variant_id" });
-        continue;
+      if (listing.listingType === "store_product") {
+        if (!item.variantId) {
+          skippedItems.push({ productId: item.product, reason: "missing_variant_id" });
+          return;
+        }
+        const variant = findVariant(listing, item.variantId);
+        if (!variant) {
+          skippedItems.push({ productId: item.product, reason: "variant_not_found" });
+          return;
+        }
+        if (!(variant.stock > 0)) {
+          skippedItems.push({ productId: item.product, reason: "variant_out_of_stock", stock: variant.stock });
+          return;
+        }
+        if (variant.stock < item.quantity) {
+          skippedItems.push({ productId: item.product, reason: "insufficient_stock", stock: variant.stock, requested: item.quantity });
+          return;
+        }
+
+        price = variant.price;
+        discount = variant.discount || 0;
+        finalPrice = variantFinalPrice(variant);
       }
 
-      const variant = typeof listing.variants.id === "function"
-        ? listing.variants.id(item.variantId)
-        : listing.variants.find((v) => String(v._id) === String(item.variantId));
-
-      if (!variant) {
-        skippedItems.push({ productId: item.product, reason: "variant_not_found" });
-        continue;
-      }
-      if (!(variant.stock > 0)) {
-        skippedItems.push({ productId: item.product, reason: "variant_out_of_stock", stock: variant.stock });
-        continue;
-      }
-      if (variant.stock < item.quantity) {
-        skippedItems.push({ productId: item.product, reason: "insufficient_stock", stock: variant.stock, requested: item.quantity });
-        continue;
+      if (typeof finalPrice !== "number" || typeof price !== "number") {
+        skippedItems.push({ productId: item.product, reason: "price_not_available" });
+        return;
       }
 
-      price = variant.price ?? listing.price;
-    }
+      subtotal += finalPrice * item.quantity;
 
-    subtotal += price * item.quantity;
-
-    normalizedItems.push({
-      offer: null,
-      store: null,
-      product: listing._id,
-      variantId: item.variantId,
-      variantSnapshot: getVariantSnapshot(listing, item.variantId),
-      quantity: item.quantity,
-      priceSnapshot: price,
+      normalizedItems.push({
+        product: listing._id,
+        variantId: item.variantId || null,
+        offer: null,
+        store: null,
+        quantity: item.quantity,
+        price,
+        discount,
+        finalPrice,
+        variantSnapshot: getVariantSnapshot(listing, item.variantId),
+        listingType: listing.listingType,
+        shipsWithinDays: 3,
+        productInfo: productInfoOf(listing),
+        offerInfo: null,
+      });
     });
-  }
+  });
+
   if (skippedItems.length > 0) {
     logger.warn("[cart] skipped items while calculating totals:", skippedItems);
   }
 
-  let discount = 0;
-  if (couponDoc) {
-    const now = new Date();
-    const isValid =
-      couponDoc.isActive &&
-      (!couponDoc.startsAt || couponDoc.startsAt <= now) &&
-      (!couponDoc.expiresAt || couponDoc.expiresAt >= now);
+  subtotal = round2(subtotal);
+  const couponDiscount = calcCouponDiscount(couponDoc, subtotal);
+  const shipping = round2(Number(shippingCost || 0));
 
-    if (isValid) {
-      if (couponDoc.type === "percent") {
-        discount = Math.floor((subtotal * Number(couponDoc.amount || 0)) / 100);
-      } else if (couponDoc.type === "fixed") {
-        discount = Number(couponDoc.amount || 0);
-      }
-      if (couponDoc.maxDiscount) {
-        discount = Math.min(discount, Number(couponDoc.maxDiscount));
-      }
-    }
-  }
-
-  discount = Math.min(discount, subtotal);
-  const finalTotal = subtotal - discount + Number(shippingCost || 0);
   return {
     items: normalizedItems,
     skippedItems,
     pricing: {
       subtotal,
-      discount,
-      shippingCost: Number(shippingCost || 0),
-      total: finalTotal,
+      discount: couponDiscount,
+      shippingCost: shipping,
+      total: round2(subtotal - couponDiscount + shipping),
     },
   };
 };
-
 const mergeCartItems = (currentItems, newItems) => {
-  const merged = [...currentItems];
+  const merged = currentItems.map((item) => ({ ...item }));
 
   for (const newItem of newItems) {
-    const existingIndex = merged.findIndex(
-      (item) => itemKey(item) === itemKey(newItem)
-    );
+    const normalized = {
+      product: newItem.product,
+      variantId: newItem.variantId || null,
+      offer: newItem.offer || newItem.offerId || null,
+      quantity: Math.max(Number(newItem.quantity) || 1, 1),
+    };
+    const existing = merged.find((item) => itemKey(item) === itemKey(normalized));
 
-    if (existingIndex > -1) {
-      merged[existingIndex].quantity += Number(newItem.quantity) || 1;
+    if (existing) {
+      existing.quantity = Number(existing.quantity) + normalized.quantity;
     } else {
-      merged.push({
-        offer: newItem.offer || newItem.offerId || null,
-        product: newItem.product,
-        variantId: newItem.variantId,
-        quantity: Number(newItem.quantity) || 1,
-        priceSnapshot: newItem.priceSnapshot || 0,
-      });
+      merged.push(normalized);
     }
   }
 
   return merged;
 };
 
-module.exports = { paginate, buildListingFilters, escapeRegex, mergeCartItems, calculateCartTotals, itemKey };
+module.exports = {
+  paginate,
+  buildListingFilters,
+  escapeRegex,
+  normalizeSearchText,
+  mergeCartItems,
+  calculateCartTotals,
+  itemKey,
+  getCouponProblem,
+};

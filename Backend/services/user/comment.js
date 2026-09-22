@@ -34,7 +34,7 @@ const create = async (userId, data) => {
   const order = await Order.findOne({
     user: userId,
     "items.product": listing,
-    paymentStatus: "paid",
+    $or: [{ paymentStatus: "paid" }, { status: "completed" }],
   })
     .sort({ createdAt: -1 })
     .lean();
@@ -43,22 +43,17 @@ const create = async (userId, data) => {
     throw new AppError(403, "You can only review products you have purchased and paid for");
   }
 
-  let store = null;
-  let verifiedPurchase = false;
   const matchingItem = order.items.find((it) => String(it.product) === String(listing));
-  if (matchingItem?.seller) {
-    store = matchingItem.seller;
-    verifiedPurchase = true;
-  }
+  const store = matchingItem?.store || null;
 
   try {
     return await Comment.create({
+      ...rest,
       user: userId,
       listing,
       store,
-      verifiedPurchase,
+      verifiedPurchase: true,
       parentId: null,
-      ...rest,
     });
   } catch (err) {
     if (err.code === 11000) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getUrl } from "@/utils/helper";
 import Link from "next/link";
 import {
   HiOutlineArrowLeft,
@@ -20,13 +21,6 @@ interface ConversationThreadProps {
   initialMessages?: IMessage[];
   initialPagination?: IPagination | null;
 }
-
-const getMediaUrl = (path?: string | null) => {
-  if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-  return `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
-};
 
 export default function ConversationThread({
   conversationId,
@@ -66,7 +60,7 @@ export default function ConversationThread({
   const otherParticipant = initialConversation?.participants?.find(
     (p) => p?._id !== user?._id
   );
-  const avatarUrl = getMediaUrl(otherParticipant?.profilePicture);
+  const avatarUrl = getUrl(otherParticipant?.profilePicture);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +102,7 @@ export default function ConversationThread({
           </h1>
           {initialConversation?.listing && (
             <Link
-              href={`/listings/${initialConversation.listing._id}`}
+              href={`/posts/${initialConversation.listing._id}`}
               className="text-xs text-[var(--foreground-muted)] hover:text-[var(--primary-500)] transition-colors flex items-center gap-1 truncate"
             >
               <HiOutlineTag className="w-3 h-3 flex-shrink-0" />

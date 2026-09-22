@@ -99,7 +99,7 @@ export default function CheckoutPage() {
                                     )}
                                     <span className="text-[var(--foreground-subtle)] text-xs"> x{item.quantity}</span>
                                 </span>
-                                <span className="font-semibold text-[var(--foreground)]">${(item.priceSnapshot * item.quantity).toFixed(2)}</span>
+                                <span className="font-semibold text-[var(--foreground)]">${(item.finalPrice * item.quantity).toFixed(2)}</span>
                             </div>
                             );
                         })}

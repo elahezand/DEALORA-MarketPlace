@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { OfferStatus, Offer, OffersResponse } from "@/types/Offer";
 import { getUrl } from "@/utils/helper";
+import { findVariant, getVariantLabel } from "@/utils/price";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { toast } from "sonner";
 
@@ -37,17 +38,16 @@ interface MyOffersPageProps {
 const ENDPOINT = "/offers/me"
 
 export default function OffersPage({ initialData }: MyOffersPageProps) {
-    const [status, setStatus] = useState<OfferStatus | "all">("all");
+    const [status, setStatus] = useState<OfferStatus | "all">("pending");
     const [editTarget, setEditTarget] = useState<Offer | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Offer | null>(null);
     const [priceInput, setPriceInput] = useState("");
     const [stockInput, setStockInput] = useState("");
+    const [discountInput, setDiscountInput] = useState("");
     const [descriptionInput, setDescriptionInput] = useState("");
     const [actioningId, setActioningId] = useState<string | null>(null);
 
     const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
-
-
 
     const {
         data,
@@ -59,13 +59,12 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
     } = useInfiniteGet<OffersResponse>(
         ENDPOINT,
         params,
-        { queryKey: ["/offers/me", status], initialData: status === "all" ? initialData : undefined }
+        { queryKey: ["offers-me", status], initialData: status === "all" ? initialData : undefined }
     );
 
     const offers: Offer[] = (
         data?.pages?.flatMap((page: OffersResponse) => page?.data ?? []) || []
     ).filter(Boolean);
-
 
     const { mutate: updateOffer, isPending: isSaving } = useUpdateOffer(() => {
         closeEdit();
@@ -76,6 +75,7 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
         setEditTarget(offer);
         setPriceInput(String(offer.price ?? ""));
         setStockInput(String(offer.stock ?? ""));
+        setDiscountInput(String(offer.discount ?? 0));
         setDescriptionInput("");
     }
 
@@ -83,6 +83,7 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
         setEditTarget(null);
         setPriceInput("");
         setStockInput("");
+        setDiscountInput("");
         setDescriptionInput("");
     }
 
@@ -92,14 +93,20 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
 
         const price = priceInput.trim() ? Number(priceInput) : undefined;
         const stock = stockInput.trim() ? Number(stockInput) : undefined;
+        const discount = discountInput.trim() ? Number(discountInput) : undefined;
         const description = descriptionInput.trim() || undefined;
 
-        if (price === undefined && stock === undefined && description === undefined) {
+        if (discount !== undefined && (Number.isNaN(discount) || discount < 0 || discount > 100)) {
+            toast.error("Discount must be between 0 and 100");
+            return;
+        }
+
+        if (price === undefined && stock === undefined && discount === undefined && description === undefined) {
             toast.error("Change at least one field before saving");
             return;
         }
 
-        updateOffer({ offerId: editTarget._id, price, stock, description });
+        updateOffer({ offerId: editTarget._id, price, stock, discount, description });
     }
 
     function confirmDelete() {
@@ -156,6 +163,7 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
                     <tr>
                         <Th>Product</Th>
                         <Th>Price</Th>
+                        <Th>Discount</Th>
                         <Th>Stock</Th>
                         <Th>Status</Th>
                         <Th align="right">Actions</Th>
@@ -163,7 +171,7 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
                 </thead>
                 <tbody>
                     {offers.map((o) => {
-                        const product = typeof o.listing === "object" ? o.listing : null;
+                        const product = typeof o.productId === "object" ? o.productId : null;
                         const busy = actioningId === o._id;
                         const src = getUrl(product?.images?.[0])
                         return (
@@ -176,13 +184,26 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
                                             fallback={(product?.title ?? "?").slice(0, 2).toUpperCase()}
                                             shape="square"
                                         />
-                                        <p className="font-bold text-sm text-[var(--foreground)] truncate max-w-[220px]">
-                                            {product?.title || "—"}
-                                        </p>
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-sm text-[var(--foreground)] truncate max-w-[220px]">
+                                                {product?.title || "—"}
+                                            </p>
+                                            <p className="text-xs text-[var(--foreground-muted)] truncate max-w-[220px]">
+                                                {getVariantLabel(findVariant(o.productId, o.variantId)) || "—"}
+                                            </p>
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-sm font-bold text-[var(--foreground)]">
-                                    ${o.price?.toLocaleString() ?? 0}
+                                    {!!o.discount && o.discount > 0 && (
+                                        <span className="block text-xs font-medium text-[var(--foreground-subtle)] line-through">
+                                            ${o.price?.toLocaleString() ?? 0}
+                                        </span>
+                                    )}
+                                    ${o.finalPrice.toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
+                                    {o.discount ? `${o.discount}%` : "—"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">{o.stock}</td>
                                 <td className="px-6 py-4">
@@ -282,6 +303,24 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
                             />
                         </FormField>
                     </div>
+                    <FormField label="Discount % (0-100)">
+                        <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            className={inputClass}
+                            value={discountInput}
+                            onChange={(e) => setDiscountInput(e.target.value)}
+                        />
+                    </FormField>
+                    {priceInput && (
+                        <p className="text-xs text-[var(--foreground-muted)]">
+                            Final price after discount:{" "}
+                            <span className="font-bold text-[var(--foreground)]">
+                                ${(Number(priceInput) - (Number(priceInput) * (Number(discountInput) || 0)) / 100).toLocaleString()}
+                            </span>
+                        </p>
+                    )}
                     <FormField label="Note (optional)">
                         <textarea
                             className={textareaClass}
@@ -325,8 +364,8 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
             >
                 <p className="text-sm text-[var(--foreground)]">
                     Are you sure you want to delete this offer
-                    {deleteTarget && typeof deleteTarget.listing === "object"
-                        ? ` on "${deleteTarget.listing?.title}"`
+                    {deleteTarget && typeof deleteTarget.productId === "object"
+                        ? ` on "${deleteTarget.productId?.title}"`
                         : ""}
                     ? This can't be undone.
                 </p>

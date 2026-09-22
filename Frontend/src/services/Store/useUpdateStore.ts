@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { IStore } from "@/types/Store";
 
 export type UpdateStorePayload = Partial<
-  Pick<IStore, "name" | "phone" | "logo" | "address">
+  Pick<IStore, "name" | "phone" | "logo" | "address" | "category">
 > & { id: string };
 
 export const useUpdateStore = (onSuccessCallback?: () => void) => {

@@ -3,10 +3,11 @@ import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
 import { Offer } from "@/types/Offer";
 
-const ENDPOINT = "/offers";
+const ENDPOINT = "/offers/me";
 
 export interface CreateOfferPayload {
-  listingId: string;
+  productId: string;
+  variantId: string;
   price: number;
   stock: number;
   discount?: number;
@@ -23,7 +24,7 @@ export const useCreateOffer = (onSuccessCallback?: () => void) => {
   >(ENDPOINT, {
     onSuccess: () => {
       toast.success("Offer submitted for review");
-      queryClient.invalidateQueries({ queryKey: ["/offers/me"] });
+      queryClient.invalidateQueries({ queryKey: ["offers-me"] });
       onSuccessCallback?.();
     },
     errorFallback: "Failed to create offer",

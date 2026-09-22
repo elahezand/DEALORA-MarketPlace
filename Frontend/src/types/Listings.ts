@@ -1,8 +1,9 @@
 import { IPagination } from "./common";
 import { Offer } from "./Offer";
-import { CommentItemType } from "./CommetTypes";
+import { getListingPrice } from "@/utils/price";
 
-export type ListingStatus = "pending" | "accepted" | "rejected" ;
+export type ListingStatus = "pending" | "accepted" | "rejected" | "deleted" | "active" | "inactive" | "draft";
+
 
 export interface CategoryPathItem {
   _id: string;
@@ -14,7 +15,9 @@ export interface ListingVariant {
   _id: string;
   attributes: Record<string, string>;
   sku: string;
-  price?: number;
+  price: number;
+  discount: number;
+  finalPrice: number;
   stock: number;
 }
 
@@ -35,10 +38,9 @@ export interface ListingProps {
 
   specs?: Record<string, string>;
   tags?: string[];
-
-  price: number;
+  price?: number;
+  minPrice?: number | null;
   condition: "new" | "used";
-
   status: "pending" | "accepted" | "rejected" | "deleted" | "active" | "inactive" | "draft";
 
   shipping: {
@@ -69,10 +71,7 @@ export interface ListingProps {
 export interface ListingTypeResponse {
   success: boolean;
   data: ListingProps;
-  comments?: {
-    data: CommentItemType[];
-    pagination?: IPagination;
-  };
+  preview?: boolean;
 }
 
 // Shape returned by GET /listings (public browse)
@@ -131,7 +130,7 @@ export const convertToSmartSearchItems = (posts: ListingProps[]): SmartSearchIte
       searchableText: parts.join(" "),
       route: `/listings/${post._id}`,
       metadata: {
-        price: post.price,
+        price: getListingPrice(post),
         categoryPath: post.categoryPath.map((c) => c.title),
         condition: post.condition,
         status: post.status,

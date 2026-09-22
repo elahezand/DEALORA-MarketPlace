@@ -8,6 +8,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
 import Link from "next/link";
 import { ListingProps } from "@/types/Listings";
+import { getListingPrice } from "@/utils/price";
 
 import "swiper/css";
 import "swiper/css/effect-fade";
@@ -127,7 +128,7 @@ export default function DetailSearchModal({
 
           <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
             <div className="flex items-baseline gap-0.5 text-[var(--foreground)] font-bold">
-              <span className="text-2xl tracking-tight">{post.price}</span>
+              <span className="text-2xl tracking-tight">{getListingPrice(post).toLocaleString()}</span>
               <span className="text-sm font-semibold text-[var(--foreground-muted)] ml-1">USD</span>
             </div>
 

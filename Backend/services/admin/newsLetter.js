@@ -9,6 +9,7 @@ async function getAll(searchParams) {
   return await paginate(Newsletter, {
     limit: params.limit,
     cursor: params.cursor,
+    sort: { _id: -1 }
   });
 }
 

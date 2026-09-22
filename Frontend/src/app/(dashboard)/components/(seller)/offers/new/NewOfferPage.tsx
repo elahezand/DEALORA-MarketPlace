@@ -10,15 +10,21 @@ import { EntityAvatar } from "../../../shared/table/TableParts";
 import { FormField, inputClass, textareaClass } from "../../../(admin)/shared/AdminFormModal";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { useCreateOffer } from "@/services/Offer/useCreateOffer ";
-import { ListingProps, PublicListingsResponse } from "@/types/Listings";
+import { ListingProps, ListingVariant, PublicListingsResponse } from "@/types/Listings";
 import { getUrl } from "@/utils/helper";
+import { getListingPrice, getVariantFinalPrice, getVariantLabel } from "@/utils/price";
 import { toast } from "sonner";
 
-interface NewOfferPageProps {
-  initialData?: InfiniteData<PublicListingsResponse>;
+/** GET /offers/products — only active products in the seller's store category */
+export interface OfferableProductsResponse extends PublicListingsResponse {
+  needsCategory?: boolean;
 }
 
-const LISTINGS_ENDPOINT = "/listings";
+interface NewOfferPageProps {
+  initialData?: InfiniteData<OfferableProductsResponse>;
+}
+
+const LISTINGS_ENDPOINT = "/offers/products";
 
 export default function NewOfferPage({ initialData }: NewOfferPageProps) {
   const router = useRouter();
@@ -26,6 +32,14 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedListing, setSelectedListing] = useState<ListingProps | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<string>("");
+
+  const pickListing = (listing: ListingProps | null) => {
+    setSelectedListing(listing);
+    setSelectedVariantId(listing?.variants?.length === 1 ? listing.variants[0]._id : "");
+  };
+
+  const selectedVariant = selectedListing?.variants?.find((v: ListingVariant) => v._id === selectedVariantId) || null;
 
   const [priceInput, setPriceInput] = useState("");
   const [stockInput, setStockInput] = useState("");
@@ -46,9 +60,9 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
     hasNextPage,
     isFetchingNextPage,
     isLoading: isSearching,
-  } = useInfiniteGet<PublicListingsResponse>(
+  } = useInfiniteGet<OfferableProductsResponse>(
     LISTINGS_ENDPOINT,
-    { q: isSearchMode ? debouncedSearch : undefined, listingType: "store_product", status: "active", limit: 8 },
+    { q: isSearchMode ? debouncedSearch : undefined, limit: 8 },
     {
       queryKey: [LISTINGS_ENDPOINT, "offer-picker", isSearchMode ? debouncedSearch : "default"],
       initialData: !isSearchMode ? initialData : undefined,
@@ -57,11 +71,12 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
   );
 
   const listings: ListingProps[] = (
-    listingsData?.pages?.flatMap((page: PublicListingsResponse) => page?.data ?? []) || []
+    listingsData?.pages?.flatMap((page: OfferableProductsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
+  const needsCategory = listingsData?.pages?.[0]?.needsCategory === true;
   const { mutate: createOffer, isPending } = useCreateOffer(() => {
-    router.push("/dashboard/seller/offers");
+    router.replace("/dashboard/seller/offers");
   });
 
   function submit(e: React.FormEvent) {
@@ -69,6 +84,10 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
 
     if (!selectedListing) {
       toast.error("Pick a product to make an offer on");
+      return;
+    }
+    if (!selectedVariantId) {
+      toast.error("Pick which variant you are selling");
       return;
     }
 
@@ -103,7 +122,8 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
     }
 
     createOffer({
-      listingId: selectedListing._id,
+      productId: selectedListing._id,
+      variantId: selectedVariantId,
       price,
       stock,
       discount,
@@ -152,20 +172,28 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
                     {selectedListing.title}
                   </p>
                   <p className="text-xs text-[var(--foreground-muted)]">
-                    Listing price: ${selectedListing.price?.toLocaleString() ?? 0}
+                    Lowest current price: ${getListingPrice(selectedListing).toLocaleString()}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedListing(null);
+                  pickListing(null);
                   setSearchInput("");
                 }}
                 className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors flex-shrink-0"
               >
                 Change
               </button>
+            </div>
+          ) : needsCategory ? (
+            <div className="rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-500/10 px-4 py-4 text-sm text-amber-700 dark:text-amber-300 flex flex-col gap-2">
+              <p className="font-bold">Your store has no category yet</p>
+              <p>You can only make offers on products in your store&apos;s category. Choose one first.</p>
+              <Link href="/dashboard/seller/settings" className="font-bold underline w-fit">
+                Set store category
+              </Link>
             </div>
           ) : (
             <>
@@ -192,7 +220,7 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
                   )}
                   {!(isSearchMode && isSearching) && listings.length === 0 && (
                     <p className="text-xs text-[var(--foreground-muted)] px-4 py-3">
-                      No matching products found
+                      {isSearchMode ? "No matching products in your store's category" : "No products in your store's category yet"}
                     </p>
                   )}
                   {!(isSearchMode && isSearching) &&
@@ -200,7 +228,7 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
                       <button
                         key={listing._id}
                         type="button"
-                        onClick={() => setSelectedListing(listing)}
+                        onClick={() => pickListing(listing)}
                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--background-soft)] transition-colors text-left"
                       >
                         <EntityAvatar
@@ -214,7 +242,7 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
                             {listing.title}
                           </p>
                           <p className="text-xs text-[var(--foreground-muted)]">
-                            ${listing.price?.toLocaleString() ?? 0}
+                            From ${getListingPrice(listing).toLocaleString()}
                           </p>
                         </div>
                       </button>
@@ -238,10 +266,44 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
           )}
         </div>
 
-        {/* STEP 2 — Offer details */}
+        {/* STEP 2 — Pick a variant */}
+        {selectedListing && (
+          <div className="card rounded-2xl border border-[var(--border)] bg-[var(--card-solid)] p-5 flex flex-col gap-3">
+            <p className="text-xs font-bold text-[var(--foreground)] uppercase tracking-wider">
+              2. Choose a variant
+            </p>
+            {(selectedListing.variants?.length ?? 0) === 0 ? (
+              <p className="text-xs text-[var(--foreground-muted)]">This product has no variants yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {selectedListing.variants!.map((v: ListingVariant) => {
+                  const isSelected = v._id === selectedVariantId;
+                  return (
+                    <button
+                      key={v._id}
+                      type="button"
+                      onClick={() => setSelectedVariantId(v._id)}
+                      className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-all duration-200 text-left ${isSelected
+                        ? "border-[var(--primary-500)] bg-[var(--primary-500)]/10 text-[var(--primary-600)]"
+                        : "border-[var(--border)] hover:bg-[var(--background-soft)] text-[var(--foreground)]"
+                        }`}
+                    >
+                      <span className="block">{getVariantLabel(v) || "Default"}</span>
+                      <span className="block text-[11px] font-medium text-[var(--foreground-muted)]">
+                        Site price: ${getVariantFinalPrice(v).toLocaleString()}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STEP 3 — Offer details */}
         <div className="card rounded-2xl border border-[var(--border)] bg-[var(--card-solid)] p-5 flex flex-col gap-4">
           <p className="text-xs font-bold text-[var(--foreground)] uppercase tracking-wider">
-            2. Your offer
+            3. Your offer{selectedVariant ? ` — ${getVariantLabel(selectedVariant)}` : ""}
           </p>
 
           <div className="grid grid-cols-3 gap-3">
@@ -325,6 +387,7 @@ export default function NewOfferPage({ initialData }: NewOfferPageProps) {
 
           <p className="text-xs text-[var(--foreground-muted)]">
             Your offer will be reviewed by an admin before it appears live on the product page.
+            Each offer is for one variant — to sell another variant (e.g. 256GB), submit a separate offer for it.
             If other sellers also offer this product, the lowest approved price is shown as the product&apos;s price — yours will still be listed as an available seller.
           </p>
         </div>

@@ -48,7 +48,7 @@ export default function Store({isOpen}:any) {
                     </Link>
                 ) : (
                     <Link
-                        href="/my-store"
+                        href="/dashboard/seller/my-store"
                         className="w-11 h-11 rounded-xl overflow-hidden bg-[var(--background-soft)] border border-[var(--border-strong)] flex items-center justify-center flex-shrink-0 group relative"
                     >
                         {store.logo ? (

@@ -1,6 +1,6 @@
 const AppError = require("../../utils/AppError");
 
-const OFFER_STATUSES = ["pending", "accepted", "rejected"];
+const OFFER_STATUSES = ["pending", "accepted", "rejected", "all"];
 
 const assertOfferableVariant = (product, variantId) => {
   if (!product || product.status === "deleted") {

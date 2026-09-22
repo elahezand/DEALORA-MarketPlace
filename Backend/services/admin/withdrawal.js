@@ -13,6 +13,7 @@ const getAllWithdrawals = async (query = {}) => {
     cursor: query.cursor,
     filters,
     populate: [{ path: "store", select: "name owner" }],
+    sort: { _id: -1 }
   });
 };
 

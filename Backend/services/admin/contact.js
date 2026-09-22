@@ -1,12 +1,16 @@
 const Contact = require("../../models/contact");
 const sendEmail = require("../../utils/sendEmail");
-const {paginate} = require("../../utils/helper");
+const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 
 async function getContacts(query = {}) {
   const limit = Math.min(Number(query.limit) || 15, 100);
 
-  return paginate(Contact, { limit, cursor: query.cursor });
+  return paginate(Contact, {
+    limit,
+    cursor: query.cursor,
+    sort: { _id: -1 }
+  });
 }
 
 async function getContactById(id) {
@@ -38,7 +42,7 @@ async function answerContact(id, adminId, content) {
       contact.email,
       `Dear ${contact.name}`,
       `<p>${content}</p>`
-    ).catch(() => {});
+    ).catch(() => { });
   });
 
   return contact;

@@ -31,7 +31,6 @@ const MIN_WITHDRAWAL = 1000;
 
 const STATUS_TABS: { value: WithdrawalStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
   { value: "processing", label: "Processing" },
   { value: "completed", label: "Completed" },
   { value: "rejected", label: "Rejected" },
@@ -54,7 +53,7 @@ interface WithdrawalsPageProps {
 const ENDPOINT = "/withdrawals/mine";
 
 export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
-  const [status, setStatus] = useState<WithdrawalStatus | "all">("all");
+  const [status, setStatus] = useState<WithdrawalStatus | "all">("processing");
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [amountInput, setAmountInput] = useState("");
   const [ibanInput, setIbanInput] = useState("");

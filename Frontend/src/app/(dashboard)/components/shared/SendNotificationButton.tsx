@@ -38,12 +38,6 @@ export default function SendNotificationButton() {
 
         if (!targetAdmin || !msg.trim()) return;
 
-        console.log({
-            admin: targetAdmin,
-            msg: msg.trim(),
-        });
-
-
         send({
             user: targetAdmin,
             msg: msg.trim(),

@@ -15,8 +15,8 @@ const getAllArticlesAdmin = async (query = {}) => {
     limit,
     cursor: query.cursor,
     filters,
-    sort: { createdAt: -1 },
     populate: { path: "category", select: "title slug" },
+    sort: { createdAt: -1 },
   });
 };
 

@@ -21,9 +21,9 @@ const getPublicArticles = async (query = {}) => {
     limit,
     cursor: query.cursor,
     filters,
-    sort: { createdAt: -1 },
     populate: { path: "category", select: "title slug" },
     select: "-content",
+    sort: { _id: -1 }
   });
 };
 

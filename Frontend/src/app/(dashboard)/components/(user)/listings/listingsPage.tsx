@@ -16,6 +16,7 @@ import { useDeleteListing } from "@/services/Listings/useDeleteListing";
 import { InfiniteData } from "@tanstack/react-query";
 import { ListingStatus } from "@/types/Listings";
 import MyListingsResponse from "@/types/Listings";
+import { getListingPrice } from "@/utils/price";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
@@ -58,8 +59,8 @@ export default function ListingsPage({
     "/listings/my",
     params,
     {
-      queryKey: ["/listings/my", status],
-      initialData: status === "pending" ? initialData : undefined
+      queryKey: ["my-listings", status],
+      initialData: status === "all" ? initialData : undefined
     }
 
   );
@@ -182,7 +183,7 @@ export default function ListingsPage({
 
                 {/* Price */}
                 <td className="px-6 py-4 text-sm font-bold text-[var(--foreground)]">
-                  ${listing.price?.toLocaleString()}
+                  ${getListingPrice(listing).toLocaleString()}
                 </td>
 
                 {/* Status */}

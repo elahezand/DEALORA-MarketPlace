@@ -33,8 +33,6 @@ const createListing = async (req, res, next) => {
 
 const updateListing = async (req, res, next) => {
   try {
-    console.log(req.files);
-    
     const { listing, needsReview } = await userListingService.updateListing(
       req.params.id,
       req.user,

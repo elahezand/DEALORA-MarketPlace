@@ -1,8 +1,20 @@
 const { z } = require("zod");
 
+const objectIdString = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid id");
+
+const STORE_PRODUCT_STATUSES = ["draft", "active", "inactive"];
+
+const shippingSchema = z.object({
+  type: z.enum(["standard", "express", "free"]).default("standard"),
+  cost: z.coerce.number().nonnegative().default(0),
+});
+
 // VARIANT
 
 const variantSchema = z.object({
+  // kept when editing, so carts and seller offers still point to the same variant
+  _id: objectIdString.optional(),
+
   attributes: z.record(z.string(), z.string()),
 
   sku: z
@@ -13,8 +25,15 @@ const variantSchema = z.object({
   price: z
     .coerce
     .number()
-    .min(0)
-    .optional(),
+    .min(0, "Variant price must be >= 0"),
+
+  // Percent (0-100). finalPrice is NOT accepted — the server computes it.
+  discount: z
+    .coerce
+    .number()
+    .min(0, "Discount must be >= 0")
+    .max(100, "Discount must be <= 100")
+    .default(0),
 
   stock: z
     .coerce
@@ -63,11 +82,6 @@ const baseListingSchema = z.object({
     )
     .min(1, "Category path is required"),
 
-  price: z
-    .coerce
-    .number()
-    .min(0, "Price must be >= 0"),
-
   condition: z
     .enum(["new", "used"])
     .default("new"),
@@ -90,6 +104,12 @@ const createListingSchema = z.discriminatedUnion(
 
     baseListingSchema.extend({
       listingType: z.literal("user_ad"),
+
+      // Listing-level price exists ONLY for user ads
+      price: z
+        .coerce
+        .number()
+        .min(0, "Price must be >= 0"),
 
       location: z.object({
         state: z
@@ -127,6 +147,10 @@ const createListingSchema = z.discriminatedUnion(
     baseListingSchema.extend({
       listingType: z.literal("store_product"),
 
+      status: z.enum(STORE_PRODUCT_STATUSES).optional(),
+
+      shipping: shippingSchema.optional(),
+
       variants: z
         .array(variantSchema)
         .min(
@@ -146,6 +170,13 @@ const updateListingSchema = baseListingSchema
       "user_ad",
       "store_product",
     ]),
+
+    // Only meaningful for user_ad — ignored by the service for store products
+    price: z
+      .coerce
+      .number()
+      .min(0, "Price must be >= 0")
+      .optional(),
 
     location: z
       .object({
@@ -181,6 +212,8 @@ const updateListingSchema = baseListingSchema
     variants: z
       .array(variantSchema)
       .optional(),
+
+    status: z.enum(STORE_PRODUCT_STATUSES).optional(),
   });
 
 // UPDATE STATUS

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const { nanoid } = require("nanoid");
 const notifyUser = require("../utils/notify");
+const { calcFinalPrice, computeMinPrice, getOfferFinalPrices } = require("../utils/pricing");
 
 const LocationSchema = new Schema(
   {
@@ -16,16 +17,17 @@ const VariantSchema = new Schema(
     attributes: {
       type: Map,
       of: String,
-      required: [true, "Variant attributes are required"]
+      required: [true, "Variant attributes are required"],
     },
     sku: { type: String, required: true, trim: true },
-    price: { type: Number, min: 0 },
-    stock: { type: Number, default: 0, min: 0 }
+    price: { type: Number, required: [true, "Variant price is required"], min: 0 },
+    discount: { type: Number, default: 0, min: 0, max: 100 },
+    finalPrice: { type: Number, min: 0 },
+    stock: { type: Number, default: 0, min: 0 },
   },
   { _id: true }
 );
 
-/* MAIN UNIFIED SCHEMA */
 const UnifiedListingSchema = new Schema(
   {
     listingType: {
@@ -39,14 +41,19 @@ const UnifiedListingSchema = new Schema(
     images: {
       type: [String],
       default: [],
-      validate: [v => Array.isArray(v) && v.length <= 10, "Maximum 10 images allowed"]
+      validate: [(v) => Array.isArray(v) && v.length <= 10, "Maximum 10 images allowed"],
     },
     categoryPath: {
       type: [Schema.Types.ObjectId],
       ref: "Category",
       default: [],
     },
-    price: { type: Number, required: true, min: 0 },
+    price: {
+      type: Number,
+      min: 0,
+      required: function () { return this.listingType === "user_ad"; },
+    },
+    minPrice: { type: Number, min: 0, default: null },
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -72,13 +79,22 @@ const UnifiedListingSchema = new Schema(
     variants: {
       type: [VariantSchema],
       required: function () { return this.listingType === "store_product"; },
-      validate: {
-        validator: function (v) {
-          if (this.listingType === "store_product") return v && v.length > 0;
-          return true;
+      validate: [
+        {
+          validator: function (v) {
+            if (this.listingType === "store_product") return v && v.length > 0;
+            return true;
+          },
+          message: "Store products must have at least one variant.",
         },
-        message: "Store products must have at least one variant."
-      }
+        {
+          validator: function (v) {
+            const skus = (v || []).map((x) => String(x.sku || "").toLowerCase());
+            return new Set(skus).size === skus.length;
+          },
+          message: "Variant SKUs must be unique within a product.",
+        },
+      ],
     },
     shortIdentifier: { type: String, unique: true, sparse: true },
     tags: { type: [String], default: [] },
@@ -109,15 +125,28 @@ const UnifiedListingSchema = new Schema(
 UnifiedListingSchema.virtual("offers", {
   ref: "OfferSeller",
   localField: "_id",
-  foreignField: "listing",
+  foreignField: "product",                                   
 });
 
-/* === MIDDLEWARES / HOOKS === */
+/* === HOOKS === */
+UnifiedListingSchema.pre("validate", async function () {
+  if (this.listingType === "store_product") {
+    this.price = undefined;
+    for (const v of this.variants || []) {
+      v.finalPrice = calcFinalPrice(v.price, v.discount);
+    }
+    const offerPrices = this.isNew ? [] : await getOfferFinalPrices(this._id);
+    this.minPrice = computeMinPrice(this, offerPrices);
+  } else {
+    this.variants = [];                                    
+    this.minPrice = computeMinPrice(this);
+  }
+});
+
 UnifiedListingSchema.pre("save", async function () {
   if (!this.shortIdentifier) {
     this.shortIdentifier = nanoid(8);
   }
-
   if (this.isModified("title") && this.title) {
     const cleanTitle = this.title
       .toLowerCase()
@@ -128,20 +157,18 @@ UnifiedListingSchema.pre("save", async function () {
   }
 });
 
-/* === SENIOR INDEXING STRATEGY === */
-UnifiedListingSchema.index({ listingType: 1, status: 1, categoryPath: 1, price: 1 });
-UnifiedListingSchema.index({ status: 1, "location.city": 1, "location.neighborhood": 1 });
-UnifiedListingSchema.index({ user: 1, status: 1 });
+/* === INDEXES === */
+UnifiedListingSchema.index({ listingType: 1, status: 1, categoryPath: 1, minPrice: 1 });
+UnifiedListingSchema.index({ status: 1, "location.state": 1, "location.city": 1 });
+UnifiedListingSchema.index({ owner: 1, status: 1 });                             
 UnifiedListingSchema.index({ "variants.sku": 1 }, { sparse: true });
 UnifiedListingSchema.index({ tags: 1 });
-
-// Full-Text Index ba vazn-dehi baraye search-e herfeyitar
 UnifiedListingSchema.index(
   { title: "text", description: "text" },
   { weights: { title: 10, description: 2 }, name: "ListingTextIndex" }
 );
 
-// Notify the owner when THEIR user_ad listing is actually accepted/rejected
+/* === NOTIFICATIONS === */
 UnifiedListingSchema.pre("findOneAndUpdate", async function () {
   const doc = await this.model.findOne(this.getQuery()).select("status owner").lean();
   this._prevStatus = doc?.status;

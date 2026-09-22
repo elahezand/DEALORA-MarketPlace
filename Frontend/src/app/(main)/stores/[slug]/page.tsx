@@ -16,13 +16,13 @@ export default async function StoreDetailPage({
     `/stores/slug/${slug}`,
     `store-${slug}`,
     60
-  );  
+  );    
   const store = result?.store;
-
   if (!store) {
     notFound();
   }
 
+  
   const initialData = result?.data || [];
   const initialPagination = result?.pagination || null;
 

@@ -104,7 +104,8 @@ export default function Header() {
     startTransition(() => {
       void (async () => {
         try {
-          await api.post("/auth/logout", {}, { withCredentials: true });
+          // skipRefresh: logout works with the refresh cookie alone, no need to refresh first
+          await api.post("/auth/logout", {}, { withCredentials: true, skipRefresh: true });
           queryClient.setQueryData(["/auth/me", undefined], null);
 
           toast.success("Logged out successfully");
@@ -253,7 +254,7 @@ export default function Header() {
                 <DropdownItem
                   key="Shop"
                   textValue="Shop"
-                  onPress={() => router.push("/my-store")}
+                  onPress={() => router.push("/create-shop")}
                   className="rounded-xl text-sm font-medium px-3 text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
                 >
                   Create Shop

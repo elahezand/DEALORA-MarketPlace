@@ -8,7 +8,11 @@ export default interface FavoritesTypeResponse {
         _id: string;
         title: string;
         slug?: string;
-        price: number;
+        listingType?: "user_ad" | "store_product";
+        /** only for user_ad */
+        price?: number;
+        /** server-computed display price (both types) */
+        minPrice?: number | null;
         images?: string[];
         status: string;
         shortIdentifier?: string;

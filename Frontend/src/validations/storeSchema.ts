@@ -5,6 +5,7 @@ export const storeStepSchemas = [
   z.object({
     name: z.string().min(2, "Store name is required"),
     phone: z.string().min(8, "Enter a valid phone number"),
+    category: z.string().min(1, "Choose what your store sells"),
   }),
 
   // STEP 1: ADDRESS
@@ -28,6 +29,8 @@ export const storeStepSchemas = [
 
 export const storeSchema = z.object({
   name: z.string().min(2, "Store name is required"),
+
+  category: z.string().min(1, "Choose what your store sells"),
 
   phone: z.string().min(8, "Enter a valid phone number"),
 

@@ -2,64 +2,47 @@ const mongoose = require("mongoose");
 const { Schema, Types } = mongoose;
 const notifyUser = require("../utils/notify");
 
-const orderItemSchema = new Schema(
-  {
-    product: {
-      type: Types.ObjectId,
-      ref: "Listing",
-      required: true,
-    },
-    offer: {
-      type: Types.ObjectId,
-      ref: "OfferSeller",
-      default: null,
-    },
-    variant: {
-      type: Types.ObjectId,
-      default: null,
-    },
-    quantity: {
-      type: Number,
-      required: true,
-      min: 1,
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    seller: {
-      type: Types.ObjectId,
-      ref: "Store",
-    },
-    selectedColor: {
-      type: String,
-      trim: true,
-    },
-    selectedSize: {
-      type: String,
-      trim: true,
-    },
-    fulfillment: {
-      status: {
-        type: String,
-        enum: ["pending", "shipped"],
-        default: "pending",
-      },
-      trackingCode: { type: String, trim: true, default: null },
-      shippedAt: { type: Date, default: null },
-    },
-    estimatedShipBy: { type: Date, default: null },
-    needsAdminShipment: { type: Boolean, default: false },
-  }
-);
+/*  Order item   */
+const orderItemSchema = new Schema({
+  product: { type: Types.ObjectId, ref: "Listing", required: true },
+  variantId: { type: Types.ObjectId, default: null },
+  offer: { type: Types.ObjectId, ref: "OfferSeller", default: null },
+  store: { type: Types.ObjectId, ref: "Store", default: null },
 
-const couponSchema = new Schema(
+  quantity: { type: Number, required: true, min: 1 },
+
+  price: { type: Number, required: true, min: 0 },
+  discount: { type: Number, default: 0, min: 0, max: 100 },
+  finalPrice: { type: Number, required: true, min: 0 },
+  productSnapshot: {
+    title: { type: String, required: true },
+    image: { type: String, default: null },
+    slug: { type: String, default: null },
+  },
+  variantSnapshot: {
+    attributes: { type: Map, of: String, default: null },
+    sku: { type: String, default: null },
+  },
+  storeSnapshot: {
+    name: { type: String, default: null },
+  },
+
+  fulfillment: {
+    status: { type: String, enum: ["pending", "shipped"], default: "pending" },
+    trackingCode: { type: String, trim: true, default: null },
+    shippedAt: { type: Date, default: null },
+  },
+  estimatedShipBy: { type: Date, default: null },
+  needsAdminShipment: { type: Boolean, default: false },
+});
+
+const orderCouponSchema = new Schema(
   {
+    couponId: { type: Types.ObjectId, ref: "Coupon", required: true },
     code: { type: String, uppercase: true, trim: true },
-    discountType: { type: String, enum: ["fixed", "percent"] },
-    discountValue: { type: Number, min: 0 },
-    maxDiscount: { type: Number, min: 0 },
+    type: { type: String, enum: ["fixed", "percent"] },
+    amount: { type: Number, min: 0 },
+    maxDiscount: { type: Number, min: 0, default: null },
   },
   { _id: false }
 );
@@ -96,7 +79,7 @@ const orderSchema = new Schema(
       type: [orderItemSchema],
       validate: [(arr) => arr.length > 0, "Order items required"],
     },
-    coupon: { type: couponSchema, default: null },
+    coupon: { type: orderCouponSchema, default: null },
     pricing: { type: pricingSchema, required: true },
     shippingAddress: { type: shippingAddressSchema, required: true },
     paymentMethod: { type: String, enum: ["cash", "zarinpal"], required: true },
@@ -123,14 +106,12 @@ const orderSchema = new Schema(
 
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ "payment.authority": 1 });
-
-// Notify the buyer whenever their order's status actually changes.
+orderSchema.index({ "items.store": 1, createdAt: -1 });
 orderSchema.pre("save", function () {
   this._statusChanged = this.isModified("status");
 });
 orderSchema.post("save", async function (doc) {
   if (!doc._statusChanged) return;
-
   const shortId = String(doc._id).slice(-6).toUpperCase();
   await notifyUser(
     doc.user,
@@ -148,7 +129,6 @@ orderSchema.post("findOneAndUpdate", async function (doc) {
   const update = this.getUpdate() || {};
   const newStatus = update.status ?? update.$set?.status;
   if (!newStatus || newStatus === this._prevStatus) return;
-
   const shortId = String(doc._id).slice(-6).toUpperCase();
   await notifyUser(
     doc.user,
@@ -167,7 +147,6 @@ orderSchema.post("updateOne", async function () {
   const update = this.getUpdate() || {};
   const newStatus = update.status ?? update.$set?.status;
   if (!newStatus || newStatus === this._prevStatus) return;
-
   const shortId = String(doc._id).slice(-6).toUpperCase();
   await notifyUser(
     doc.user,

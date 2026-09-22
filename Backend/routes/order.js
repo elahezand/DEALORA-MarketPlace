@@ -1,7 +1,10 @@
 const express = require("express");
 
 const orderRouter = express.Router();
-const controller = require("../controllers/order");
+const publicController = require("../controllers/public/order");
+const userController = require("../controllers/user/order");
+const sellerController = require("../controllers/seller/order");
+const adminController = require("../controllers/admin/order");
 
 const validateObjectIdParam = require("../middlewares/objectId");
 const { authUser, authAdmin, authSeller } = require("../middlewares/authMiddleware");
@@ -20,14 +23,14 @@ const {
 orderRouter.get("/admin",
     authUser,
     authAdmin,
-    controller.getAdmin);
+    adminController.getAdmin);
 
 orderRouter.get(
     "/admin/:id",
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    controller.getByIdAdmin
+    adminController.getByIdAdmin
 );
 
 orderRouter.patch(
@@ -36,7 +39,7 @@ orderRouter.patch(
     authAdmin,
     validateObjectIdParam("id"),
     validate(updateOrderAdminSchema),
-    controller.patchAdmin
+    adminController.patchAdmin
 );
 
 orderRouter.patch(
@@ -46,7 +49,7 @@ orderRouter.patch(
     validateObjectIdParam("id"),
     validateObjectIdParam("itemId"),
     validate(shipOrderSchema),
-    controller.adminShipItem
+    adminController.adminShipItem
 );
 
 // USER ROUTES 
@@ -54,22 +57,22 @@ orderRouter.post(
     "/checkout",
     authUser,
     validate(checkoutSchema),
-    controller.checkout
+    userController.checkout
 );
 orderRouter.get(
     "/verify",
-    controller.verify
+    publicController.verify
 );
 
 orderRouter.get("/my"
     ,authUser,
-    controller.getMyOrders);
+    userController.getMyOrders);
 
 // SELLER — orders containing at least one of this seller's items.
 orderRouter.get("/seller",
     authUser,
     authSeller,
-    controller.getSeller);
+    sellerController.getSeller);
 
 orderRouter.patch("/seller/:id/items/:itemId/ship",
     authUser,
@@ -77,27 +80,27 @@ orderRouter.patch("/seller/:id/items/:itemId/ship",
     validateObjectIdParam("id"),
     validateObjectIdParam("itemId"),
     validate(shipOrderSchema),
-    controller.sellerShipItem);
+    sellerController.sellerShipItem);
 
 orderRouter.get(
     "/:id",
     authUser,
     validateObjectIdParam("id"),
-    controller.getMyOrderById
+    userController.getMyOrderById
 );
 orderRouter.patch(
     "/:id",
     authUser,
     validateObjectIdParam("id"),
     validate(updateOrderOwnerSchema),
-    controller.patch
+    userController.patch
 );
 orderRouter.delete(
     "/:id",
     authUser,
     validateObjectIdParam("id"),
     validate(cancelOrderSchema),
-    controller.cancel
+    userController.cancel
 );
 
 // Buyer confirms they received the order — the only way status becomes "completed".
@@ -105,7 +108,7 @@ orderRouter.patch(
     "/:id/confirm-delivery",
     authUser,
     validateObjectIdParam("id"),
-    controller.confirmDelivery
+    userController.confirmDelivery
 );
 
 module.exports = orderRouter;

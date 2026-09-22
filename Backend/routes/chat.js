@@ -1,26 +1,26 @@
 const express = require("express");
 const router = express.Router();
-const controller = require("../controllers/chat");
+const userController = require("../controllers/user/chat");
 const { authUser } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 const validateObjectIdParam = require("../middlewares/objectId");
 const { startConversationSchema, sendMessageSchema } = require("../validators/chat");
 
-router.get("/conversations", authUser, controller.getMyConversations);
-router.post("/conversations", authUser, validate(startConversationSchema), controller.startConversation);
+router.get("/conversations", authUser, userController.getMyConversations);
+router.post("/conversations", authUser, validate(startConversationSchema), userController.startConversation);
 
 router.get(
   "/conversations/:id/messages",
   authUser,
   validateObjectIdParam("id"),
-  controller.getMessages
+  userController.getMessages
 );
 router.post(
   "/conversations/:id/messages",
   authUser,
   validateObjectIdParam("id"),
   validate(sendMessageSchema),
-  controller.sendMessage
+  userController.sendMessage
 );
 
 module.exports = router;

@@ -3,7 +3,7 @@ import { usePatch } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
 import { Offer } from "@/types/Offer";
 
-const ENDPOINT = "/offers";
+const ENDPOINT = "/offers/me";
 
 export interface UpdateOfferPayload {
   offerId: string;
@@ -23,7 +23,7 @@ export const useUpdateOffer = (onSuccessCallback?: () => void) => {
   >((d) => `${ENDPOINT}/${d.offerId}`, {
     onSuccess: () => {
       toast.success("Offer updated");
-      queryClient.invalidateQueries({ queryKey: ["/offers/me"] });
+      queryClient.invalidateQueries({ queryKey: ["offers-me"] });
       onSuccessCallback?.();
     },
     errorFallback: "Failed to update offer",

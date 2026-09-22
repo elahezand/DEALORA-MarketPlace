@@ -12,6 +12,8 @@ import {
 } from "react-icons/hi2";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { useUpdateStore } from "@/services/Store/useUpdateStore";
+import { useGet } from "@/utils/hooks/useReactQueryHooks";
+import { CategoriesTypeResponse } from "@/types/Category";
 
 export default function EditStorePage() {
     const router = useRouter();
@@ -19,6 +21,7 @@ export default function EditStorePage() {
 
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
+    const [category, setCategory] = useState("");
     const [logo, setLogo] = useState("");
     const [province, setProvince] = useState("");
     const [city, setCity] = useState("");
@@ -30,12 +33,16 @@ export default function EditStorePage() {
         if (!store) return;
         setName(store.name ?? "");
         setPhone(store.phone ?? "");
+        setCategory(typeof store.category === "object" ? store.category?._id ?? "" : store.category ?? "");
         setLogo(store.logo ?? "");
         setProvince(store.address?.province ?? "");
         setCity(store.address?.city ?? "");
         setStreet(store.address?.street ?? "");
         setPostalCode(store.address?.postalCode ?? "");
     }, [store]);
+
+    const { data: categoriesRes } = useGet<CategoriesTypeResponse>("/categories");
+    const mainCategories = categoriesRes?.data ?? [];
 
     const { mutate: updateStore, isPending } = useUpdateStore(() => {
         setSaved(true);
@@ -51,6 +58,7 @@ export default function EditStorePage() {
             name,
             phone,
             logo,
+            ...(category && { category }),
             address: {
                 province,
                 city,
@@ -92,7 +100,7 @@ export default function EditStorePage() {
         <div className="flex flex-col gap-6 pb-10 mx-auto w-full">
             <div className="flex items-center gap-3">
                 <Link
-                    href="/my-store"
+                    href="/dashboard/seller/my-store"
                     className="p-2 rounded-lg hover:bg-[var(--background-soft)] transition-colors"
                 >
                     <HiOutlineArrowLeft className="w-5 h-5 text-[var(--foreground-muted)]" />
@@ -157,6 +165,28 @@ export default function EditStorePage() {
                             className="h-11 px-4 rounded-xl border border-[var(--border)] bg-[var(--input-bg)] text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)] disabled:opacity-60"
                         />
                     </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-[var(--foreground-muted)]">
+                            Store category
+                        </label>
+                        <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            disabled={isPending}
+                            className="h-11 px-4 rounded-xl border border-[var(--border)] bg-[var(--input-bg)] text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)] disabled:opacity-60"
+                        >
+                            <option value="">Choose a category...</option>
+                            {mainCategories.map((c) => (
+                                <option key={c._id} value={c._id}>
+                                    {c.title}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-[var(--foreground-muted)]">
+                            You can only make offers on products in this category.
+                        </p>
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-4 pt-2 border-t border-[var(--border)]">
@@ -205,7 +235,7 @@ export default function EditStorePage() {
                     </button>
                     <button
                         type="button"
-                        onClick={() => router.push("/my-store")}
+                        onClick={() => router.push("/dashboard/seller/my-store")}
                         disabled={isPending}
                         className="text-xs font-bold px-4 h-10 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
                     >

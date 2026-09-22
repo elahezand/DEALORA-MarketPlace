@@ -1,19 +1,19 @@
 import { useAuthServerData } from "@/utils/hooks/useServerData";
-import ProductsModerationClient from "@/app/(dashboard)/components/(admin)/products/ProductsModerationPage";
+import ProductsPage from "@/app/(dashboard)/components/(admin)/products/ProductsPage";
 import { PublicListingsResponse } from "@/types/Listings";
 
 export const revalidate = 60;
 
 export default async function Page() {
-  const initialListings = await useAuthServerData<PublicListingsResponse>(
-    "/listings/admin?listingType=store_product&status=pending",
+  const initialProducts = await useAuthServerData<PublicListingsResponse>(
+    "/listings/admin?listingType=store_product&status=all"
   );
 
   return (
-    <ProductsModerationClient
+    <ProductsPage
       initialData={
-        initialListings
-          ? { pages: [initialListings], pageParams: [null] }
+        initialProducts
+          ? { pages: [initialProducts], pageParams: [undefined] } 
           : undefined
       }
     />

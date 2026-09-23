@@ -4,6 +4,9 @@ import { HiOutlineEnvelope } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import { QueryParams } from "@/types/api/ErrorTypes";
+import { useState } from "react";
+import AdminFilters from "../shared/AdminFilters";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th } from "../../shared/table/TableParts";
@@ -16,6 +19,7 @@ interface NewsletterClientProps {
 }
 
 export default function NewsletterClient({ initialData }: NewsletterClientProps) {
+  const [filters, setFilters] = useState<QueryParams>({});
   const {
     data,
     fetchNextPage,
@@ -23,7 +27,7 @@ export default function NewsletterClient({ initialData }: NewsletterClientProps)
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<NewsletterSubscribersResponse>(ENDPOINT, { limit: 30 }, { initialData });
+  } = useInfiniteGet<NewsletterSubscribersResponse>(ENDPOINT, { limit: 30, ...filters }, { queryKey: ["admin-newsletter", JSON.stringify(filters)], initialData: Object.keys(filters).length === 0 ? initialData : undefined });
 
   const subscribers: NewsletterSubscriber[] = (
     data?.pages?.flatMap((page: NewsletterSubscribersResponse) => page?.data ?? []) || []
@@ -64,6 +68,8 @@ export default function NewsletterClient({ initialData }: NewsletterClientProps)
           </button>
         )}
       </div>
+
+      <AdminFilters value={filters} onChange={setFilters} showSearch searchPlaceholder="Search email..." />
 
       <TableCard
         header={

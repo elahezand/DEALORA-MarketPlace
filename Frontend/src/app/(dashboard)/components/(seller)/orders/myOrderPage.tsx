@@ -58,7 +58,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
     } = useInfiniteGet(ENDPOINT,
         params, {
         queryKey: ["/orders/seller", status],
-        initialData: status === "all" ? initialData : undefined,
+        initialData: status === "processing" ? initialData : undefined,
     });
 
     const orders: ISellerOrder[] = (
@@ -85,7 +85,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
             const buyer = typeof order.user === "object" ? order.user : null;
             const itemsSummary = order.items
                 .map((item) => {
-                    const p = typeof item.product === "object" ? item.product : null;
+                    const p = typeof item.productId === "object" ? item.productId : null;
                     return `${p?.title ?? "item"} x${item.quantity}`;
                 })
                 .join("; ");
@@ -195,7 +195,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                     {filteredOrders.map((order) => {
                         const buyer = typeof order.user === "object" ? order.user : null;
                         const firstItem = order.items[0];
-                        const firstProduct = firstItem && typeof firstItem.product === "object" ? firstItem.product : null;
+                        const firstProduct = firstItem && typeof firstItem.productId === "object" ? firstItem.productId : null;
                         const extraCount = order.items.length - 1;
                         const shortId = order._id.slice(-6).toUpperCase();
 
@@ -329,7 +329,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                             </p>
                             <div className="flex flex-col gap-2">
                                 {viewTarget.items.map((item, i) => {
-                                    const p = typeof item.product === "object" ? item.product : null;
+                                    const p = typeof item.productId === "object" ? item.productId : null;
                                     return (
                                         <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--background-soft)]">
                                             <EntityAvatar

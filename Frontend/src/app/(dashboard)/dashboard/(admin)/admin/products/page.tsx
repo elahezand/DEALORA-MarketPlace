@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export default async function Page() {
   const initialProducts = await useAuthServerData<PublicListingsResponse>(
-    "/listings/admin?listingType=store_product&status=all"
+    "/listings/admin?listingType=store_product"
   );
 
   return (

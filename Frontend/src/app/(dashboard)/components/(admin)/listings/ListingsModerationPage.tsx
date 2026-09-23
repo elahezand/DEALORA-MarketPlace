@@ -3,9 +3,11 @@ import { useState } from "react";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
-import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import { useInfiniteGet, useGet } from "@/utils/hooks/useReactQueryHooks";
 import { ListingProps, PublicListingsResponse } from "@/types/Listings";
 import { QueryParams } from "@/types/api/ErrorTypes";
+import { CategoriesTypeResponse } from "@/types/Category";
+import AdminFilters from "../shared/AdminFilters";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
@@ -52,8 +54,10 @@ export default function ListingsModerationClient({
   const [status, setStatus] = useState<StatusTab>("all");
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<QueryParams>({});
+  const { data: categoriesRes } = useGet<CategoriesTypeResponse>("/categories");
 
-  const params: QueryParams = { listingType: "user_ad", status, limit: 20 };
+  const params: QueryParams = { listingType: "user_ad", status, limit: 20, ...filters };
 
   const {
     data,
@@ -63,7 +67,7 @@ export default function ListingsModerationClient({
     isLoading,
     isError,
   } = useInfiniteGet<PublicListingsResponse>(Endpoint, params, {
-    queryKey: ["listings-moderation", status],
+    queryKey: ["listings-moderation", status, JSON.stringify(filters)],
     initialData: status === "pending" ? initialData : undefined,
   });
 
@@ -130,6 +134,13 @@ export default function ListingsModerationClient({
           </button>
         ))}
       </div>
+
+      <AdminFilters
+        value={filters}
+        onChange={setFilters}
+        showCategory
+        categories={(categoriesRes?.data ?? []).map((c) => ({ _id: c._id, title: c.title }))}
+      />
 
       <TableCard
         header={

@@ -12,6 +12,7 @@ import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, inputClass, textareaClass } from "../shared/AdminFormModal";
 import { useResolveReport } from "@/services/Report/useResolveReport";
+import AdminFilters from "../shared/AdminFilters";
 
 const STATUS_TABS: { value: ReportStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -47,8 +48,9 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
   const [resolveStatus, setResolveStatus] = useState<"reviewed" | "resolved" | "rejected">("resolved");
   const [actionTaken, setActionTaken] = useState<ReportActionTaken>("none");
   const [note, setNote] = useState("");
+  const [filters, setFilters] = useState<QueryParams>({});
 
-  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params: QueryParams = { limit: 20, ...(status !== "all" ? { status } : {}), ...filters };
 
   const {
     data,
@@ -57,8 +59,8 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminReportsResponse>(ENDPOINT, params, {  queryKey: ["admin-reports", status],
-    initialData: status === "pending" ? initialData : undefined,
+  } = useInfiniteGet<AdminReportsResponse>(ENDPOINT, params, {  queryKey: ["admin-reports", status, JSON.stringify(filters)],
+    initialData: status === "pending" && Object.keys(filters).length === 0 ? initialData : undefined,
   });;
 
   const reports: AdminReportRow[] = (
@@ -112,6 +114,8 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
           </button>
         ))}
       </div>
+
+      <AdminFilters value={filters} onChange={setFilters} />
 
       <TableCard
         header={

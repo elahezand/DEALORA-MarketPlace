@@ -5,6 +5,7 @@ import { HiOutlineCreditCard, HiOutlineExclamationTriangle } from "react-icons/h
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import AdminFilters from "../shared/AdminFilters";
 import { IOrder, OrderStatus, AdminOrdersResponse } from "@/types/Order";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import TableCard from "../../shared/table/TableCard";
@@ -50,13 +51,15 @@ interface TransactionsClientProps {
 export default function TransactionsClient({
   initialData,
 }: TransactionsClientProps) {
-  const [status, setStatus] = useState<OrderStatus | "all">("all");
+  const [status, setStatus] = useState<OrderStatus | "all">("processing");
   const [needsActionOnly, setNeedsActionOnly] = useState(false);
+  const [filters, setFilters] = useState<QueryParams>({});
 
   const params: QueryParams = {
     limit: 20,
     ...(status !== "all" ? { status } : {}),
     ...(needsActionOnly ? { needsAdminAction: "true" } : {}),
+    ...filters,
   };
 
   const {
@@ -67,16 +70,20 @@ export default function TransactionsClient({
     isLoading,
     isError,
   } = useInfiniteGet<AdminOrdersResponse>(ENDPOINT, params,
-      { queryKey: ["admin-orders", status, needsActionOnly], initialData: needsActionOnly ? undefined : initialData }
-    );
-  
+    {
+      queryKey: ["admin-orders", status, needsActionOnly, JSON.stringify(filters)], initialData:
+        status === "processing" && !needsActionOnly
+          ? initialData
+          : undefined
+    }
+  );
+
 
   const allOrders: (IOrder & { hasPendingAdminItems?: boolean })[] = (
     data?.pages?.flatMap((page: AdminOrdersResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
-  const orders =
-    status === "all" ? allOrders : allOrders.filter((o) => o.status === status);
+
 
   return (
     <div className="flex flex-col gap-8 pb-10">
@@ -94,11 +101,10 @@ export default function TransactionsClient({
               key={tab.value}
               type="button"
               onClick={() => setStatus(tab.value)}
-              className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${
-                status === tab.value
-                  ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                  : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
-              }`}
+              className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
+                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+                }`}
             >
               {tab.label}
             </button>
@@ -108,16 +114,17 @@ export default function TransactionsClient({
         <button
           type="button"
           onClick={() => setNeedsActionOnly((v) => !v)}
-          className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors flex items-center gap-1.5 ${
-            needsActionOnly
-              ? "bg-[var(--warning-500)] text-white border-[var(--warning-500)]"
-              : "border-[var(--warning-500)]/40 text-[var(--warning-500)] hover:bg-[var(--warning-bg)]"
-          }`}
+          className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors flex items-center gap-1.5 ${needsActionOnly
+            ? "bg-[var(--warning-500)] text-white border-[var(--warning-500)]"
+            : "border-[var(--warning-500)]/40 text-[var(--warning-500)] hover:bg-[var(--warning-bg)]"
+            }`}
         >
           <HiOutlineExclamationTriangle className="w-4 h-4" />
           Needs My Action
         </button>
       </div>
+
+      <AdminFilters value={filters} onChange={setFilters}  />
 
       <TableCard
         header={
@@ -129,7 +136,7 @@ export default function TransactionsClient({
         }
         isLoading={isLoading}
         isError={isError}
-        isEmpty={orders.length === 0}
+        isEmpty={allOrders.length === 0}
         errorMessage="Error fetching orders"
         emptyTitle="No orders"
         emptyMessage={needsActionOnly ? "Nothing needs your attention right now" : "No orders match this filter"}
@@ -145,7 +152,7 @@ export default function TransactionsClient({
           </tr>
         </thead>
         <tbody>
-          {orders.map((order) => (
+          {allOrders.map((order) => (
             <tr
               key={order._id}
               className="border-b border-[var(--border)] hover:bg-[var(--background-soft)] transition-colors"
@@ -177,6 +184,12 @@ export default function TransactionsClient({
                   tone={PAYMENT_TONE[order.paymentStatus] ?? "neutral"}
                   label={order.paymentStatus}
                 />
+                {order.paymentStatus === "refunded" && (
+                  <p className="mt-1 text-[10px] text-[var(--foreground-muted)]">
+                    Refund: ${(order.refundAmount ?? 0).toLocaleString()}
+                    {order.refundedAt ? ` · ${new Date(order.refundedAt).toLocaleDateString("en-US")}` : ""}
+                  </p>
+                )}
               </td>
               <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
                 {new Date(order.createdAt).toLocaleDateString("en-US")}
@@ -201,9 +214,8 @@ export default function TransactionsClient({
           >
             <span>{isFetchingNextPage ? "Loading..." : "Load More"}</span>
             <HiChevronRight
-              className={`text-lg transition-transform duration-200 ${
-                isFetchingNextPage ? "animate-spin" : ""
-              }`}
+              className={`text-lg transition-transform duration-200 ${isFetchingNextPage ? "animate-spin" : ""
+                }`}
             />
           </button>
         </div>

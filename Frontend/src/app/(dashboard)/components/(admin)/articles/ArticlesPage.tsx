@@ -18,6 +18,8 @@ import {
   UpdateArticlePayload,
 } from "@/types/Article";
 import { CategoriesTypeResponse } from "@/types/Category";
+import { QueryParams } from "@/types/api/ErrorTypes";
+import AdminFilters from "../shared/AdminFilters";
 import { useCreateArticle } from "@/services/Article/useCreateArticle";
 import { useUpdateArticle } from "@/services/Article/useUpdateArticle";
 import { useDeleteArticle } from "@/services/Article/useDeleteArticle";
@@ -50,6 +52,7 @@ export default function ArticlesClient({ initialData }: ArticlesClientProps) {
   const [form, setForm] = useState<ArticleFormState>(EMPTY_FORM);
   const [slugTouched, setSlugTouched] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<QueryParams>({});
 
   const {
     data,
@@ -60,8 +63,8 @@ export default function ArticlesClient({ initialData }: ArticlesClientProps) {
     isError,
   } = useInfiniteGet<ArticlesResponse>(
     ENDPOINT,
-    { limit: 20 },
-    { queryKey: ["/articles/admin"], initialData }
+    { limit: 20, ...filters },
+    { queryKey: ["/articles/admin", JSON.stringify(filters)], initialData: Object.keys(filters).length === 0 ? initialData : undefined }
   );
 
   const { data: categoriesData } = useGet<CategoriesTypeResponse>("/categories");
@@ -160,6 +163,13 @@ export default function ArticlesClient({ initialData }: ArticlesClientProps) {
           <HiOutlinePlus className="w-4 h-4" /> New Article
         </button>
       </div>
+
+      <AdminFilters
+        value={filters}
+        onChange={setFilters}
+        showCategory
+        categories={categories.map((c) => ({ _id: c._id, title: c.title }))}
+      />
 
       <TableCard
         header={<WidgetHeader icon={HiOutlineNewspaper} title="All Articles" href="/dashboard/admin/articles" />}

@@ -48,7 +48,7 @@ export default function CartPreview() {
       ) : (
         <ul className="divide-y divide-[var(--border)]">
           {items.slice(0, 4).map((item, index) => {
-            const product = typeof item.product === "object" ? item.product : null;
+            const product = typeof item.productId === "object" ? item.productId : null;
             const key =
               (typeof item.offer === "object" ? item.offer?._id : item.offer) ??
               product?._id ??

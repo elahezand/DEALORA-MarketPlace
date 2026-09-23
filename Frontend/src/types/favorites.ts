@@ -4,7 +4,7 @@ export default interface FavoritesTypeResponse {
     success: boolean;
     data: {
       _id: string;
-      product: {
+      productId: {
         _id: string;
         title: string;
         slug?: string;

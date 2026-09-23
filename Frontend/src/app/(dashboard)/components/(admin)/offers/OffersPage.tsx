@@ -14,6 +14,7 @@ import { OfferStatus, Offer, OffersResponse } from "@/types/Offer";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { findVariant, getVariantLabel } from "@/utils/price";
 import { getUrl } from "@/utils/helper";
+import AdminFilters from "../shared/AdminFilters";
 
 const STATUS_TABS: { value: OfferStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -42,8 +43,9 @@ export default function OffersClient({ initialData }: OffersClientProps) {
   const [rejectTarget, setRejectTarget] = useState<Offer | null>(null);
   const [adminComment, setAdminComment] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<QueryParams>({});
 
-  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params: QueryParams = { limit: 20, ...(status !== "all" ? { status } : {}), ...filters };
 
   const {
     data,
@@ -54,8 +56,8 @@ export default function OffersClient({ initialData }: OffersClientProps) {
     isError,
   } = useInfiniteGet<OffersResponse>(ENDPOINT, params,
     {
-      queryKey: ["offers-admin", status],
-      initialData: status === "all" ? initialData : undefined,
+      queryKey: ["offers-admin", status, JSON.stringify(filters)],
+      initialData: status === "pending" && Object.keys(filters).length === 0 ? initialData : undefined,
     });
 
   const offers: Offer[] = (
@@ -118,6 +120,8 @@ export default function OffersClient({ initialData }: OffersClientProps) {
           </button>
         ))}
       </div>
+
+      <AdminFilters value={filters} onChange={setFilters} />
 
       <TableCard
         header={

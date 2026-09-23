@@ -10,6 +10,7 @@ import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { IUser, AdminUsersResponse } from "@/types/User";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { ApiError } from "@/types/api/ErrorTypes";
+import AdminFilters from "../shared/AdminFilters";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
@@ -27,7 +28,8 @@ export default function UsersClient({ initialData }: UsersClientProps) {
   const { user: me } = useGetProfile();
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const [filters, setFilters] = useState<QueryParams>({});
+  const params: QueryParams = { limit: 20, ...filters };
 
   const {
     data,
@@ -36,7 +38,7 @@ export default function UsersClient({ initialData }: UsersClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, params, { queryKey: ["admin-users"], initialData });
+  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, params, { queryKey: ["admin-users", JSON.stringify(filters)], initialData });
 
   const users: IUser[] = (
     data?.pages?.flatMap((page: AdminUsersResponse) => page?.data ?? []) || []
@@ -77,6 +79,8 @@ export default function UsersClient({ initialData }: UsersClientProps) {
         </h1>
       </div>
 
+      <AdminFilters value={filters} onChange={setFilters} showSearch searchPlaceholder="Search username, phone or email..." />
+
       <TableCard
         header={
           <WidgetHeader
@@ -96,6 +100,8 @@ export default function UsersClient({ initialData }: UsersClientProps) {
           <tr>
             <Th>User</Th>
             <Th>Role</Th>
+            <Th>Joined At</Th>
+            <Th>Last Login Device</Th>
             <Th align="right">Actions</Th>
           </tr>
         </thead>
@@ -140,10 +146,14 @@ export default function UsersClient({ initialData }: UsersClientProps) {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <Badge
-                    tone={roleTone}
-                    label={roleLabel}
-                  />
+                  <Badge tone={roleTone} label={roleLabel} />
+                </td>
+                <td className="px-6 py-4 text-xs text-[var(--foreground-muted)]">
+                  {new Date(user.createdAt).toLocaleDateString("en-US")}
+                </td>
+                <td className="px-6 py-4 text-xs text-[var(--foreground-muted)]">
+                  <div>{user.lastLogin ? new Date(user.lastLogin).toLocaleString("en-US") : "Never"}</div>
+                  <div className="text-[10px]">{user.lastLoginDevice ?? "Unknown"}</div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-2">

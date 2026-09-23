@@ -1,7 +1,7 @@
 export type OrderStatus = "created" | "processing" | "shipped" | "completed" | "cancelled"
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
-export type PaymentMethod = "cash" | "zarinpal";
+export type PaymentMethod = "cash" | "zarinpal" | "wallet";
 
 export interface IOrderFulfillment {
   status: "pending" | "shipped";
@@ -21,7 +21,7 @@ export interface IOrderVariantSnapshot {
 }
 
 export interface IOrderItem {
-  product: string;
+  productId: string;
   variantId: string | null;
   offer?: string | null;
   store?: string | null;
@@ -85,6 +85,8 @@ export interface IOrder {
   deliveredAt: string | Date | null;
   createdAt: string | Date;
   updatedAt: string | Date;
+  refundedAt?: string | Date | null;
+  refundAmount?: number;
 }
 
 export interface OrdersResponse {
@@ -111,9 +113,9 @@ export interface AdminOrdersResponse {
 /* ADMIN — GET /orders/admin/:id is populated for the order detail page:
    product, seller (Store), and buyer info are all real objects, not just
    ids. */
-export interface IAdminOrderItem extends Omit<IOrderItem, "product" | "store"> {
+export interface IAdminOrderItem extends Omit<IOrderItem, "productId" | "store"> {
   _id: string;
-  product: { _id: string; title?: string; images?: string[] } | string;
+  productId: { _id: string; title?: string; images?: string[] } | string;
   store: { _id: string; name?: string; slug?: string } | string | null;
 }
 
@@ -130,7 +132,7 @@ export interface AdminOrderResponse {
 /* SELLER —*/
 export interface ISellerOrderItem {
   _id: string;
-  product: { _id: string; title?: string; images?: string[] } | string;
+  productId: { _id: string; title?: string; images?: string[] } | string;
   variantId: string | null;
   quantity: number;
   price: number;

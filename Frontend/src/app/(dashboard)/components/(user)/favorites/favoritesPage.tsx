@@ -95,8 +95,8 @@ export default function InfiniteFavoritesSection({
         <tbody>
           {favorites.map((favorite: FavoriteItem) => {            
             if (!favorite) return null;
-            const src = getUrl(favorite.product?.images?.[0])
-            const product = favorite.product;
+            const src = getUrl(favorite.productId?.images?.[0])
+            const product = favorite.productId;
             const statusKey = product?.status?.toLowerCase() || "inactive";
             const tone = STATUS_TONE[statusKey] ?? "destructive";
             const label =

@@ -91,6 +91,8 @@ interface SellerStats {
   totalRevenue: number;
   totalOrders: number;
   walletBalance: number;
+  /** money held until the buyer receives the order */
+  walletPending: number;
   pendingOffers: number;
   acceptedOffers: number;
 }

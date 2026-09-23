@@ -40,7 +40,6 @@ const STATUS_TONE: Record<
   WithdrawalStatus,
   "success" | "warning" | "destructive" | "info"
 > = {
-  pending: "warning",
   processing: "info",
   completed: "success",
   rejected: "destructive",
@@ -61,6 +60,7 @@ export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
 
   const { stats, isLoading: isStatsLoading } = useGetSellerStats();
   const balance = stats?.walletBalance ?? 0;
+  const pending = stats?.walletPending ?? 0;
 
   const params: QueryParams =
     status === "all" ? { limit: 20 } : { limit: 20, status };
@@ -74,7 +74,7 @@ export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
     isError,
   } = useInfiniteGet<WithdrawalsResponse>(ENDPOINT, params, {
     queryKey: ["/withdrawals/mine", status],
-    initialData: status === "all" ? initialData : undefined,
+    initialData: status === "processing" ? initialData : undefined,
   });
 
   const withdrawals: Withdrawal[] = (
@@ -146,6 +146,11 @@ export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
           <p className="text-xs font-bold text-[var(--foreground-muted)] uppercase tracking-wider">
             Available Wallet Balance
           </p>
+          {pending > 0 && (
+            <p className="text-xs text-[var(--foreground-muted)] mt-1">
+              ${pending.toLocaleString()} pending — released when buyers receive their orders
+            </p>
+          )}
         </div>
       </div>
 

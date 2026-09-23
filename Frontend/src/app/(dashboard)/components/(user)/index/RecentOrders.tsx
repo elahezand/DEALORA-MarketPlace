@@ -45,7 +45,7 @@ export default function RecentOrders({ initialData = [] }: RecentOrdersProps) {
       <tbody>
         {initialData.map((order) => {
           const displayTitle =
-            order.items?.[0]?.product || `Order #${order._id.slice(-6).toUpperCase()}`;
+            order.items?.[0]?.productId || `Order #${order._id.slice(-6).toUpperCase()}`;
 
           return (
             <tr

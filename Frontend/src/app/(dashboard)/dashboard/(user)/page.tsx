@@ -2,6 +2,7 @@ import Link from "next/link";
 import Orders from "@/app/(dashboard)/components/(user)/index/RecentOrders";
 import Listings from "@/app/(dashboard)/components/(user)/index/RecentListings";
 import ProfileBanner from "@/app/(dashboard)/components/(user)/index/ProfileBanner";
+import WalletCard from "@/app/(dashboard)/components/(user)/index/WalletCard";
 import CartPreview from "@/app/(dashboard)/components/(user)/index/CartPreview";
 import MiniCalendar from "@/app/(dashboard)/components/shared/MiniCalendar";
 import { OrdersResponse } from "@/types/Order";
@@ -38,6 +39,7 @@ export default async function DashboardPage() {
       </div>
       {/* Profile completion banner */}
       <ProfileBanner />
+      <WalletCard />
       {/* Orders + Listings side by side on large screens */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Orders initialData={orderList} />

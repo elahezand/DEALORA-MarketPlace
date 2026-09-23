@@ -169,7 +169,7 @@ export default function GlobalSearch({ inputRef, role }: GlobalSearchProps) {
                                 {config.secondaryLabel}
                             </p>
                             {offers.map((offer) => {
-                                const product = typeof offer.product === "object" ? offer.product : null;
+                                const product = typeof offer.productId === "object" ? offer.productId : null;
                                 return (
                                     <button
                                         key={offer._id}

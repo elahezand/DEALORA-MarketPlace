@@ -45,7 +45,7 @@ export default function RecentOffers() {
       </thead>
       <tbody>
         {offers.map((offer) => {
-          const product = typeof offer.product === "object" ? offer.product : null;
+          const product = typeof offer.productId === "object" ? offer.productId : null;
           const title = product?.title || "—";
           const image = product?.images?.[0] || null;
           const store = typeof offer.store === "object" ? offer.store : null;

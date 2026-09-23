@@ -6,6 +6,7 @@ import { HiOutlineTicket, HiOutlinePlus } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import AdminFilters from "../shared/AdminFilters";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
@@ -15,6 +16,7 @@ import { useToggleActiveCoupon, } from "@/services/Coupon/useToggleActiveCoupon"
 import { useDeleteCoupon } from "@/services/Coupon/useDeleteCoupon";
 import { useCreateCoupon } from "@/services/Coupon/useCreateCoupon";
 import { useUpdateCoupon } from "@/services/Coupon/useUpdateCoupon";
+import { QueryParams } from "@/types/api/ErrorTypes";
 
 const ENDPOINT = "/coupon/admin";
 
@@ -36,6 +38,7 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<QueryParams>({});
 
   const {
     data,
@@ -45,7 +48,7 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
     isLoading,
     isError,
   } = useInfiniteGet<CouponsResponse>(
-    ENDPOINT, { limit: 20 }, { queryKey: ["/admin/coupon"], initialData }
+    ENDPOINT, { limit: 20, ...filters }, { queryKey: ["/admin/coupon", JSON.stringify(filters)], initialData: Object.keys(filters).length === 0 ? initialData : undefined }
   );
 
   const coupons: Coupon[] = (
@@ -140,6 +143,8 @@ export default function CouponsClient({ initialData }: CouponsClientProps) {
           <HiOutlinePlus className="w-4 h-4" /> New Coupon
         </button>
       </div>
+
+      <AdminFilters value={filters} onChange={setFilters} />
 
       <TableCard
         header={<WidgetHeader icon={HiOutlineTicket} title="All Coupons" href="/dashboard/admin/coupons" />}

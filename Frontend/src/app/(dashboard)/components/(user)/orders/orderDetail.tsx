@@ -194,7 +194,7 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
               <div key={idx} className="flex items-center justify-between px-5 py-4 gap-3">
                 <div className="min-w-0">
                   <Link
-                    href={`/posts/${item.product}`}
+                    href={`/posts/${item.productId}`}
                     className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors"
                   >
                     {item.productSnapshot.title}

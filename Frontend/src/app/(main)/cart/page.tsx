@@ -21,7 +21,7 @@ const MetaItem = ({ label, value }: { label: string; value: string }) => (
 const getOfferId = (item: CartItem): string | null =>
   (typeof item?.offer === "object" ? item.offer?._id : item?.offer) ?? null;
 const getProductId = (item: CartItem): string | null =>
-  (typeof item?.product === "object" ? item.product?._id : item?.product) ?? null;
+  (typeof item?.productId === "object" ? item.productId?._id : item?.productId) ?? null;
 
 export default function CartPage() {
   const { data: cart, isLoading } = useGetMyCart();
@@ -36,7 +36,7 @@ export default function CartPage() {
 
   const toPayloadItem = (i: CartItem) => ({
     offer: getOfferId(i),
-    product: getProductId(i),
+    productId: getProductId(i),
     variantId: i.variantId,
     quantity: i.quantity,
   });
@@ -113,7 +113,7 @@ export default function CartPage() {
           {/* Items List Container */}
           <div className="space-y-4 lg:col-span-1">
             {items.map((item: CartItem, index: number) => {
-              const product = typeof item.product === "object" ? item.product : null;
+              const product = typeof item.productId === "object" ? item.productId : null;
               const offer = typeof item.offer === "object" ? item.offer : null;
               const offerStoreName = typeof offer?.store === "object" ? offer.store?.name : undefined;
               return (

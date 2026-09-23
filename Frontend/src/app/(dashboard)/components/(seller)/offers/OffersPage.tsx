@@ -59,7 +59,7 @@ export default function OffersPage({ initialData }: MyOffersPageProps) {
     } = useInfiniteGet<OffersResponse>(
         ENDPOINT,
         params,
-        { queryKey: ["offers-me", status], initialData: status === "all" ? initialData : undefined }
+        { queryKey: ["offers-me", status], initialData: status === "pending" ? initialData : undefined }
     );
 
     const offers: Offer[] = (

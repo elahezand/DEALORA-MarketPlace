@@ -5,7 +5,7 @@ export const revalidate = 60;
 
 export default async function AdminOffersPage() {
   const initialOffers = await useAuthServerData<OffersResponse>(
-    "/offers?status=all",
+    "/offers?status=pending",
   );
 
   return (

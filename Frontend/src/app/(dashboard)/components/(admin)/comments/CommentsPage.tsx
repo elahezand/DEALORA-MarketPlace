@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import AdminFilters from "../shared/AdminFilters";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
@@ -14,6 +15,7 @@ import { useDeleteComment } from "@/services/Comments/useDeleteComment";
 import { useAnswerComment } from "@/services/Comments/useAnswerComment";
 import { InfiniteData } from "@tanstack/react-query";
 import { CommentStatus, AdminComment, AdminCommentsResponse } from "@/types/CommetTypes";
+import { QueryParams } from "@/types/api/ErrorTypes";
 
 const ENDPOINT = "/comments/admin";
 
@@ -43,8 +45,9 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
   const [replyTarget, setReplyTarget] = useState<AdminComment | null>(null);
   const [replyBody, setReplyBody] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<QueryParams>({});
 
-  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params = { limit: 20, ...(status !== "all" ? { status } : {}), ...filters };
 
   const {
     data,
@@ -54,7 +57,7 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
     isLoading,
     isError,
   } = useInfiniteGet<AdminCommentsResponse>(ENDPOINT, params, {
-    queryKey: ["/comments/admin", status],
+    queryKey: ["/comments/admin", status, JSON.stringify(filters)],
     initialData: status === "pending" ? initialData : undefined,
   }
   );
@@ -147,6 +150,15 @@ export default function CommentsClient({ initialData }: CommentsClientProps) {
             {tab.label}
           </button>
         ))}
+      </div>
+
+      <AdminFilters value={filters} onChange={setFilters} />
+
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => setFilters((f) => ({ ...f, type: "reply" }))} className="text-xs font-bold px-3 py-2 rounded-lg border border-[var(--border)]">Replies only</button>
+        <button type="button" onClick={() => setFilters((f) => ({ ...f, replyStatus: "replied" }))} className="text-xs font-bold px-3 py-2 rounded-lg border border-[var(--border)]">Replied comments</button>
+        <button type="button" onClick={() => setFilters((f) => ({ ...f, replyStatus: "unreplied" }))} className="text-xs font-bold px-3 py-2 rounded-lg border border-[var(--border)]">Unreplied comments</button>
+        <button type="button" onClick={() => setFilters((f) => { const n = { ...f }; delete n.type; delete n.replyStatus; return n; })} className="text-xs font-bold px-3 py-2 rounded-lg border border-[var(--border)]">All types</button>
       </div>
 
       <TableCard

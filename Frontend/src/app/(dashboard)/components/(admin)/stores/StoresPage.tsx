@@ -10,6 +10,8 @@ import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { useVerifyStore } from "@/services/Store/useVerifyStore";
+import { QueryParams } from "@/types/api/ErrorTypes";
+import AdminFilters from "../shared/AdminFilters";
 
 const ENDPOINT = "/stores";
 
@@ -19,6 +21,7 @@ interface StoresClientProps {
 
 export default function StoresClient({ initialData }: StoresClientProps) {
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<QueryParams>({});
 
   const {
     data,
@@ -27,8 +30,8 @@ export default function StoresClient({ initialData }: StoresClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminStoresResponse>(ENDPOINT, { limit: 20 },  
-     { queryKey: ["admin-stores"], initialData }
+  } = useInfiniteGet<AdminStoresResponse>(ENDPOINT, { limit: 20, ...filters },  
+     { queryKey: ["admin-stores", JSON.stringify(filters)], initialData: Object.keys(filters).length === 0 ? initialData : undefined }
 );
 
   const stores: AdminStoreRow[] = (
@@ -53,6 +56,8 @@ export default function StoresClient({ initialData }: StoresClientProps) {
           Stores
         </h1>
       </div>
+
+      <AdminFilters value={filters} onChange={setFilters} showSearch searchPlaceholder="Search store..." />
 
       <TableCard
         header={

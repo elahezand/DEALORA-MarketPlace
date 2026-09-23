@@ -5,9 +5,11 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { HiOutlineCube, HiOutlinePlus } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
-import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import { useInfiniteGet, useGet } from "@/utils/hooks/useReactQueryHooks";
 import { ListingProps, PublicListingsResponse } from "@/types/Listings";
 import { QueryParams } from "@/types/api/ErrorTypes";
+import { CategoriesTypeResponse } from "@/types/Category";
+import AdminFilters from "../shared/AdminFilters";
 import { getUrl } from "@/utils/helper";
 import { getListingPrice } from "@/utils/price";
 import TableCard from "../../shared/table/TableCard";
@@ -20,7 +22,6 @@ import {
   useChangeProductStatus,
   useDeleteProduct,
 } from "@/services/Products/useProductMutations";
-import { log } from "util";
 
 type ProductStatus = ProductInput["status"] | "deleted";
 type StatusTab = ProductStatus | "all";
@@ -45,19 +46,20 @@ interface ProductsPageProps {
 }
 
 export default function ProductsPage({ initialData }: ProductsPageProps) {
-  const [status, setStatus] = useState<StatusTab>("all");
-  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<StatusTab | "all">("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reviewId, setReviewId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<QueryParams>({});
+  const { data: categoriesRes } = useGet<CategoriesTypeResponse>("/categories");
 
-  const params: QueryParams = { listingType: "store_product", status, limit: 20, ...(search.trim() && { q: search.trim() }) };
+  const params: QueryParams = { listingType: "store_product", status, limit: 20, ...filters };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
     useInfiniteGet<PublicListingsResponse>("/listings/admin", params, {
-      queryKey: [PRODUCTS_QUERY_KEY, status, search.trim()],
-      initialData: status === "all" && !search.trim() ? initialData : undefined,
+      queryKey: [PRODUCTS_QUERY_KEY, status, JSON.stringify(filters)],
+      initialData: status === "all" && Object.keys(filters).length === 0 ? initialData : undefined,
     });
-    
+
   const products: ListingProps[] = (
     data?.pages?.flatMap((page: PublicListingsResponse) => page?.data ?? []) || []
   ).filter(Boolean);
@@ -100,7 +102,7 @@ export default function ProductsPage({ initialData }: ProductsPageProps) {
           deleteProduct(product._id, { onSettled: () => setBusyId(null) });
         },
       },
-      cancel: { label: "Cancel", onClick: () => {} },
+      cancel: { label: "Cancel", onClick: () => { } },
     });
   };
 
@@ -125,22 +127,24 @@ export default function ProductsPage({ initialData }: ProductsPageProps) {
             key={tab.value}
             type="button"
             onClick={() => setStatus(tab.value)}
-            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${
-              status === tab.value
+            className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
                 ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
                 : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
-            }`}
+              }`}
           >
             {tab.label}
           </button>
         ))}
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by title..."
-          className="ml-auto h-9 px-3 rounded-lg border border-[var(--border)] bg-[var(--input-bg)] text-sm w-full sm:w-64"
-        />
       </div>
+
+      <AdminFilters
+        value={filters}
+        onChange={setFilters}
+        showCategory
+        categories={(categoriesRes?.data ?? []).map((c) => ({ _id: c._id, title: c.title }))}
+        showSearch
+        searchPlaceholder="Search by title..."
+      />
 
       <TableCard
         header={<WidgetHeader icon={HiOutlineCube} title={`${STATUS_TABS.find((t) => t.value === status)?.label} Products`} href="/dashboard/admin/products" />}
@@ -204,40 +208,40 @@ export default function ProductsPage({ initialData }: ProductsPageProps) {
                         Restore as draft
                       </button>
                     ) : (
-                    <>
-                    <button
-                      type="button"
-                      onClick={() => setReviewId(product._id)}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${TONE_BUTTON.neutral}`}
-                    >
-                      View
-                    </button>
-                    <Link
-                      href={`/dashboard/admin/products/${product._id}`}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${TONE_BUTTON.neutral}`}
-                    >
-                      Edit
-                    </Link>
-                    {(STATUS_ACTIONS[productStatus as ProductInput["status"]] ?? []).map((action) => (
-                      <button
-                        key={action.to}
-                        type="button"
-                        disabled={busy}
-                        onClick={() => setProductStatus(product._id, action.to)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-40 ${TONE_BUTTON[action.tone]}`}
-                      >
-                        {action.label}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => confirmDelete(product)}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-40 ${TONE_BUTTON.destructive}`}
-                    >
-                      Delete
-                    </button>
-                    </>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setReviewId(product._id)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${TONE_BUTTON.neutral}`}
+                        >
+                          View
+                        </button>
+                        <Link
+                          href={`/dashboard/admin/products/${product._id}`}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${TONE_BUTTON.neutral}`}
+                        >
+                          Edit
+                        </Link>
+                        {(STATUS_ACTIONS[productStatus as ProductInput["status"]] ?? []).map((action) => (
+                          <button
+                            key={action.to}
+                            type="button"
+                            disabled={busy}
+                            onClick={() => setProductStatus(product._id, action.to)}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-40 ${TONE_BUTTON[action.tone]}`}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => confirmDelete(product)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-40 ${TONE_BUTTON.destructive}`}
+                        >
+                          Delete
+                        </button>
+                      </>
                     )}
                   </div>
                 </td>

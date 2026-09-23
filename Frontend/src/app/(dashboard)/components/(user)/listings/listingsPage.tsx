@@ -60,7 +60,7 @@ export default function ListingsPage({
     params,
     {
       queryKey: ["my-listings", status],
-      initialData: status === "all" ? initialData : undefined
+      initialData: status === "pending" ? initialData : undefined
     }
 
   );

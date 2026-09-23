@@ -17,6 +17,7 @@ import {
   textareaClass,
 } from "../shared/AdminFormModal";
 import { useProcessWithdrawal } from "@/services/Withdrawls/useProcessWithdrawal";
+import AdminFilters from "../shared/AdminFilters";
 
 const STATUS_TABS: { value: WithdrawalStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -29,7 +30,6 @@ const STATUS_TONE: Record<
   WithdrawalStatus,
   "success" | "warning" | "destructive" | "info" | "neutral"
 > = {
-  pending: "warning",
   processing: "info",
   completed: "success",
   rejected: "destructive",
@@ -44,15 +44,16 @@ interface WithdrawalsClientProps {
 export default function WithdrawalsClient({
   initialData,
 }: WithdrawalsClientProps) {
-  const [status, setStatus] = useState<WithdrawalStatus | "all">("pending");
+  const [status, setStatus] = useState<WithdrawalStatus | "all">("processing");
   const [target, setTarget] = useState<Withdrawal | null>(null);
   const [action, setAction] = useState<"processing" | "completed" | "rejected">(
     "completed"
   );
   const [trackingCode, setTrackingCode] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  const [filters, setFilters] = useState<QueryParams>({});
 
-  const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params: QueryParams = { limit: 20, ...(status !== "all" ? { status } : {}), ...filters };
 
   const {
     data,
@@ -61,7 +62,9 @@ export default function WithdrawalsClient({
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<WithdrawalsResponse>(ENDPOINT, params, { queryKey: ["admin-withdrawals",status], initialData });
+  } = useInfiniteGet<WithdrawalsResponse>(ENDPOINT, params, {
+    queryKey: ["admin-withdrawals", status, JSON.stringify(filters)], initialData: status === "processing" && Object.keys(filters).length === 0 ? initialData : undefined,
+  });
 
   const withdrawals: Withdrawal[] = (
     data?.pages?.flatMap((page: WithdrawalsResponse) => page?.data ?? []) || []
@@ -107,14 +110,16 @@ export default function WithdrawalsClient({
             type="button"
             onClick={() => setStatus(tab.value)}
             className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
-                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+              ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+              : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
               }`}
           >
             {tab.label}
           </button>
         ))}
       </div>
+
+      <AdminFilters value={filters} onChange={setFilters} />
 
       <TableCard
         header={
@@ -144,8 +149,7 @@ export default function WithdrawalsClient({
         <tbody>
           {withdrawals.map((w) => {
             const store = typeof w.store === "object" ? w.store : null;
-            const canProcess =
-              w.status === "pending" || w.status === "processing";
+            const canProcess = w.status
             return (
               <tr
                 key={w._id}

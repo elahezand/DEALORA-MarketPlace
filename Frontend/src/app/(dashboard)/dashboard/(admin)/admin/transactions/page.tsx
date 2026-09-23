@@ -4,7 +4,7 @@ import { AdminOrdersResponse } from "@/types/Order";
 export default async function AdminTransactionsPage() {
   const initialOrders = await useAuthServerData<AdminOrdersResponse>(
     "/orders/admin?status=processing",
-  );
+  );  
 
   return (
     <TransactionsClient

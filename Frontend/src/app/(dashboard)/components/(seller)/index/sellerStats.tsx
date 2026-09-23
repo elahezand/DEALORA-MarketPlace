@@ -6,6 +6,7 @@ import {
   HiOutlineShoppingBag,
   HiOutlineWallet,
   HiOutlineTag,
+  HiOutlineClock,
 } from "react-icons/hi2";
 import { useGetSellerStats, useGetSellerStatsTimeseries } from "@/services/Stats/useGetStats";
 import SalesAreaChart from "../shared/SalesAreaChart";
@@ -19,7 +20,8 @@ const STAT_CARDS: {
 }[] = [
   { key: "totalRevenue", label: "Total Revenue", icon: HiOutlineBanknotes, iconBg: "cat-icon-teal", isCurrency: true },
   { key: "totalOrders", label: "Total Orders", icon: HiOutlineShoppingBag, iconBg: "cat-icon-sand" },
-  { key: "walletBalance", label: "Wallet Balance", icon: HiOutlineWallet, iconBg: "cat-icon-blue", isCurrency: true },
+  { key: "walletBalance", label: "Available Balance", icon: HiOutlineWallet, iconBg: "cat-icon-blue", isCurrency: true },
+  { key: "walletPending", label: "Pending (until delivery)", icon: HiOutlineClock, iconBg: "cat-icon-amber", isCurrency: true },
   { key: "pendingOffers", label: "Pending Offers", icon: HiOutlineTag, iconBg: "cat-icon-amber" },
 ];
 

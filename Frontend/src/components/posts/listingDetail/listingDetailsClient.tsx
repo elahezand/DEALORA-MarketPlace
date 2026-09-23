@@ -180,7 +180,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
         }
 
         const itemPayload = {
-            product: data._id,
+            productId: data._id,
             variantId: selectedOffer?.variantId ?? targetVariant._id,
             quantity: 1,
             ...(selectedOffer?._id && {

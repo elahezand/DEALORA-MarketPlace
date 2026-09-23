@@ -10,5 +10,5 @@ export const checkoutSchema = z.object({
         city: z.string().min(2, "City is required"),
         state: z.string().min(2, "State is required"),
     }),
-    paymentMethod: z.enum(["cash", "zarinpal"]),
+    paymentMethod: z.enum(["cash", "zarinpal", "wallet"]),
 });

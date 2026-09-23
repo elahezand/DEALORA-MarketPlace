@@ -6,7 +6,7 @@
 export interface CartItem {
   offer?: { _id: string; price?: number; discount?: number; stock?: number; shipsWithinDays?: number; store?: { _id: string; name?: string } | string; finalPrice?: number } | string | null;
   store?: string | null;
-  product: { _id: string; title?: string; images?: string[] } | string;
+  productId: { _id: string; title?: string; images?: string[] } | string;
   variantId?: string | null;
   variantSnapshot?: {
     attributes?: Record<string, string> | null;
@@ -29,7 +29,9 @@ export interface CartPricing {
 }
 
 export interface ICart {
-  _id: string;
+  /** the API returns "id" (see the model's toJSON transform) */
+  id?: string;
+  _id?: string;
   user: string;
   items: CartItem[];
   /** applied coupon (the cart only stores a reference to it) */

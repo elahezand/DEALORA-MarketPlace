@@ -43,7 +43,7 @@ const toFormData = (payload: ProductInput, files: File[]) => {
   return formData;
 };
 
-export const useSaveProduct = (id?: string, onSuccess?: (product: ListingProps) => void) => {
+export const useSaveProduct = (id?: string, onSuccess?: (productId: ListingProps) => void) => {
   const queryClient = useQueryClient();
 
   return useMutation({

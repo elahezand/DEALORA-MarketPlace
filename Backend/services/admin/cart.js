@@ -1,13 +1,16 @@
 const Cart = require("../../models/cart");
 const AppError = require("../../utils/AppError");
 const { paginate } = require("../../utils/helper");
+const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const { buildCartView } = require("../shared/cart");
 
 
 const getAdminCarts = async (query = {}) => {
   const limit = Math.min(Number(query.limit) || 15, 100);
+  const filters = {};
+  Object.assign(filters, buildDateFilter(query, "createdAt"));
   return paginate(Cart, {
-    limit, cursor: query.cursor, populate: "user items.product", sort: { _id: -1 }
+    limit, cursor: query.cursor, filters, populate: "user items.productId", sort: getAdminSort(query, ["createdAt", "updatedAt"])
   });
 };
 

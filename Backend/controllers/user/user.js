@@ -4,10 +4,6 @@ const AppError = require("../../utils/AppError");
 const putUser = async (req, res, next) => {
   try {
     const updateData = { ...req.parsed.data };
-
-    delete updateData.role;
-    delete updateData.phone;
-
     if (req.file) {
       updateData.profilePicture = `/users/avatars/${req.file.filename}`;
     }
@@ -15,7 +11,7 @@ const putUser = async (req, res, next) => {
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { $set: updateData },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     ).select("-password");
 
     if (!updatedUser) {
@@ -39,7 +35,7 @@ const createAddress = async (req, res, next) => {
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { $push: { addresses: addressData } },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     );
 
     if (!updatedUser) {

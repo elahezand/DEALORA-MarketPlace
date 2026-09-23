@@ -3,12 +3,14 @@ const userOrderService = require("../../services/user/order");
 const checkout = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const { shippingAddress, paymentMethod } = req.parsed.data;
+    const { shippingAddress, paymentMethod, idempotencyKey, useWallet } = req.parsed.data;
 
     const result = await userOrderService.checkout(
       userId,
       shippingAddress,
-      paymentMethod
+      paymentMethod,
+      idempotencyKey || req.get("Idempotency-Key") || null,
+      useWallet === true
     );
 
     res.status(201).json({

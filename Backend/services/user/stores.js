@@ -16,7 +16,7 @@ const createStore = async (userId, data) => {
     await UserModel.findByIdAndUpdate(
       userId,
       { $addToSet: { role: "SELLER" } },
-      { new: true }
+      { returnDocument: "after" }
     );
   } catch (err) {
     await Store.findByIdAndDelete(newSeller._id).catch(() => {});

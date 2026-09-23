@@ -215,7 +215,7 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
 /* ═══════════════════════════ CART ═══════════════════════════ */
 const itemKey = (item) => {
   const offerId = item.offer || item.offerId || "";
-  return `${String(offerId)}::${String(item.product || "")}::${String(item.variantId || "")}`;
+  return `${String(offerId)}::${String(item.productId || "")}::${String(item.variantId || "")}`;
 };
 
 const findVariant = (listing, variantId) => {
@@ -281,7 +281,7 @@ const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0)
 
   const offers = offerIds.length
     ? await Offer.find({ _id: { $in: offerIds } })
-      .populate("product", "_id title slug images variants listingType status")
+      .populate("productId", "_id title slug images variants listingType status")
       .populate("store", "_id name")
     : [];
 
@@ -300,12 +300,12 @@ const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0)
       skippedItems.push({ offerId, reason: "offer_not_accepted", status: offer.status });
       return;
     }
-    if (!offer.product) {
+    if (!offer.productId) {
       skippedItems.push({ offerId, reason: "offer_missing_product_ref" });
       return;
     }
-    if (offer.product.status !== "active") {
-      skippedItems.push({ offerId, reason: "product_not_available", status: offer.product.status });
+    if (offer.productId.status !== "active") {
+      skippedItems.push({ offerId, reason: "product_not_available", status: offer.productId.status });
       return;
     }
     if (!(offer.stock > 0)) {
@@ -326,7 +326,7 @@ const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0)
       skippedItems.push({ offerId, reason: "variant_mismatch" });
       return;
     }
-    const variantSnapshot = getVariantSnapshot(offer.product, offerVariantId);
+    const variantSnapshot = getVariantSnapshot(offer.productId, offerVariantId);
     if (!variantSnapshot) {
       skippedItems.push({ offerId, reason: "variant_not_found" });
       return;
@@ -338,7 +338,7 @@ const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0)
     const storeId = offer.store?._id || offer.store || null;
 
     normalizedItems.push({
-      product: offer.product._id,
+      productId: offer.productId._id,
       variantId: offerVariantId,
       offer: offer._id,
       store: storeId,
@@ -347,9 +347,9 @@ const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0)
       discount: offer.discount || 0,
       finalPrice,
       variantSnapshot,
-      listingType: offer.product.listingType || "store_product",
+      listingType: offer.productId.listingType || "store_product",
       shipsWithinDays: offer.shipsWithinDays ?? 3,
-      productInfo: productInfoOf(offer.product),
+      productInfo: productInfoOf(offer.productId),
       offerInfo: {
         _id: offer._id,
         price: offer.price,
@@ -363,28 +363,28 @@ const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0)
   });
 
   /* ── 2) BOUGHT FROM THE SITE (variant price) ── */
-  const productIds = [...new Set(directItems.map((i) => String(i.product || "")))].filter(isValidId);
+  const productIds = [...new Set(directItems.map((i) => String(i.productId || "")))].filter(isValidId);
   const listings = productIds.length ? await Listing.find({ _id: { $in: productIds } }) : [];
 
   directItems.forEach((item) => {
-    if (!item.product) {
+    if (!item.productId) {
       skippedItems.push({ reason: "missing_product_id" });
       return;
     }
-    const found = listings.find((l) => String(l._id) === String(item.product));
+    const found = listings.find((l) => String(l._id) === String(item.productId));
     if (!found) {
-      skippedItems.push({ productId: item.product, reason: "product_not_found" });
+      skippedItems.push({ productId: item.productId, reason: "product_not_found" });
     }
   });
 
   listings.forEach((listing) => {
     const itemsOfListing = directItems.filter(
-      (i) => String(i.product) === String(listing._id)
+      (i) => String(i.productId) === String(listing._id)
     );
 
     if (!["active", "accepted"].includes(listing.status)) {
       itemsOfListing.forEach((item) => {
-        skippedItems.push({ productId: item.product, reason: "product_not_available", status: listing.status });
+        skippedItems.push({ productId: item.productId, reason: "product_not_available", status: listing.status });
       });
       return;
     }
@@ -396,20 +396,20 @@ const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0)
 
       if (listing.listingType === "store_product") {
         if (!item.variantId) {
-          skippedItems.push({ productId: item.product, reason: "missing_variant_id" });
+          skippedItems.push({ productId: item.productId, reason: "missing_variant_id" });
           return;
         }
         const variant = findVariant(listing, item.variantId);
         if (!variant) {
-          skippedItems.push({ productId: item.product, reason: "variant_not_found" });
+          skippedItems.push({ productId: item.productId, reason: "variant_not_found" });
           return;
         }
         if (!(variant.stock > 0)) {
-          skippedItems.push({ productId: item.product, reason: "variant_out_of_stock", stock: variant.stock });
+          skippedItems.push({ productId: item.productId, reason: "variant_out_of_stock", stock: variant.stock });
           return;
         }
         if (variant.stock < item.quantity) {
-          skippedItems.push({ productId: item.product, reason: "insufficient_stock", stock: variant.stock, requested: item.quantity });
+          skippedItems.push({ productId: item.productId, reason: "insufficient_stock", stock: variant.stock, requested: item.quantity });
           return;
         }
 
@@ -419,14 +419,14 @@ const calculateCartTotals = async (rawItems, couponDoc = null, shippingCost = 0)
       }
 
       if (typeof finalPrice !== "number" || typeof price !== "number") {
-        skippedItems.push({ productId: item.product, reason: "price_not_available" });
+        skippedItems.push({ productId: item.productId, reason: "price_not_available" });
         return;
       }
 
       subtotal += finalPrice * item.quantity;
 
       normalizedItems.push({
-        product: listing._id,
+        productId: listing._id,
         variantId: item.variantId || null,
         offer: null,
         store: null,
@@ -467,7 +467,7 @@ const mergeCartItems = (currentItems, newItems) => {
 
   for (const newItem of newItems) {
     const normalized = {
-      product: newItem.product,
+      productId: newItem.productId,
       variantId: newItem.variantId || null,
       offer: newItem.offer || newItem.offerId || null,
       quantity: Math.max(Number(newItem.quantity) || 1, 1),

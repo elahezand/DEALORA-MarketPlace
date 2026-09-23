@@ -1,15 +1,17 @@
 const Coupon = require("../../models/coupon");
 const { paginate } = require("../../utils/helper");
+const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
 
 const getCoupons = async (query = {}) => {
   const filter = {};
+  Object.assign(filter, buildDateFilter(query, "createdAt"));
   if (query.isActive !== undefined) filter.isActive = query.isActive === "true";
   if (query.type) filter.type = query.type;
 
   const limit = Math.min(Number(query.limit) || 15, 100);
   return paginate(Coupon, {
-    limit, cursor: query.cursor, filters: filter, sort: { _id: -1 }
+    limit, cursor: query.cursor, filters: filter, sort: getAdminSort(query, ["createdAt", "updatedAt"])
   });
 };
 
@@ -27,7 +29,7 @@ const createCoupon = async (data) => {
 };
 
 const updateCoupon = async (id, data) => {
-  const coupon = await Coupon.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  const coupon = await Coupon.findByIdAndUpdate(id, data, { returnDocument: "after", runValidators: true });
   if (!coupon) throw new AppError(404, "Coupon not found");
   return coupon;
 };

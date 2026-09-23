@@ -20,7 +20,7 @@ const listing = {
   ],
 };
 const offer = {
-  _id: OFFER_ID, status: "accepted", stock: 10, product: listing, store: "s1",
+  _id: OFFER_ID, status: "accepted", stock: 10, productId: listing, store: "s1",
   variantId: V128, price: 48, discount: 5, finalPrice: 45.6,
 };
 
@@ -45,7 +45,7 @@ Module._load = function (request, parent, isMain) {
 const { calculateCartTotals } = require("../utils/helper");
 
 test("direct purchase: price / discount / finalPrice come from the variant", async () => {
-  const res = await calculateCartTotals([{ product: LISTING_ID, variantId: V128, quantity: 2 }]);
+  const res = await calculateCartTotals([{ productId: LISTING_ID, variantId: V128, quantity: 2 }]);
   const [item] = res.items;
   assert.equal(item.price, 50);
   assert.equal(item.discount, 10);
@@ -54,7 +54,7 @@ test("direct purchase: price / discount / finalPrice come from the variant", asy
 });
 
 test("offer purchase: price / discount / finalPrice come from the offer", async () => {
-  const res = await calculateCartTotals([{ offer: OFFER_ID, product: LISTING_ID, variantId: V128, quantity: 1 }]);
+  const res = await calculateCartTotals([{ offer: OFFER_ID, productId: LISTING_ID, variantId: V128, quantity: 1 }]);
   const [item] = res.items;
   assert.equal(item.price, 48);
   assert.equal(item.discount, 5);
@@ -63,19 +63,19 @@ test("offer purchase: price / discount / finalPrice come from the offer", async 
 });
 
 test("offer purchase with another variant id is rejected", async () => {
-  const res = await calculateCartTotals([{ offer: OFFER_ID, product: LISTING_ID, variantId: V256, quantity: 1 }]);
+  const res = await calculateCartTotals([{ offer: OFFER_ID, productId: LISTING_ID, variantId: V256, quantity: 1 }]);
   assert.equal(res.items.length, 0);
   assert.equal(res.skippedItems[0].reason, "variant_mismatch");
 });
 
 test("client-sent prices are ignored", async () => {
-  const res = await calculateCartTotals([{ product: LISTING_ID, variantId: V256, quantity: 1, finalPrice: 1, price: 1 }]);
+  const res = await calculateCartTotals([{ productId: LISTING_ID, variantId: V256, quantity: 1, finalPrice: 1, price: 1 }]);
   assert.equal(res.items[0].finalPrice, 60);
 });
 
 test("coupon discount is applied on top of the final prices", async () => {
   const coupon = { isActive: true, type: "percent", amount: 10, maxDiscount: null };
-  const res = await calculateCartTotals([{ product: LISTING_ID, variantId: V256, quantity: 1 }], coupon, 5);
+  const res = await calculateCartTotals([{ productId: LISTING_ID, variantId: V256, quantity: 1 }], coupon, 5);
   assert.equal(res.pricing.subtotal, 60);
   assert.equal(res.pricing.discount, 6);
   assert.equal(res.pricing.total, 59);

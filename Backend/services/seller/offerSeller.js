@@ -54,7 +54,7 @@ const getOfferableProducts = async (userId, query = {}) => {
 const createOffer = async (userId, data) => {
   const { productId, variantId, price, stock, discount, shipsWithinDays, description } = data;
 
-  if (!isValidId(productId)) throw new AppError(400, "Invalid productId");
+  if (!isValidId(productId)) throw new AppError(400, "Invalid product id");
   if (!isValidId(variantId)) throw new AppError(400, "Invalid variantId");
 
   const store = await getMyStore(userId);
@@ -69,7 +69,7 @@ const createOffer = async (userId, data) => {
   }
 
   const existingOffer = await OfferSeller.exists({
-    productId: productId,
+    productId,
     variantId,
     store: storeId,
     status: { $in: ["pending", "accepted"] },
@@ -79,7 +79,7 @@ const createOffer = async (userId, data) => {
   }
 
   return OfferSeller.create({
-    productId: productId,
+    productId,
     variantId,
     store: storeId,
     price,
@@ -138,7 +138,7 @@ const getMine = async (userId, query = {}) => {
     const matchingProducts = await Listing.find({ listingType: "store_product", title: regex })
       .select("_id")
       .lean();
-    filters.product = { $in: matchingProducts.map((p) => p._id) };
+    filters.productId = { $in: matchingProducts.map((p) => p._id) };
   }
 
   return paginate(OfferSeller, {

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Listing = require("../../models/listing");
 const OfferSeller = require("../../models/offerSeller");
 const { paginate, buildListingFilters } = require("../../utils/helper");
+const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const invalidateCache = require("../../utils/cache");
 const AppError = require("../../utils/AppError");
 const { buildListingDetail, PROTECTED_FIELDS } = require("../shared/listing");
@@ -16,13 +17,15 @@ const STATUSES_BY_TYPE = {
 async function getAllListingsAdmin(query = {}) {
   const filters = await buildListingFilters(query, { isAdmin: true });
   const limit = Math.min(query.limit ? Number(query.limit) : 21, 99);
+  Object.assign(filters, buildDateFilter(query, "createdAt"));
+  if (query.q) filters.title = { $regex: String(query.q).trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
 
   return paginate(Listing, {
     limit,
     cursor: query.cursor,
     filters,
     populate: ["categoryPath", "owner"],
-    sort: { _id: -1 } 
+    sort: getAdminSort(query, ["createdAt", "updatedAt", "title", "minPrice"]) 
   });
 }
 
@@ -36,7 +39,7 @@ async function changeStatus(id, status) {
   if (!allowed.includes(status)) {
     throw new AppError(400, `Invalid status for ${listing.listingType}. Allowed: ${allowed.join(", ")}`);
   }
-  const updated = await Listing.findByIdAndUpdate(id, { status }, { new: true });
+  const updated = await Listing.findByIdAndUpdate(id, { status }, { returnDocument: "after" });
 
   await invalidateCache("/api/listings*");
   return updated;
@@ -56,7 +59,7 @@ async function assertRemovedVariantsHaveNoOffers(listing, nextVariants) {
   if (!removedIds.length) return;
 
   const hasOffers = await OfferSeller.exists({
-    product: listing._id,
+    productId: listing._id,
     variantId: { $in: removedIds },
     status: { $in: ["pending", "accepted"] },
   });

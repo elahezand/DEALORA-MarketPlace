@@ -16,7 +16,7 @@ const getOrCreateActiveCart = async (userId) => {
     return await Cart.findOneAndUpdate(
       { user: userId, status: "active" },
       { $setOnInsert: { user: userId, items: [], status: "active" } },
-      { new: true, upsert: true }
+      { returnDocument: "after", upsert: true }
     );
   } catch (err) {
     if (err?.code === 11000) return Cart.findOne({ user: userId, status: "active" });
@@ -58,7 +58,7 @@ const removeFromCart = async (userId, itemId) => {
     const matchesDirectVariant =
       !item.offer && item.variantId && String(item.variantId) === String(itemId);
     const matchesDirectProduct =
-      !item.offer && !item.variantId && String(item.product) === String(itemId);
+      !item.offer && !item.variantId && String(item.productId) === String(itemId);
     return !(matchesOffer || matchesDirectVariant || matchesDirectProduct);
   });
 

@@ -33,7 +33,7 @@ async function updateInfo(data) {
     { key: "main" },
     { $set: update },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
       upsert: true,
     }

@@ -29,7 +29,7 @@ const startConversation = async (senderId, data) => {
         listing,
       },
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   );
 
   const message = await Message.create({

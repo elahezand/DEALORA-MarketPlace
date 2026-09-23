@@ -64,6 +64,6 @@ test("an offer on a product outside the store's category is refused", async () =
 
 test("an offer inside the store's category is created", async () => {
   const offer = await service.createOffer("u1", { productId: PRODUCT, variantId: V1, price: 10, stock: 1 });
-  assert.equal(offer.product, PRODUCT);
+  assert.equal(offer.productId, PRODUCT);
   assert.equal(offer.status, "pending");
 });

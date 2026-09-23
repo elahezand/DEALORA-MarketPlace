@@ -87,21 +87,20 @@ offerSellerSchema.pre("validate", function () {
   this.finalPrice = calcFinalPrice(this.price, this.discount);
 });
 
-// ⭐ this.listing → this.product
 const syncMinPrice = (productId) => syncListingMinPrice(productId);
 offerSellerSchema.post("save", async function () {
-  await syncMinPrice(this.product);
+  await syncMinPrice(this.productId);
 });
 offerSellerSchema.post("findOneAndUpdate", async function () {
   const doc = await this.model.findOne(this.getQuery());
-  if (doc) await syncMinPrice(doc.product);
+  if (doc) await syncMinPrice(doc.productId);
 });
 offerSellerSchema.post("updateOne", async function () {
   const doc = await this.model.findOne(this.getQuery());
-  if (doc) await syncMinPrice(doc.product);
+  if (doc) await syncMinPrice(doc.productId);
 });
 offerSellerSchema.post("findOneAndDelete", async function (doc) {
-  if (doc) await syncMinPrice(doc.product);
+  if (doc) await syncMinPrice(doc.productId);
 });
 
 async function getStoreOwnerId(storeId) {
@@ -175,8 +174,8 @@ offerSellerSchema.post("updateOne", async function () {
 });
 
 offerSellerSchema.index({ store: 1, status: 1 });
-offerSellerSchema.index({ product: 1, status: 1, stock: 1 });
-offerSellerSchema.index({ product: 1, variantId: 1, status: 1 });
+offerSellerSchema.index({ productId: 1, status: 1, stock: 1 });
+offerSellerSchema.index({ productId: 1, variantId: 1, status: 1 });
 
 const Offer =
   mongoose.models.OfferSeller || mongoose.model("OfferSeller", offerSellerSchema);

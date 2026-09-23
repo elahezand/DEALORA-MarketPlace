@@ -33,7 +33,7 @@ const create = async (userId, data) => {
 
   const order = await Order.findOne({
     user: userId,
-    "items.product": listing,
+    "items.productId": listing,
     $or: [{ paymentStatus: "paid" }, { status: "completed" }],
   })
     .sort({ createdAt: -1 })
@@ -43,7 +43,7 @@ const create = async (userId, data) => {
     throw new AppError(403, "You can only review products you have purchased and paid for");
   }
 
-  const matchingItem = order.items.find((it) => String(it.product) === String(listing));
+  const matchingItem = order.items.find((it) => String(it.productId) === String(listing));
   const store = matchingItem?.store || null;
 
   try {
@@ -94,7 +94,7 @@ const deleteOwn = async (userId, id) => {
       deletedAt: new Date(),
       body: "[deleted]",
     },
-    { new: true }
+    { returnDocument: "after" }
   );
 };
 

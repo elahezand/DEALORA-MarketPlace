@@ -13,7 +13,7 @@ const listing = {
   variants: [{ _id: V128, sku: "128", attributes: { storage: "128GB" }, price: 50, discount: 10, finalPrice: 45, stock: 5 }],
 };
 const offer = {
-  _id: OFFER_ID, status: "accepted", stock: 10, product: listing, store: { _id: "s1", name: "Ali Store" },
+  _id: OFFER_ID, status: "accepted", stock: 10, productId: listing, store: { _id: "s1", name: "Ali Store" },
   variantId: V128, price: 48, discount: 5, finalPrice: 45.6, shipsWithinDays: 2,
 };
 
@@ -51,10 +51,10 @@ Module._load = function (request, parent, isMain) {
 
 const cartService = require("../services/user/cart");
 
-test("addToCart stores only product / variantId / offer / quantity", async () => {
+test("addToCart stores only productId / variantId / offer / quantity", async () => {
   FakeCart.current = null;
-  await cartService.addToCart("u1", [{ product: LISTING_ID, variantId: V128, offer: OFFER_ID, quantity: 1 }]);
-  assert.deepEqual(Object.keys(savedCart[0]).sort(), ["offer", "product", "quantity", "variantId"]);
+  await cartService.addToCart("u1", [{ productId: LISTING_ID, variantId: V128, offer: OFFER_ID, quantity: 1 }]);
+  assert.deepEqual(Object.keys(savedCart[0]).sort(), ["offer", "productId", "quantity", "variantId"]);
 });
 
 test("reading the cart returns the CURRENT prices from the offer", async () => {
@@ -62,7 +62,7 @@ test("reading the cart returns the CURRENT prices from the offer", async () => {
   const view = await cartService.getUserCart("u1");
   assert.equal(view.items[0].finalPrice, 60);
   assert.equal(view.items[0].offer.store.name, "Ali Store");
-  assert.equal(view.items[0].product.title, "iPhone 15");
+  assert.equal(view.items[0].productId.title, "iPhone 15");
   assert.equal(view.pricing.total, 60);
 });
 

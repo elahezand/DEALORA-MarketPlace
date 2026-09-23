@@ -12,7 +12,7 @@ const createWithdrawal = async (userId, data) => {
   const updatedStore = await Store.findOneAndUpdate(
     { _id: store._id, "wallet.balance": { $gte: data.amount } },
     { $inc: { "wallet.balance": -data.amount } },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   if (!updatedStore) {

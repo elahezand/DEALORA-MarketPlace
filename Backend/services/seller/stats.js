@@ -38,6 +38,7 @@ const getSellerStats = async (userId) => {
     totalRevenue: revenueAgg[0]?.revenue || 0,
     totalOrders: orderCountAgg[0]?.count || 0,
     walletBalance: store.wallet?.balance || 0,
+    walletPending: store.wallet?.pending || 0,
     pendingOffers,
     acceptedOffers,
   };

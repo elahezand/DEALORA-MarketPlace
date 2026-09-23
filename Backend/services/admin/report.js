@@ -1,9 +1,11 @@
 const Report = require("../../models/report");
 const { paginate } = require("../../utils/helper");
+const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
 
 const getAllReports = async (query = {}) => {
   const filters = {};
+  Object.assign(filters, buildDateFilter(query, "createdAt"));
   if (query.status) filters.status = query.status;
   if (query.targetType) filters.targetType = query.targetType;
   if (query.reason) filters.reason = query.reason;
@@ -15,7 +17,7 @@ const getAllReports = async (query = {}) => {
     cursor: query.cursor,
     filters,
     populate: [{ path: "reporter", select: "username phone" }],
-    sort: { _id: -1 }
+    sort: getAdminSort(query, ["createdAt", "updatedAt"])
   });
 };
 

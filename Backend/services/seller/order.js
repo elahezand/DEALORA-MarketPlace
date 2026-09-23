@@ -30,7 +30,7 @@ const getSellerOrders = async (userId, query = {}) => {
     filters,
     populate: [
       { path: "user", select: "username phone" },
-      { path: "items.product", select: "title images" },
+      { path: "items.productId", select: "title images" },
     ],
     sort: { _id: -1 }
   });

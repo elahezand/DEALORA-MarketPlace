@@ -52,9 +52,9 @@ const publicService = require("../services/public/listing");
 const userService = require("../services/user/listing");
 const adminService = require("../services/admin/listing");
 
-test("product page loads offers by `product` (not `listing`)", async () => {
+test("product page loads offers by `product`", async () => {
   await publicService.getListingById(LISTING_ID);
-  assert.equal(offerFilter.product, LISTING_ID);
+  assert.equal(offerFilter.productId, LISTING_ID);
   assert.equal(offerFilter.listing, undefined);
 });
 

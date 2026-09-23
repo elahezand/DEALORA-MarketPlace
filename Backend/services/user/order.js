@@ -1,26 +1,44 @@
 const Cart = require("../../models/cart");
 const Order = require("../../models/order");
+const User = require("../../models/user");
+const { spendFromWallet, refundToWallet } = require("../shared/wallet");
 const { paginate, calculateCartTotals, getCouponProblem } = require("../../utils/helper");
+const { round2 } = require("../../utils/pricing");
 const AppError = require("../../utils/AppError");
 const logger = require("../../utils/logger");
 const { createPayment } = require("../shared/zarinpal");
-const { buildOrderIdSearchExpr, finalizeOrder } = require("../shared/order");
+const { buildOrderIdSearchExpr, finalizeOrder, releaseOrderFunds, revertOrder } = require("../shared/order");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /* ═══════════════════════════ CHECKOUT: Cart → Order ═══════════════════════════ */
 
-const checkout = async (userId, shippingAddress, paymentMethod) => {
+const payUrl = (authority) => `https://www.zarinpal.com/pg/StartPay/${authority}`;
+
+const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey = null, useWallet = false) => {
+  // the client retried (lost response, double click, refresh) → give back the same order
+  if (idempotencyKey) {
+    const existing = await Order.findOne({ user: userId, idempotencyKey });
+    if (existing) {
+      return {
+        order: existing,
+        paymentUrl: existing.payment?.authority ? payUrl(existing.payment.authority) : null,
+      };
+    }
+  }
 
   const cart = await Cart.findOneAndUpdate(
     { user: userId, status: "active", "items.0": { $exists: true } },
     { $set: { status: "converted" } },
-    { new: true }
+    { returnDocument: "after" }
   ).populate("coupon");
 
   if (!cart) {
     throw new AppError(400, "Cart is empty or is already being checked out");
   }
+
+  let walletSpent = 0;
+  let createdOrder = null;
 
   const unlockCart = () =>
     Cart.updateOne({ _id: cart._id }, { $set: { status: "active" } }).catch((err) =>
@@ -37,8 +55,13 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
       });
     }
 
+    // how much of this order the wallet could cover (charged after the order exists)
+    const buyer = useWallet ? await User.findById(userId).select("wallet").lean() : null;
+    const walletPlanned = buyer ? Math.min(buyer.wallet?.balance || 0, totals.pricing.total) : 0;
+    const pricing = { ...totals.pricing, walletUsed: 0 };
+
     const orderItems = totals.items.map((item) => ({
-      product: item.product,
+      productId: item.productId,
       variantId: item.variantId || null,
       offer: item.offer || null,
       store: item.store || null,
@@ -61,7 +84,7 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
       needsAdminShipment: !item.store && item.listingType === "store_product",
     }));
 
-    const order = await Order.create({
+    const order = createdOrder = await Order.create({
       user: cart.user,
       items: orderItems,
       coupon: coupon
@@ -73,31 +96,84 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
           maxDiscount: coupon.maxDiscount ?? null,
         }
         : null,
-      pricing: totals.pricing,
+      pricing,
       shippingAddress,
       paymentMethod,
       paymentStatus: "pending",
       status: "created",
+      idempotencyKey,
     });
-
-    // 5) Payment
+    // 5) Payment — the order exists now, so money can be moved safely
     let paymentUrl = null;
-    if (paymentMethod === "zarinpal") {
-      const payment = await createPayment(order.pricing.total * 10, `Order ${order._id}`);
+
+    if (walletPlanned > 0) {
+      order.finalizedAt = new Date();
+      await order.save();
+
+      const charged = await spendFromWallet(
+        userId,
+        order._id,
+        walletPlanned
+      );
+
+      if (charged > 0) {
+        walletSpent = charged;
+        order.pricing.walletUsed = charged;
+        order.pricing.total = round2(order.pricing.total - charged);
+        await order.save();
+      }
+    }
+
+    // Wallet covered the whole order
+    if (order.pricing.total === 0 && order.pricing.walletUsed > 0) {
+      order.paymentMethod = "wallet";
+      order.paymentStatus = "paid";
+      order.payment = {
+        authority: null,
+        refId: null,
+        paidAt: new Date(),
+      };
+
+      await order.save();
+      await finalizeOrder(order);
+      await order.save();
+
+      return { order, paymentUrl: null };
+    }
+
+    // Wallet covered only part of the order
+    // or the user selected ZarinPal directly
+    if (
+      (paymentMethod === "wallet" || paymentMethod === "zarinpal") &&
+      order.pricing.total > 0
+    ) {
+      const payment = await createPayment(
+        order.pricing.total * 10,
+        `Order ${order._id}`
+      );
 
       if (!payment?.data?.authority) {
         order.status = "cancelled";
         order.paymentStatus = "failed";
         await order.save();
+
         throw new AppError(502, "Payment init failed");
       }
 
-      order.payment = { authority: payment.data.authority };
-      paymentUrl = `https://www.zarinpal.com/pg/StartPay/${payment.data.authority}`;
+      // Remaining amount will be paid through ZarinPal
+      order.paymentMethod = "zarinpal";
+      order.payment = {
+        authority: payment.data.authority,
+      };
+
+      paymentUrl = payUrl(payment.data.authority);
       await order.save();
     }
 
     if (paymentMethod === "cash") {
+      order.finalizedAt = order.finalizedAt || new Date();
+      await order.save();
+
       await finalizeOrder(order);
       await order.save();
     }
@@ -105,6 +181,9 @@ const checkout = async (userId, shippingAddress, paymentMethod) => {
     return { order, paymentUrl };
   } catch (err) {
     await unlockCart();
+    if (walletSpent > 0 && createdOrder) {
+      await refundToWallet(userId, createdOrder._id, walletSpent, "checkout failed");
+    }
     throw err;
   }
 };
@@ -160,7 +239,11 @@ const cancelOrder = async (orderId, userId) => {
   }
 
   order.status = "cancelled";
-  return order.save();
+  await order.save();
+
+  // give back the stock, the held money and the coupon use
+  await revertOrder(order);
+  return order;
 };
 
 const confirmDelivery = async (orderId, userId) => {
@@ -177,7 +260,11 @@ const confirmDelivery = async (orderId, userId) => {
   order.status = "completed";
   order.isDelivered = true;
   order.deliveredAt = new Date();
-  return order.save();
+  await order.save();
+
+  // delivered → the sellers can now withdraw their money
+  await releaseOrderFunds(order);
+  return order;
 };
 
 module.exports = {

@@ -9,7 +9,7 @@ const favoriteSchema = new Schema(
       required: true,
       index: true,
     },
-    product: {
+    productId: {
       type: Types.ObjectId,
       ref: "Listing",
       required: true,
@@ -27,10 +27,7 @@ const favoriteSchema = new Schema(
   }
 );
 
-// Ensure a user can only favorite a product once
-favoriteSchema.index({ user: 1, product: 1 }, { unique: true });
-
-// Index for quick user favorites lookup
+favoriteSchema.index({ user: 1, productId: 1 }, { unique: true });
 favoriteSchema.index({ user: 1, createdAt: -1 });
 
 const Favorite =

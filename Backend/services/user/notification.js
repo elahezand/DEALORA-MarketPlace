@@ -32,7 +32,7 @@ const markSeen = async (id, ownerId) => {
   const updated = await Notification.findOneAndUpdate(
     { _id: id, user: ownerId },
     { $set: { see: 1 } },
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 
   if (!updated) {

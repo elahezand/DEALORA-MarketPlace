@@ -2,12 +2,21 @@ const Comment = require("../../models/comment");
 const mongoose = require("mongoose");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
+const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const getAdmin = async (query = {}) => {
   const filters = {};
-  if (query.status) filters.status = query.status;
+  if (query.status && query.status !== "all") filters.status = query.status;
+  if (query.type === "reply") filters.parentId = { $ne: null };
+  if (query.type === "comment") filters.parentId = null;
+  if (query.replyStatus === "replied" || query.replyStatus === "unreplied") {
+    const repliedIds = await Comment.distinct("parentId", { parentId: { $ne: null } });
+    filters.parentId = null;
+    filters._id = query.replyStatus === "replied" ? { $in: repliedIds } : { $nin: repliedIds };
+  }
+  Object.assign(filters, buildDateFilter(query, "createdAt"));
   if (query.listing && isValidId(query.listing)) filters.listing = query.listing;
 
   const limit = Math.min(Number(query.limit) || 15, 100);
@@ -21,7 +30,7 @@ const getAdmin = async (query = {}) => {
       { path: "listing", select: "title" },
       { path: "parentId", select: "body" },
     ],
-    sort: { _id: -1 }
+    sort: getAdminSort(query, ["createdAt"])
   });
 };
 
@@ -70,7 +79,7 @@ const moderate = async (id, adminId, data) => {
     update.status = "deleted";
   }
 
-  return Comment.findByIdAndUpdate(id, update, { new: true });
+  return Comment.findByIdAndUpdate(id, update, { returnDocument: "after" });
 };
 
 const adminDelete = async (id) => {
@@ -81,7 +90,7 @@ const adminDelete = async (id) => {
       deletedAt: new Date(),
       body: "[deleted]",
     },
-    { new: true }
+    { returnDocument: "after" }
   );
 };
 

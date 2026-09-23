@@ -13,7 +13,7 @@ async function getUserFavorites(userId, query = {}) {
             user: userId,
         },
         populate: {
-            path: "product",
+            path: "productId",
             select:
                 "title slug price minPrice listingType images status metrics condition shortIdentifier",
         },
@@ -31,7 +31,7 @@ async function addFavorite(userId, productId, productType) {
 
     const exists = await Favorite.findOne({
         user: userId,
-        product: productId,
+        productId,
     });
 
     if (exists) {
@@ -40,7 +40,7 @@ async function addFavorite(userId, productId, productType) {
 
     return Favorite.create({
         user: userId,
-        product: productId,
+        productId,
         productType: productType || product.listingType,
     });
 }
@@ -48,7 +48,7 @@ async function addFavorite(userId, productId, productType) {
 async function removeFavorite(userId, productId) {
     const favorite = await Favorite.findOneAndDelete({
         user: userId,
-        product: productId,
+        productId,
     });
 
     if (!favorite) {
@@ -61,7 +61,7 @@ async function removeFavorite(userId, productId) {
 async function toggleFavorite(userId, productId, productType) {
     const favorite = await Favorite.findOne({
         user: userId,
-        product: productId,
+        productId,
     });
 
     if (favorite) {
@@ -71,7 +71,7 @@ async function toggleFavorite(userId, productId, productType) {
 
     await Favorite.create({
         user: userId,
-        product: productId,
+        productId,
         productType,
     });
 
@@ -81,7 +81,7 @@ async function toggleFavorite(userId, productId, productType) {
 async function isFavorited(userId, productId) {
     return !!(await Favorite.exists({
         user: userId,
-        product: productId,
+        productId,
     }));
 }
 
@@ -103,12 +103,12 @@ async function checkFavorites(userId, productIds) {
 
     const favorites = await Favorite.find({
         user: userId,
-        product: { $in: idsArray },
+        productId: { $in: idsArray },
     })
         .select("product")
         .lean();
 
-    return favorites.map((f) => String(f.product));
+    return favorites.map((f) => String(f.productId));
 }
 
 async function filterFavoritesByType(userId, type, query = {}) {
@@ -123,7 +123,7 @@ async function filterFavoritesByType(userId, type, query = {}) {
         },
         sort: { createdAt: -1 },
         populate: {
-            path: "product",
+            path: "productId",
             select:
                 "title slug price minPrice listingType images status metrics condition shortIdentifier",
         },

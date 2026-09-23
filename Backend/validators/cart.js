@@ -9,7 +9,7 @@ const objectIdSchema = z.string().refine(
 
 /* One cart item: only WHAT to buy — prices are always calculated by the server */
 const cartItemZodSchema = z.object({
-  product: objectIdSchema,
+  productId: objectIdSchema,
   variantId: objectIdSchema,
   offer: objectIdSchema.nullable().optional(),
   quantity: z.number().int().min(1),

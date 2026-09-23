@@ -31,7 +31,7 @@ const getPublicArticleById = async (id) => {
   const article = await Article.findOneAndUpdate(
     { _id: id, isPublished: true },
     { $inc: { views: 1 } },
-    { new: true }
+    { returnDocument: "after" }
   ).populate("category", "title slug");
 
   if (!article) {

@@ -31,6 +31,7 @@ const storeSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     wallet: {
       balance: { type: Number, default: 0, min: 0 },
+      pending: { type: Number, default: 0, min: 0 },
     },
     meta: {
       ratings: { type: Number, default: 0 },

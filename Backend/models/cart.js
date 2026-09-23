@@ -11,7 +11,7 @@ const CART_STATUS = Object.freeze({
 /* ---------- Cart item ---------- */
 const cartItemSchema = new Schema(
   {
-    product: { type: Types.ObjectId, ref: "Listing", required: true },
+    productId: { type: Types.ObjectId, ref: "Listing", required: true },
     variantId: { type: Types.ObjectId, default: null },
     offer: { type: Types.ObjectId, ref: "OfferSeller", default: null },
     quantity: { type: Number, required: true, min: 1, default: 1 },

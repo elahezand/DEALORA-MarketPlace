@@ -4,7 +4,7 @@ const notifyUser = require("../utils/notify");
 
 /*  Order item   */
 const orderItemSchema = new Schema({
-  product: { type: Types.ObjectId, ref: "Listing", required: true },
+  productId: { type: Types.ObjectId, ref: "Listing", required: true },
   variantId: { type: Types.ObjectId, default: null },
   offer: { type: Types.ObjectId, ref: "OfferSeller", default: null },
   store: { type: Types.ObjectId, ref: "Store", default: null },
@@ -27,6 +27,9 @@ const orderItemSchema = new Schema({
     name: { type: String, default: null },
   },
 
+  stockReserved: { type: Boolean, default: false },
+  walletCredited: { type: Boolean, default: false },
+  walletReleased: { type: Boolean, default: false },
   fulfillment: {
     status: { type: String, enum: ["pending", "shipped"], default: "pending" },
     trackingCode: { type: String, trim: true, default: null },
@@ -52,6 +55,7 @@ const pricingSchema = new Schema(
     subtotal: { type: Number, default: 0, min: 0 },
     discount: { type: Number, default: 0, min: 0 },
     shippingCost: { type: Number, default: 0, min: 0 },
+    walletUsed: { type: Number, default: 0, min: 0 },
     total: { type: Number, default: 0, min: 0 },
   },
   { _id: false }
@@ -82,7 +86,7 @@ const orderSchema = new Schema(
     coupon: { type: orderCouponSchema, default: null },
     pricing: { type: pricingSchema, required: true },
     shippingAddress: { type: shippingAddressSchema, required: true },
-    paymentMethod: { type: String, enum: ["cash", "zarinpal"], required: true },
+    paymentMethod: { type: String, enum: ["cash", "zarinpal", "wallet"], required: true },
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded"],
@@ -98,6 +102,15 @@ const orderSchema = new Schema(
       enum: ["created", "processing", "shipped", "completed", "cancelled"],
       default: "created",
     },
+    couponCounted: { type: Boolean, default: false },
+    fundsReleasedAt: { type: Date, default: null },
+    revertedAt: { type: Date, default: null },
+    idempotencyKey: { type: String, default: null },
+    finalizedAt: { type: Date, default: null },
+    shippedAt: { type: Date, default: null },
+    autoCompletedAt: { type: Date, default: null },
+    refundedAt: { type: Date, default: null },
+    refundAmount: { type: Number, default: 0, min: 0 },
     isDelivered: { type: Boolean, default: false },
     deliveredAt: { type: Date, default: null },
   },
@@ -105,6 +118,10 @@ const orderSchema = new Schema(
 );
 
 orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index(
+  { user: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { idempotencyKey: { $type: "string" } } }
+);
 orderSchema.index({ "payment.authority": 1 });
 orderSchema.index({ "items.store": 1, createdAt: -1 });
 orderSchema.pre("save", function () {

@@ -57,7 +57,37 @@ const patchAdmin = async (req, res, next) => {
   }
 };
 
+const getStuckOrders = async (req, res, next) => {
+  try {
+    const result = await adminOrderService.getStuckOrders();
+    res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const repairOrder = async (req, res, next) => {
+  try {
+    const order = await adminOrderService.repairOrder(req.params.id);
+    res.status(200).json({ success: true, message: "Order finalized", data: order });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const runAutoComplete = async (req, res, next) => {
+  try {
+    const result = await adminOrderService.runAutoComplete();
+    res.status(200).json({ success: true, message: "Order sweeps finished", data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
+  runAutoComplete,
+  getStuckOrders,
+  repairOrder,
   getAdmin,
   getByIdAdmin,
   patchAdmin,

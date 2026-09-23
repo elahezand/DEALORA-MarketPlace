@@ -14,7 +14,7 @@ const createCategory = async (data) => {
 
 const updateCategory = async (id, data) => {
     try {
-        return await Category.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
+        return await Category.findByIdAndUpdate(id, { $set: data }, { returnDocument: "after", runValidators: true });
     } catch (e) {
         if (e.code === 11000) {
             throw new AppError(409, "A category with this slug already exists");

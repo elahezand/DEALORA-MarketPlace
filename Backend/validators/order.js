@@ -17,7 +17,11 @@ const shippingAddressSchema = z.object({
 
 const checkoutSchema = z.object({
     shippingAddress: shippingAddressSchema,
-    paymentMethod: z.enum(["cash", "zarinpal"]),
+    paymentMethod: z.enum(["cash", "zarinpal", "wallet"]),
+    // same key on a retry → the same order is returned instead of a second one
+    idempotencyKey: z.string().min(8).max(100).optional(),
+    // spend the buyer's wallet balance first
+    useWallet: z.boolean().optional(),
 });
 
 // ADMIN: full control over an order's lifecycle/payment state.

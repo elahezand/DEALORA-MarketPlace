@@ -4,14 +4,14 @@ const { calculateCartTotals } = require("../../utils/helper");
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
 const toStoredItem = (item) => ({
-  product: item.product,
+  productId: item.productId,
   variantId: item.variantId || null,
   offer: item.offer || null,
   quantity: item.quantity,
 });
 
 const toViewItem = (item) => ({
-  product: item.productInfo,
+  productId: item.productInfo,
   variantId: item.variantId,
   variantSnapshot: item.variantSnapshot,
   offer: item.offerInfo,

@@ -29,16 +29,18 @@ const userSchema = new mongoose.Schema(
         phone: {
             type: String,
             required: true,
-            unique: true,
-            match: /^09\d{9}$/,
+            match: /^09\d{9}$/, // unique index: userSchema.index({ phone: 1 })
         },
 
         email: {
             type: String,
-            unique: true,
-            sparse: true,
-            lowercase: true,
+            lowercase: true, // unique sparse index: userSchema.index({ email: 1 })
             trim: true,
+        },
+
+        // refunds of cancelled orders land here
+        wallet: {
+            balance: { type: Number, default: 0, min: 0 },
         },
 
         role: {

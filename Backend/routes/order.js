@@ -25,6 +25,29 @@ orderRouter.get("/admin",
     authAdmin,
     adminController.getAdmin);
 
+// orders whose finalize never completed (server crash) + a way to finish them
+orderRouter.get(
+    "/admin/stuck",
+    authUser,
+    authAdmin,
+    adminController.getStuckOrders
+);
+
+orderRouter.post(
+    "/admin/auto-complete",
+    authUser,
+    authAdmin,
+    adminController.runAutoComplete
+);
+
+orderRouter.post(
+    "/admin/:id/repair",
+    authUser,
+    authAdmin,
+    validateObjectIdParam("id"),
+    adminController.repairOrder
+);
+
 orderRouter.get(
     "/admin/:id",
     authUser,

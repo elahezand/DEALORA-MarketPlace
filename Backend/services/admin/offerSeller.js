@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const OfferSeller = require("../../models/offerSeller");
 const Listing = require("../../models/listing");
 const { paginate } = require("../../utils/helper");
+const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
 const { assertOfferableVariant, assertValidStatus } = require("../shared/offerSeller");
 
@@ -14,6 +15,7 @@ const getAll = async (query = {}) => {
   assertValidStatus(query.status);
 
   const filters = {};
+  Object.assign(filters, buildDateFilter(query, "createdAt"));
   if (query.status) filters.status = query.status;
   if (!query.status || query.status === "all") {
     filters.status = { $ne: "deleted" };
@@ -28,7 +30,7 @@ const getAll = async (query = {}) => {
       { path: "productId", select: PRODUCT_FIELDS },
       { path: "store", select: "name slug owner", populate: { path: "owner", select: "name username phone" } },
     ],
-    sort: { _id: -1 }
+    sort: getAdminSort(query, ["createdAt", "updatedAt"])
   });
 };
 
@@ -58,7 +60,7 @@ const approve = async (offerId, adminId, data) => {
           (data.status === "accepted" ? "Approved by administration" : "Rejected by administration"),
       },
     },
-    { new: true }
+    { returnDocument: "after" }
   );
   if (!updated) throw new AppError(409, "Offer has already been processed");
 

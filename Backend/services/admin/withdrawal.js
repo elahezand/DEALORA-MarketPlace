@@ -1,10 +1,12 @@
 const Withdrawal = require("../../models/withdrawal");
 const Store = require("../../models/store");
 const { paginate } = require("../../utils/helper");
+const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
 
 const getAllWithdrawals = async (query = {}) => {
   const filters = {};
+  Object.assign(filters, buildDateFilter(query, "createdAt"));
   if (query.status) filters.status = query.status;
 
   const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 100);
@@ -13,7 +15,7 @@ const getAllWithdrawals = async (query = {}) => {
     cursor: query.cursor,
     filters,
     populate: [{ path: "store", select: "name owner" }],
-    sort: { _id: -1 }
+    sort: getAdminSort(query, ["createdAt", "updatedAt"])
   });
 };
 

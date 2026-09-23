@@ -24,9 +24,29 @@ async function startServer() {
     })
 }
 
+
+function startOrderSweeper() {
+    const { runOrderSweeps } = require("./services/shared/orderSweeper");
+    const everyMinutes = Number(process.env.ORDER_SWEEP_MINUTES || 10);
+
+    const run = async () => {
+        try {
+            const result = await runOrderSweeps();
+            const total = result.finished + result.paid + result.cancelled + result.completed;
+            if (total) logger.info(`order sweeper: ${JSON.stringify(result)}`);
+        } catch (err) {
+            logger.error(`order sweeper failed: ${err}`);
+        }
+    };
+
+    run();
+    setInterval(run, everyMinutes * 60 * 1000).unref();
+}
+
 async function run() {
     await connectToDB()
     await startServer()
+    startOrderSweeper()
 }
 
 run()

@@ -1,16 +1,17 @@
 "use client";
-import React, { useState } from 'react';
+import { useState } from 'react';
 import * as z from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetMyCart } from "@/services/Cart/useGetMyCart";
-import {useCheckout} from "@/services/Cart/useCheckout"
+import { useCheckout } from "@/services/Cart/useCheckout"
 import { checkoutSchema } from '@/validations/cartSchrma';
 import { Button } from "@heroui/react";
 import { ShieldCheck } from "lucide-react";
 import { useGetProfile } from '@/services/Profile/useGetProfile';
 import { IAddress } from '@/types/User';
 import { CartItem } from '@/types/Cart';
+import { useRouter } from 'next/navigation';
 import { AddressCard } from '@/components/shared/address/AddressCard';
 import AddNewAddress from '@/components/shared/address/AddNewAddress';
 import { getCheckoutKey } from '@/utils/idempotencyKey';
@@ -20,9 +21,14 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
     const { data: cart } = useGetMyCart();
+    const route = useRouter()
     const cartId = cart?.data?.id ?? cart?.data?._id;
-    const { mutate: placeOrder, isPending } = useCheckout(cartId);
+    // no online payment (cash, or the wallet paid everything) → show the new order
+    const { mutate: placeOrder, isPending } = useCheckout(cartId, (orderId) => {
+        route.replace(orderId ? `/dashboard/orders/${orderId}` : "/dashboard/orders");
+    });
     const { user } = useGetProfile();
+
     const [isAdding, setIsAdding] = useState(false);
     const [useWallet, setUseWallet] = useState(false);
 
@@ -45,11 +51,10 @@ export default function CheckoutPage() {
         placeOrder({
             shippingAddress: {
                 ...data.shippingAddress,
-                phone: user?.phone || "",
+                ...(user?.phone && { phone: user.phone }),
             },
             paymentMethod: data.paymentMethod,
             useWallet,
-            // same key on a retry → the server returns the same order, never a second one
             idempotencyKey: getCheckoutKey(cartId),
         });
     };
@@ -96,23 +101,23 @@ export default function CheckoutPage() {
                             const product = typeof item.productId === "object" ? item.productId : null;
                             const offerId = typeof item.offer === "object" ? item.offer?._id : item.offer;
                             return (
-                            <div
-                                key={`${offerId ?? "direct"}-${item.variantId ?? "novariant"}-${index}`}
-                                className="flex justify-between items-center text-sm"
-                            >
-                                <span className="text-[var(--foreground-muted)] font-medium">
-                                    {product?.title}
-                                    {item.variantSnapshot?.attributes && (
-                                        <span className="block text-[var(--foreground-subtle)] text-xs">
-                                            {Object.entries(item.variantSnapshot.attributes)
-                                                .map(([key, value]) => `${key}: ${value}`)
-                                                .join(" · ")}
-                                        </span>
-                                    )}
-                                    <span className="text-[var(--foreground-subtle)] text-xs"> x{item.quantity}</span>
-                                </span>
-                                <span className="font-semibold text-[var(--foreground)]">${(item.finalPrice * item.quantity).toFixed(2)}</span>
-                            </div>
+                                <div
+                                    key={`${offerId ?? "direct"}-${item.variantId ?? "novariant"}-${index}`}
+                                    className="flex justify-between items-center text-sm"
+                                >
+                                    <span className="text-[var(--foreground-muted)] font-medium">
+                                        {product?.title}
+                                        {item.variantSnapshot?.attributes && (
+                                            <span className="block text-[var(--foreground-subtle)] text-xs">
+                                                {Object.entries(item.variantSnapshot.attributes)
+                                                    .map(([key, value]) => `${key}: ${value}`)
+                                                    .join(" · ")}
+                                            </span>
+                                        )}
+                                        <span className="text-[var(--foreground-subtle)] text-xs"> x{item.quantity}</span>
+                                    </span>
+                                    <span className="font-semibold text-[var(--foreground)]">${(item.finalPrice * item.quantity).toFixed(2)}</span>
+                                </div>
                             );
                         })}
                     </div>

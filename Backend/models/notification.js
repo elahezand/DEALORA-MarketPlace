@@ -25,6 +25,7 @@ const notificationSchema = new mongoose.Schema(
         "offer_rejected",
         "listing_approved",
         "listing_rejected",
+        "cod_overdue",
       ],
       default: "manual",
     },

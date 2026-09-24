@@ -13,6 +13,7 @@ import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import {
   HiOutlineChatBubbleLeftRight
 } from "react-icons/hi2";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 type ToneType = "success" | "warning" | "destructive" | "neutral" | "info";
 
 const STATUS_TONE: Record<string, ToneType> = {
@@ -52,8 +53,9 @@ interface OrdersPageProps {
 export default function OrdersPage({
   initialData,
 }: OrdersPageProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [status, setStatus] = useState<OrderStatus | "all">("processing");
-  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params = { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
   const {
     data,
@@ -66,8 +68,8 @@ export default function OrdersPage({
     "/orders/my",
     params,
     {
-      queryKey: ["/orders/my", status],
-      initialData: status === "processing" ? initialData : undefined
+      queryKey: ["/orders/my", status, filtersKey(filters)],
+      initialData: status === "processing" && filtersKey(filters) === "{}" ? initialData : undefined
     })
 
 
@@ -117,6 +119,8 @@ export default function OrdersPage({
 
       {/* Table Card Structure */}
       {/* Table Container */}
+      <TableFilters value={filters} onChange={setFilters} searchPlaceholder="Search order id..." />
+
       <TableCard
         header={<WidgetHeader
           icon={HiOutlineChatBubbleLeftRight} title="Orders" href="/dashboard/orders" />}

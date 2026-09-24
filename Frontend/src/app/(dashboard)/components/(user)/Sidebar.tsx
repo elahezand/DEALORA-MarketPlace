@@ -11,6 +11,7 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineChatBubbleLeftRight,
   HiOutlineFlag,
+  HiOutlineWallet,
 } from "react-icons/hi2";
 import StoreAction from "./storeAction";
 import { useUnreadConversationsCount } from "@/services/Chat/useUnreadConversationsCount";
@@ -24,6 +25,7 @@ const menuItems = [
   { name: "My Listings", href: "/dashboard/listings", icon: HiOutlineTag },
   { name: "Favorites", href: "/dashboard/favorites", icon: HiOutlineHeart },
   { name: "My Orders", href: "/dashboard/orders", icon: HiOutlineShoppingBag },
+  { name: "My Wallet", href: "/dashboard/wallet", icon: HiOutlineWallet },
   { name: "Messages", href: "/dashboard/messages", icon: HiOutlineChatBubbleLeftRight },
   { name: "My Reports", href: "/dashboard/reports", icon: HiOutlineFlag },
   { name: "Settings", href: "/dashboard/settings", icon: HiOutlineCog6Tooth },
@@ -50,11 +52,12 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
   return (
     <aside
       className={clsx(
-        "fixed top-0 h-screen z-30 p-4 flex flex-col justify-between",
+        "fixed top-0 left-0 h-screen z-50 lg:z-30 p-4 flex flex-col justify-between",
         "bg-[var(--card)] border-r border-[var(--border-strong)]",
         "transition-all duration-300 ease-out shadow-sm",
         isScrolled ? "pt-4" : "pt-16",
-        isOpen ? "w-72" : "w-20"
+        "dash-sidebar",
+        isOpen ? "w-72 translate-x-0" : "w-72 -translate-x-full lg:translate-x-0 lg:w-20"
       )}
     >
       {/* Nav items */}

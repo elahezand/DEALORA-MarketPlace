@@ -8,13 +8,13 @@ import { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
+import { QueryParams } from "@/types/api/ErrorTypes";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, textareaClass } from "../shared/AdminFormModal";
-import AdminFilters from "../shared/AdminFilters";
 import { useAnswerSupportMessage } from "@/services/Support/useAnswerSupportMessage";
 import { useDeleteSupportMessage } from "@/services/Support/useDeleteSupportMessage";
 import { ContactMessage, ContactsResponse } from "@/types/Contact";
-import { QueryParams } from "@/types/api/ErrorTypes";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 const ENDPOINT = "/contacts";
 
 interface SupportClientProps {
@@ -22,13 +22,14 @@ interface SupportClientProps {
 }
 
 export default function SupportClient({ initialData }: SupportClientProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [filter, setFilter] = useState<"all" | "pending" | "answered">("pending");
   const [target, setTarget] = useState<ContactMessage | null>(null);
   const [answer, setAnswer] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<QueryParams>({});
 
-  const params: QueryParams = { limit: 20, ...(filter !== "all" ? { status: filter } : {}), ...filters };
+  // filtering happens on the server, so paging through "pending" never skips messages
+  const params: QueryParams = { limit: 20, ...(filter !== "all" && { status: filter }), ...filtersToParams(filters) };
 
   const {
     data,
@@ -38,7 +39,7 @@ export default function SupportClient({ initialData }: SupportClientProps) {
     isLoading,
     isError,
   } = useInfiniteGet<ContactsResponse>(ENDPOINT, params,
-    { queryKey: ["admin-support", filter, JSON.stringify(filters)], initialData: filter === "pending" && Object.keys(filters).length === 0 ? initialData : undefined }
+    { queryKey: ["admin-support", filter, filtersKey(filters)], initialData: filter === "pending" && filtersKey(filters) === "{}" ? initialData : undefined }
   );
 
   const allMessages: ContactMessage[] = (
@@ -107,7 +108,8 @@ export default function SupportClient({ initialData }: SupportClientProps) {
         ))}
       </div>
 
-      <AdminFilters value={filters} onChange={setFilters} showSearch searchPlaceholder="Search messages..." />
+      <TableFilters value={filters} onChange={setFilters} searchPlaceholder="Search name, email, phone, message..." />
+
 
       <TableCard
         header={

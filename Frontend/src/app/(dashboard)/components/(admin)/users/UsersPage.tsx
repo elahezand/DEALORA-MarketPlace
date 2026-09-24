@@ -10,7 +10,6 @@ import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { IUser, AdminUsersResponse } from "@/types/User";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { ApiError } from "@/types/api/ErrorTypes";
-import AdminFilters from "../shared/AdminFilters";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
@@ -18,6 +17,13 @@ import { getUrl } from "@/utils/helper"
 import { useToggleBanUser } from "@/services/User/useToggleBanUser";
 import { useToggleUserRole } from "@/services/User/useToggleUserRole";
 import { useDeleteUser } from "@/services/User/useDeleteUser";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
+
+const formatDate = (value?: string) =>
+  value ? new Date(value).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const ENDPOINT = "/users";
 
@@ -25,11 +31,11 @@ interface UsersClientProps {
   initialData?: InfiniteData<AdminUsersResponse>;
 }
 export default function UsersClient({ initialData }: UsersClientProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const { user: me } = useGetProfile();
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const [filters, setFilters] = useState<QueryParams>({});
-  const params: QueryParams = { limit: 20, ...filters };
+  const params: QueryParams = { limit: 20, ...filtersToParams(filters) };
 
   const {
     data,
@@ -38,7 +44,7 @@ export default function UsersClient({ initialData }: UsersClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, params, { queryKey: ["admin-users", JSON.stringify(filters)], initialData });
+  } = useInfiniteGet<AdminUsersResponse>(ENDPOINT, params, { queryKey: ["admin-users", filtersKey(filters)], initialData: filtersKey(filters) === "{}" ? initialData : undefined });
 
   const users: IUser[] = (
     data?.pages?.flatMap((page: AdminUsersResponse) => page?.data ?? []) || []
@@ -79,7 +85,8 @@ export default function UsersClient({ initialData }: UsersClientProps) {
         </h1>
       </div>
 
-      <AdminFilters value={filters} onChange={setFilters} showSearch searchPlaceholder="Search username, phone or email..." />
+      <TableFilters value={filters} onChange={setFilters} searchPlaceholder="Search name, username, phone..." />
+
 
       <TableCard
         header={
@@ -100,8 +107,9 @@ export default function UsersClient({ initialData }: UsersClientProps) {
           <tr>
             <Th>User</Th>
             <Th>Role</Th>
-            <Th>Joined At</Th>
-            <Th>Last Login Device</Th>
+            <Th>Joined</Th>
+            <Th>Last login</Th>
+            <Th>Orders</Th>
             <Th align="right">Actions</Th>
           </tr>
         </thead>
@@ -146,14 +154,29 @@ export default function UsersClient({ initialData }: UsersClientProps) {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <Badge tone={roleTone} label={roleLabel} />
+                  <Badge
+                    tone={roleTone}
+                    label={roleLabel}
+                  />
                 </td>
-                <td className="px-6 py-4 text-xs text-[var(--foreground-muted)]">
-                  {new Date(user.createdAt).toLocaleDateString("en-US")}
+                <td className="px-6 py-4 text-xs text-[var(--foreground-muted)] whitespace-nowrap">
+                  {formatDate(user.joinedAt ?? user.createdAt)}
                 </td>
-                <td className="px-6 py-4 text-xs text-[var(--foreground-muted)]">
-                  <div>{user.lastLogin ? new Date(user.lastLogin).toLocaleString("en-US") : "Never"}</div>
-                  <div className="text-[10px]">{user.lastLoginDevice ?? "Unknown"}</div>
+                <td className="px-6 py-4 text-xs whitespace-nowrap">
+                  {user.lastLoginAt ? (
+                    <div className="flex flex-col">
+                      <span className="text-[var(--foreground)]">{formatDateTime(user.lastLoginAt)}</span>
+                      <span className="text-[var(--foreground-muted)]">
+                        {user.lastDevice ?? "Unknown device"}
+                        {user.activeSessions ? ` · ${user.activeSessions} active` : ""}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[var(--foreground-subtle)]">Never</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-sm font-bold text-[var(--foreground)]">
+                  {user.ordersCount ?? 0}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-2">

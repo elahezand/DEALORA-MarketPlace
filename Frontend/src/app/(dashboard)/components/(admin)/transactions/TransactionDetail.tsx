@@ -169,15 +169,6 @@ export default function TransactionDetail({
             label={order.paymentStatus}
           />
         </div>
-      {order.paymentStatus === "refunded" && (
-        <div className="card rounded-2xl border border-[var(--border)] px-5 py-4">
-          <p className="text-xs font-black text-[var(--foreground)]">Refund</p>
-          <div className="mt-1 flex flex-wrap gap-4 text-sm text-[var(--foreground-muted)]">
-            <span>Amount: <b className="text-[var(--foreground)]">${(order.refundAmount ?? 0).toLocaleString()}</b></span>
-            {order.refundedAt && <span>Date: {formatDate(order.refundedAt)}</span>}
-          </div>
-        </div>
-      )}
       </div>
 
       <div className="card rounded-2xl border border-[var(--border)] overflow-hidden">

@@ -1,0 +1,198 @@
+/* =========================================================
+   DASHBOARD (admin · seller · user)
+   Only loaded by the dashboard layout, so the storefront is untouched.
+   ========================================================= */
+
+/* ---------- shell ---------- */
+
+.dash-main {
+  min-height: calc(100vh - 64px);
+  padding: 1rem 1rem 3rem;
+}
+
+@media (min-width: 640px) {
+  .dash-main {
+    padding: 1.25rem 1.5rem 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dash-main {
+    padding: 1.5rem 2rem 3rem;
+  }
+}
+
+/* content never stretches into unreadable line lengths on wide screens */
+.dash-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* phones: the sidebar is a drawer above this */
+.dash-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(15 23 42 / 0.45);
+  backdrop-filter: blur(3px);
+  animation: dash-fade-in 0.2s ease-out;
+}
+
+@keyframes dash-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dash-sidebar {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, var(--primary-500)) 0%, var(--card) 40%);
+  backdrop-filter: saturate(140%) blur(8px);
+}
+
+@media (max-width: 1023px) {
+  .dash-sidebar {
+    box-shadow: 0 20px 60px rgb(0 0 0 / 0.25);
+  }
+}
+
+/* ---------- cards: tables and modals must not move under the mouse ---------- */
+
+.dash-main .card:hover {
+  transform: none;
+}
+
+/* ---------- page titles ---------- */
+
+.dash-main h1 {
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 639px) {
+  .dash-main h1 {
+    font-size: 1.35rem !important;
+  }
+}
+
+/* ---------- tables ---------- */
+
+.dash-main table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.dash-main thead th {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--foreground-muted);
+  white-space: nowrap;
+}
+
+.dash-main tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.dash-main tbody tr:last-child {
+  border-bottom: 0;
+}
+
+/* phones: tighter cells so more of the table fits before it scrolls */
+@media (max-width: 639px) {
+  .dash-main table th,
+  .dash-main table td {
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+    padding-top: 0.7rem !important;
+    padding-bottom: 0.7rem !important;
+  }
+}
+
+/* the horizontal scroll area of every table */
+.dash-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.dash-table-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.dash-table-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+/* ---------- filter toolbar ---------- */
+
+.dash-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+}
+
+/* phones: the chips scroll sideways instead of wrapping into five rows */
+.dash-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 639px) {
+  .dash-chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .dash-chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dash-chip-row > * {
+    flex-shrink: 0;
+  }
+}
+
+/* ---------- badges ---------- */
+
+.dash-main .status-badge {
+  text-transform: capitalize;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.dash-main .status-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+/* ---------- keyboard focus ---------- */
+
+.dash-main :is(button, a, select, input, textarea):focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* ---------- modals on phones: use the whole width ---------- */
+
+@media (max-width: 639px) {
+  .dash-main .fixed.inset-0 > .card {
+    max-height: 92vh;
+    padding: 1.1rem;
+    border-radius: 20px;
+  }
+}

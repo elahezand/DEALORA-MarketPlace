@@ -50,11 +50,12 @@ export function SellerSidebar({ isOpen }: SellerSidebarProps) {
     return (
         <aside
             className={clsx(
-                "fixed top-0 left-0 h-screen z-30 p-4 flex flex-col justify-between",
+                "fixed top-0 left-0 h-screen z-50 lg:z-30 p-4 flex flex-col justify-between",
                 "bg-[var(--card)] border-r border-[var(--border-strong)]",
                 "transition-all duration-300 ease-out shadow-sm",
                 isScrolled ? "pt-4" : "pt-16",
-                isOpen ? "w-72" : "w-20"
+                "dash-sidebar",
+        isOpen ? "w-72 translate-x-0" : "w-72 -translate-x-full lg:translate-x-0 lg:w-20"
             )}
         >
             {/* Nav items */}

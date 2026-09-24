@@ -13,6 +13,7 @@ import { OrderStatus, ISellerOrder, SellerOrdersResponse } from "@/types/Order";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { getUrl } from "@/utils/helper";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const getTrackingCode = (order: ISellerOrder) =>
     order.items.find((item) => item.fulfillment?.trackingCode)?.fulfillment?.trackingCode ?? "";
@@ -40,13 +41,14 @@ interface MyOrdersPageProps {
 const ENDPOINT = "/orders/seller"
 
 export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
     const [status, setStatus] = useState<OrderStatus | "all">("processing");
     const [searchQuery, setSearchQuery] = useState("");
     const [viewTarget, setViewTarget] = useState<ISellerOrder | null>(null);
     const [shipTarget, setShipTarget] = useState<ISellerOrder | null>(null);
     const [trackingCode, setTrackingCode] = useState("");
 
-    const params: QueryParams = status === "all" ? { limit: 20 } : { limit: 20, status };
+    const params: QueryParams = { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
     const {
         data,
@@ -57,8 +59,8 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
         isError,
     } = useInfiniteGet(ENDPOINT,
         params, {
-        queryKey: ["/orders/seller", status],
-        initialData: status === "processing" ? initialData : undefined,
+        queryKey: ["/orders/seller", status, filtersKey(filters)],
+        initialData: status === "processing" && filtersKey(filters) === "{}" ? initialData : undefined,
     });
 
     const orders: ISellerOrder[] = (
@@ -170,6 +172,9 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                     </button>
                 </div>
             </div>
+
+            <TableFilters value={filters} onChange={setFilters} withSearch={false} />
+
 
             <TableCard
                 header={<WidgetHeader icon={HiOutlineClipboardDocumentList} title="Orders including your products" href="/dashboard/seller/orders" />}

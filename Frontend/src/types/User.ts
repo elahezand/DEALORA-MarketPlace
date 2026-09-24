@@ -8,14 +8,20 @@ export interface IAddress {
   address: string;
   city: string;
   state: string;
+  phone:string
 }
 
 export interface IUser {
     _id: string;
     username?: string;
     phone: string;
-    /** refunds of cancelled orders are credited here */
     wallet?: { balance: number };
+    joinedAt?: string;
+    lastLoginAt?: string | null;
+    lastDevice?: string | null;
+    lastIp?: string | null;
+    activeSessions?: number;
+    ordersCount?: number;
     email?: string;
     role: ("USER" | "ADMIN" | "SELLER")[];
     store?: IStore | null;
@@ -25,10 +31,6 @@ export interface IUser {
     meta?: Record<string, unknown>;
     createdAt: string;
     updatedAt: string;
-    lastLogin?: string | null;
-    lastLoginDevice?: string | null;
-    lastLoginUserAgent?: string | null;
-    lastLoginIp?: string | null;
 }
 
 export interface UserType {

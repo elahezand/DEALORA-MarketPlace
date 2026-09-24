@@ -10,8 +10,7 @@ import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { useVerifyStore } from "@/services/Store/useVerifyStore";
-import { QueryParams } from "@/types/api/ErrorTypes";
-import AdminFilters from "../shared/AdminFilters";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const ENDPOINT = "/stores";
 
@@ -20,8 +19,8 @@ interface StoresClientProps {
 }
 
 export default function StoresClient({ initialData }: StoresClientProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [actioningId, setActioningId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<QueryParams>({});
 
   const {
     data,
@@ -30,8 +29,8 @@ export default function StoresClient({ initialData }: StoresClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminStoresResponse>(ENDPOINT, { limit: 20, ...filters },  
-     { queryKey: ["admin-stores", JSON.stringify(filters)], initialData: Object.keys(filters).length === 0 ? initialData : undefined }
+  } = useInfiniteGet<AdminStoresResponse>(ENDPOINT, { limit: 20, ...filtersToParams(filters) },  
+     { queryKey: ["admin-stores", filtersKey(filters)], initialData: filtersKey(filters) === "{}" ? initialData : undefined }
 );
 
   const stores: AdminStoreRow[] = (
@@ -57,7 +56,8 @@ export default function StoresClient({ initialData }: StoresClientProps) {
         </h1>
       </div>
 
-      <AdminFilters value={filters} onChange={setFilters} showSearch searchPlaceholder="Search store..." />
+      <TableFilters value={filters} onChange={setFilters} searchPlaceholder="Search stores..." />
+
 
       <TableCard
         header={

@@ -12,7 +12,7 @@ import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, inputClass, textareaClass } from "../shared/AdminFormModal";
 import { useResolveReport } from "@/services/Report/useResolveReport";
-import AdminFilters from "../shared/AdminFilters";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const STATUS_TABS: { value: ReportStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -43,14 +43,14 @@ interface ReportsClientProps {
 }
 
 export default function ReportsClient({ initialData }: ReportsClientProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [status, setStatus] = useState<ReportStatus | "all">("pending");
   const [target, setTarget] = useState<AdminReportRow | null>(null);
   const [resolveStatus, setResolveStatus] = useState<"reviewed" | "resolved" | "rejected">("resolved");
   const [actionTaken, setActionTaken] = useState<ReportActionTaken>("none");
   const [note, setNote] = useState("");
-  const [filters, setFilters] = useState<QueryParams>({});
 
-  const params: QueryParams = { limit: 20, ...(status !== "all" ? { status } : {}), ...filters };
+  const params: QueryParams = { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
   const {
     data,
@@ -59,8 +59,8 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
     isFetchingNextPage,
     isLoading,
     isError,
-  } = useInfiniteGet<AdminReportsResponse>(ENDPOINT, params, {  queryKey: ["admin-reports", status, JSON.stringify(filters)],
-    initialData: status === "pending" && Object.keys(filters).length === 0 ? initialData : undefined,
+  } = useInfiniteGet<AdminReportsResponse>(ENDPOINT, params, {  queryKey: ["admin-reports", status, filtersKey(filters)],
+    initialData: status === "pending" && filtersKey(filters) === "{}" ? initialData : undefined,
   });;
 
   const reports: AdminReportRow[] = (
@@ -115,7 +115,8 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
         ))}
       </div>
 
-      <AdminFilters value={filters} onChange={setFilters} />
+      <TableFilters value={filters} onChange={setFilters} searchPlaceholder="Search reports..." />
+
 
       <TableCard
         header={

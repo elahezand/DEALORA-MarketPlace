@@ -18,11 +18,10 @@ import {
   UpdateArticlePayload,
 } from "@/types/Article";
 import { CategoriesTypeResponse } from "@/types/Category";
-import { QueryParams } from "@/types/api/ErrorTypes";
-import AdminFilters from "../shared/AdminFilters";
 import { useCreateArticle } from "@/services/Article/useCreateArticle";
 import { useUpdateArticle } from "@/services/Article/useUpdateArticle";
 import { useDeleteArticle } from "@/services/Article/useDeleteArticle";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const ENDPOINT = "/articles/admin";
 
@@ -48,11 +47,11 @@ interface ArticlesClientProps {
 }
 
 export default function ArticlesClient({ initialData }: ArticlesClientProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<ArticleFormState>(EMPTY_FORM);
   const [slugTouched, setSlugTouched] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<QueryParams>({});
 
   const {
     data,
@@ -63,8 +62,8 @@ export default function ArticlesClient({ initialData }: ArticlesClientProps) {
     isError,
   } = useInfiniteGet<ArticlesResponse>(
     ENDPOINT,
-    { limit: 20, ...filters },
-    { queryKey: ["/articles/admin", JSON.stringify(filters)], initialData: Object.keys(filters).length === 0 ? initialData : undefined }
+    { limit: 20, ...filtersToParams(filters) },
+    { queryKey: ["/articles/admin", filtersKey(filters)], initialData: filtersKey(filters) === "{}" ? initialData : undefined }
   );
 
   const { data: categoriesData } = useGet<CategoriesTypeResponse>("/categories");
@@ -164,12 +163,8 @@ export default function ArticlesClient({ initialData }: ArticlesClientProps) {
         </button>
       </div>
 
-      <AdminFilters
-        value={filters}
-        onChange={setFilters}
-        showCategory
-        categories={categories.map((c) => ({ _id: c._id, title: c.title }))}
-      />
+      <TableFilters value={filters} onChange={setFilters} searchPlaceholder="Search articles..." />
+
 
       <TableCard
         header={<WidgetHeader icon={HiOutlineNewspaper} title="All Articles" href="/dashboard/admin/articles" />}

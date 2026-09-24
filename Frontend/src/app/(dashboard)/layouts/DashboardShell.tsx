@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import clsx from "clsx";
+import { usePathname } from "next/navigation";
 import { useSidebar } from "../dashboard/context/sideBarContext";
 import { AuthGuard, Role } from "./authGuard";
 
@@ -17,18 +19,43 @@ export default function DashboardShell({
   requireRole,
   redirectTo,
 }: DashboardShellProps) {
-  const { isOpen } = useSidebar();
+  const { isOpen, isMobile, closeSidebar } = useSidebar();
+  const pathname = usePathname();
+
+  // on phones the drawer closes itself after navigating
+  useEffect(() => {
+    if (isMobile) closeSidebar();
+  }, [pathname, isMobile, closeSidebar]);
+
+  // no background scrolling while the drawer is open on a phone
+  useEffect(() => {
+    if (!isMobile) return;
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen, isMobile]);
 
   const content = (
     <>
       {sidebar(isOpen)}
+
+      {isMobile && isOpen && (
+        <div
+          className="dash-backdrop"
+          onClick={closeSidebar}
+          aria-hidden="true"
+        />
+      )}
+
       <main
         className={clsx(
-          "transition-all duration-300 pt-4 px-6 min-h-[calc(100vh-64px)]",
-          isOpen ? "ml-72" : "ml-20"
+          "dash-main transition-[margin] duration-300",
+          // the sidebar only pushes content on desktop; on phones it overlays
+          isOpen ? "lg:ml-72" : "lg:ml-20"
         )}
       >
-        {children}
+        <div className="dash-container">{children}</div>
       </main>
     </>
   );

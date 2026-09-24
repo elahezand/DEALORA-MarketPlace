@@ -14,7 +14,7 @@ import { OfferStatus, Offer, OffersResponse } from "@/types/Offer";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { findVariant, getVariantLabel } from "@/utils/price";
 import { getUrl } from "@/utils/helper";
-import AdminFilters from "../shared/AdminFilters";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const STATUS_TABS: { value: OfferStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -39,13 +39,13 @@ interface OffersClientProps {
 }
 
 export default function OffersClient({ initialData }: OffersClientProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [status, setStatus] = useState<OfferStatus | "all">("pending");
   const [rejectTarget, setRejectTarget] = useState<Offer | null>(null);
   const [adminComment, setAdminComment] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<QueryParams>({});
 
-  const params: QueryParams = { limit: 20, ...(status !== "all" ? { status } : {}), ...filters };
+  const params: QueryParams = { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
   const {
     data,
@@ -56,8 +56,8 @@ export default function OffersClient({ initialData }: OffersClientProps) {
     isError,
   } = useInfiniteGet<OffersResponse>(ENDPOINT, params,
     {
-      queryKey: ["offers-admin", status, JSON.stringify(filters)],
-      initialData: status === "pending" && Object.keys(filters).length === 0 ? initialData : undefined,
+      queryKey: ["offers-admin", status, filtersKey(filters)],
+      initialData: status === "pending" && filtersKey(filters) === "{}" ? initialData : undefined,
     });
 
   const offers: Offer[] = (
@@ -121,7 +121,8 @@ export default function OffersClient({ initialData }: OffersClientProps) {
         ))}
       </div>
 
-      <AdminFilters value={filters} onChange={setFilters} />
+      <TableFilters value={filters} onChange={setFilters} withSearch={false} />
+
 
       <TableCard
         header={

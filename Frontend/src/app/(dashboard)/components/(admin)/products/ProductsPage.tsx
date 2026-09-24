@@ -5,11 +5,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { HiOutlineCube, HiOutlinePlus } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
-import { useInfiniteGet, useGet } from "@/utils/hooks/useReactQueryHooks";
+import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { ListingProps, PublicListingsResponse } from "@/types/Listings";
 import { QueryParams } from "@/types/api/ErrorTypes";
-import { CategoriesTypeResponse } from "@/types/Category";
-import AdminFilters from "../shared/AdminFilters";
 import { getUrl } from "@/utils/helper";
 import { getListingPrice } from "@/utils/price";
 import TableCard from "../../shared/table/TableCard";
@@ -22,6 +20,7 @@ import {
   useChangeProductStatus,
   useDeleteProduct,
 } from "@/services/Products/useProductMutations";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 type ProductStatus = ProductInput["status"] | "deleted";
 type StatusTab = ProductStatus | "all";
@@ -46,18 +45,18 @@ interface ProductsPageProps {
 }
 
 export default function ProductsPage({ initialData }: ProductsPageProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [status, setStatus] = useState<StatusTab | "all">("all");
+  const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reviewId, setReviewId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<QueryParams>({});
-  const { data: categoriesRes } = useGet<CategoriesTypeResponse>("/categories");
 
-  const params: QueryParams = { listingType: "store_product", status, limit: 20, ...filters };
+  const params: QueryParams = { listingType: "store_product", status, limit: 20, ...(search.trim() && { q: search.trim() }), ...filtersToParams(filters) };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
     useInfiniteGet<PublicListingsResponse>("/listings/admin", params, {
-      queryKey: [PRODUCTS_QUERY_KEY, status, JSON.stringify(filters)],
-      initialData: status === "all" && Object.keys(filters).length === 0 ? initialData : undefined,
+      queryKey: [PRODUCTS_QUERY_KEY, status, search.trim(), filtersKey(filters)],
+      initialData: status === "all" && !search.trim() && filtersKey(filters) === "{}" ? initialData : undefined,
     });
 
   const products: ListingProps[] = (
@@ -135,16 +134,16 @@ export default function ProductsPage({ initialData }: ProductsPageProps) {
             {tab.label}
           </button>
         ))}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by title..."
+          className="ml-auto h-9 px-3 rounded-lg border border-[var(--border)] bg-[var(--input-bg)] text-sm w-full sm:w-64"
+        />
       </div>
 
-      <AdminFilters
-        value={filters}
-        onChange={setFilters}
-        showCategory
-        categories={(categoriesRes?.data ?? []).map((c) => ({ _id: c._id, title: c.title }))}
-        showSearch
-        searchPlaceholder="Search by title..."
-      />
+      <TableFilters value={filters} onChange={setFilters} withCategory withSearch={false} />
+
 
       <TableCard
         header={<WidgetHeader icon={HiOutlineCube} title={`${STATUS_TABS.find((t) => t.value === status)?.label} Products`} href="/dashboard/admin/products" />}

@@ -26,11 +26,13 @@ import {
 } from "@/types/Withdrawal";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { toast } from "sonner";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const MIN_WITHDRAWAL = 1000;
 
 const STATUS_TABS: { value: WithdrawalStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
   { value: "processing", label: "Processing" },
   { value: "completed", label: "Completed" },
   { value: "rejected", label: "Rejected" },
@@ -40,6 +42,7 @@ const STATUS_TONE: Record<
   WithdrawalStatus,
   "success" | "warning" | "destructive" | "info"
 > = {
+  pending: "warning",
   processing: "info",
   completed: "success",
   rejected: "destructive",
@@ -52,6 +55,7 @@ interface WithdrawalsPageProps {
 const ENDPOINT = "/withdrawals/mine";
 
 export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [status, setStatus] = useState<WithdrawalStatus | "all">("processing");
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [amountInput, setAmountInput] = useState("");
@@ -63,7 +67,7 @@ export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
   const pending = stats?.walletPending ?? 0;
 
   const params: QueryParams =
-    status === "all" ? { limit: 20 } : { limit: 20, status };
+    { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
   const {
     data,
@@ -73,8 +77,8 @@ export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
     isLoading,
     isError,
   } = useInfiniteGet<WithdrawalsResponse>(ENDPOINT, params, {
-    queryKey: ["/withdrawals/mine", status],
-    initialData: status === "processing" ? initialData : undefined,
+    queryKey: ["/withdrawals/mine", status, filtersKey(filters)],
+    initialData: status === "processing" && filtersKey(filters) === "{}" ? initialData : undefined,
   });
 
   const withdrawals: Withdrawal[] = (
@@ -169,6 +173,9 @@ export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
           </button>
         ))}
       </div>
+
+      <TableFilters value={filters} onChange={setFilters} withSearch={false} />
+
 
       <TableCard
         header={

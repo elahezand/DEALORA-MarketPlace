@@ -1,5 +1,6 @@
 "use client";
 
+import "../dashboard.css";
 import { AppHeader } from "../components/shared/Header";
 import { SidebarProvider, useSidebar } from "./context/sideBarContext";
 import { useGetProfile } from "@/services/Profile/useGetProfile";

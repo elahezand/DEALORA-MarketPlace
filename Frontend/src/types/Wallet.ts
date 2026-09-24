@@ -1,28 +1,27 @@
-export interface WalletOrder {
-  _id: string;
-  status?: string;
-  paymentStatus?: string;
-  refundAmount?: number;
-  refundedAt?: string | null;
-  createdAt?: string;
-}
+import { IPagination } from "./common";
+
+export type WalletTransactionType = "spend" | "refund";
 
 export interface WalletTransaction {
   _id: string;
   amount: number;
-  type: "spend" | "refund";
+  type: WalletTransactionType;
   note?: string;
   createdAt: string;
-  order?: WalletOrder | null;
+  order?: {
+    _id: string;
+    status: string;
+    paymentStatus: string;
+    pricing?: { total: number; walletUsed?: number };
+    createdAt: string;
+  } | null;
 }
 
+/** GET /users/me/wallet */
 export interface WalletResponse {
   success: boolean;
   balance: number;
+  totals: { refunded: number; spent: number };
   data: WalletTransaction[];
-  pagination?: {
-    limit: number;
-    nextCursor: string | null;
-    hasMore: boolean;
-  };
+  pagination?: IPagination;
 }

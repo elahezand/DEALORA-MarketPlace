@@ -17,10 +17,11 @@ import {
   textareaClass,
 } from "../shared/AdminFormModal";
 import { useProcessWithdrawal } from "@/services/Withdrawls/useProcessWithdrawal";
-import AdminFilters from "../shared/AdminFilters";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const STATUS_TABS: { value: WithdrawalStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
   { value: "processing", label: "Processing" },
   { value: "completed", label: "Completed" },
   { value: "rejected", label: "Rejected" },
@@ -30,6 +31,7 @@ const STATUS_TONE: Record<
   WithdrawalStatus,
   "success" | "warning" | "destructive" | "info" | "neutral"
 > = {
+  pending: "warning",
   processing: "info",
   completed: "success",
   rejected: "destructive",
@@ -44,16 +46,16 @@ interface WithdrawalsClientProps {
 export default function WithdrawalsClient({
   initialData,
 }: WithdrawalsClientProps) {
-  const [status, setStatus] = useState<WithdrawalStatus | "all">("processing");
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
+  const [status, setStatus] = useState<WithdrawalStatus | "all">("pending");
   const [target, setTarget] = useState<Withdrawal | null>(null);
   const [action, setAction] = useState<"processing" | "completed" | "rejected">(
     "completed"
   );
   const [trackingCode, setTrackingCode] = useState("");
   const [rejectReason, setRejectReason] = useState("");
-  const [filters, setFilters] = useState<QueryParams>({});
 
-  const params: QueryParams = { limit: 20, ...(status !== "all" ? { status } : {}), ...filters };
+  const params: QueryParams = { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
   const {
     data,
@@ -63,7 +65,7 @@ export default function WithdrawalsClient({
     isLoading,
     isError,
   } = useInfiniteGet<WithdrawalsResponse>(ENDPOINT, params, {
-    queryKey: ["admin-withdrawals", status, JSON.stringify(filters)], initialData: status === "processing" && Object.keys(filters).length === 0 ? initialData : undefined,
+    queryKey: ["admin-withdrawals", status, filtersKey(filters)], initialData: status === "pending" && filtersKey(filters) === "{}" ? initialData : undefined,
   });
 
   const withdrawals: Withdrawal[] = (
@@ -119,7 +121,8 @@ export default function WithdrawalsClient({
         ))}
       </div>
 
-      <AdminFilters value={filters} onChange={setFilters} />
+      <TableFilters value={filters} onChange={setFilters} withSearch={false} />
+
 
       <TableCard
         header={
@@ -149,7 +152,7 @@ export default function WithdrawalsClient({
         <tbody>
           {withdrawals.map((w) => {
             const store = typeof w.store === "object" ? w.store : null;
-            const canProcess = w.status
+            const canProcess = w.status === "pending" || w.status === "processing";
             return (
               <tr
                 key={w._id}

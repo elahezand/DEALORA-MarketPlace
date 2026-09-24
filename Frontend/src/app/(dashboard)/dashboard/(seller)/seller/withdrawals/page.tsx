@@ -4,7 +4,7 @@ import WithdrawalsPage from "@/app/(dashboard)/components/(seller)/Withdrawals/w
 
 export default async function SellerWithdrawalsRoute() {
   const initialWithdrawals = await useAuthServerData<WithdrawalsResponse>(
-    "/withdrawals/mine",
+    "/withdrawals/mine?status=processing",
   );
 
   return (

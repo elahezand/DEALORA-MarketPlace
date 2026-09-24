@@ -5,7 +5,7 @@ export const revalidate = 60;
 
 export default async function AdminWithdrawalsPage() {
   const initialWithdrawals = await useAuthServerData<WithdrawalsResponse>(
-    "/withdrawals/admin?status=processing",
+    "/withdrawals/admin?status=pending",
   );
 
   return (

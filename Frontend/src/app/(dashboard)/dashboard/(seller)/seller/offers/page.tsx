@@ -4,7 +4,7 @@ import OffersPage from "@/app/(dashboard)/components/(seller)/offers/OffersPage"
 
 export default async function AdminOffersPage() {
   const initialOffers = await useAuthServerData<OffersResponse>(
-    "/offers/me",
+    "/offers/me?status=pending",
   );
 
   return (

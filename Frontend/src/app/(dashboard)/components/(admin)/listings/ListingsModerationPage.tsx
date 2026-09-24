@@ -3,11 +3,9 @@ import { useState } from "react";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
-import { useInfiniteGet, useGet } from "@/utils/hooks/useReactQueryHooks";
+import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { ListingProps, PublicListingsResponse } from "@/types/Listings";
 import { QueryParams } from "@/types/api/ErrorTypes";
-import { CategoriesTypeResponse } from "@/types/Category";
-import AdminFilters from "../shared/AdminFilters";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
@@ -16,6 +14,7 @@ import { useUpdateListingStatus } from "@/services/Listings/useUpdateListingStat
 import { getUrl } from "@/utils/helper"
 import { getListingPrice } from "@/utils/price";
 import ListingReviewModal from "../shared/ListingReviewModal";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const Endpoint = "/listings/admin";
 
@@ -51,13 +50,12 @@ interface ListingsModerationClientProps {
 export default function ListingsModerationClient({
   initialData,
 }: ListingsModerationClientProps) {
-  const [status, setStatus] = useState<StatusTab>("all");
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
+  const [status, setStatus] = useState<StatusTab>("pending");
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<QueryParams>({});
-  const { data: categoriesRes } = useGet<CategoriesTypeResponse>("/categories");
 
-  const params: QueryParams = { listingType: "user_ad", status, limit: 20, ...filters };
+  const params: QueryParams = { listingType: "user_ad", status, limit: 20, ...filtersToParams(filters) };
 
   const {
     data,
@@ -67,8 +65,8 @@ export default function ListingsModerationClient({
     isLoading,
     isError,
   } = useInfiniteGet<PublicListingsResponse>(Endpoint, params, {
-    queryKey: ["listings-moderation", status, JSON.stringify(filters)],
-    initialData: status === "pending" ? initialData : undefined,
+    queryKey: ["listings-moderation", status, filtersKey(filters)],
+    initialData: status === "pending" && filtersKey(filters) === "{}" ? initialData : undefined,
   });
 
   const listings: ListingProps[] = (
@@ -135,12 +133,8 @@ export default function ListingsModerationClient({
         ))}
       </div>
 
-      <AdminFilters
-        value={filters}
-        onChange={setFilters}
-        showCategory
-        categories={(categoriesRes?.data ?? []).map((c) => ({ _id: c._id, title: c.title }))}
-      />
+      <TableFilters value={filters} onChange={setFilters} withCategory searchPlaceholder="Search ads by title..." />
+
 
       <TableCard
         header={

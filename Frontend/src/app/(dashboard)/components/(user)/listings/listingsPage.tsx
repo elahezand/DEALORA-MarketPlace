@@ -20,6 +20,7 @@ import { getListingPrice } from "@/utils/price";
 import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, Badge } from "../../shared/table/TableParts";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const STATUS_TONE: Record<string, "success" | "warning" | "destructive"> = {
   active: "success",
@@ -45,8 +46,9 @@ interface InfiniteListingsSectionProps {
 export default function ListingsPage({
   initialData,
 }: InfiniteListingsSectionProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [status, setStatus] = useState<ListingStatus | "all">("pending");
-  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params = { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
   const {
     data,
@@ -59,8 +61,8 @@ export default function ListingsPage({
     "/listings/my",
     params,
     {
-      queryKey: ["my-listings", status],
-      initialData: status === "pending" ? initialData : undefined
+      queryKey: ["my-listings", status, filtersKey(filters)],
+      initialData: status === "pending" && filtersKey(filters) === "{}" ? initialData : undefined
     }
 
   );
@@ -125,6 +127,8 @@ export default function ListingsPage({
 
 
       {/* Table Container */}
+      <TableFilters value={filters} onChange={setFilters} withCategory searchPlaceholder="Search your ads..." />
+
       <TableCard
         header={<WidgetHeader
           icon={HiOutlineChatBubbleLeftRight} title="Comments" href="/dashboard/listings" />}

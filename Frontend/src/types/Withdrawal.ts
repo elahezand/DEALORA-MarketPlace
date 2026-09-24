@@ -1,4 +1,5 @@
 export type WithdrawalStatus =
+  | "pending"
   | "processing"
   | "completed"
   | "rejected";

@@ -10,6 +10,7 @@ import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import TableCard from "../../shared/table/TableCard";
 import { Th, Badge } from "../../shared/table/TableParts";
 import { timeAgo } from "@/utils/timeAgo";
+import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 type ToneType = "success" | "warning" | "destructive" | "neutral" | "info";
 
@@ -52,10 +53,11 @@ interface ReportsPageProps {
 export default function ReportsPage({
   initialData,
 }: ReportsPageProps) {
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [status, setStatus] = useState<ReportStatus | "all">("pending");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const params = status === "all" ? { limit: 20 } : { limit: 20, status };
+  const params = { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
   const {
     data,
@@ -68,8 +70,8 @@ export default function ReportsPage({
     "/reports/mine",
     params,
     {
-      queryKey: ["/reports/mine", status],
-      initialData: status === "pending" ? initialData : undefined
+      queryKey: ["/reports/mine", status, filtersKey(filters)],
+      initialData: status === "pending" && filtersKey(filters) === "{}" ? initialData : undefined
     }
 
   );
@@ -116,6 +118,8 @@ export default function ReportsPage({
       </div>
 
       {/* Table */}
+      <TableFilters value={filters} onChange={setFilters} withSearch={false} />
+
       <TableCard
         header={<WidgetHeader
           icon={HiOutlineChatBubbleLeftRight} title="Orders" href="/dashboard/orders" />}

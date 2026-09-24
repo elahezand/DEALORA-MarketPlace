@@ -1,7 +1,7 @@
 export type OrderStatus = "created" | "processing" | "shipped" | "completed" | "cancelled"
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
-export type PaymentMethod = "cash" | "zarinpal" | "wallet";
+export type PaymentMethod = "cash" | "zarinpal";
 
 export interface IOrderFulfillment {
   status: "pending" | "shipped";
@@ -85,8 +85,6 @@ export interface IOrder {
   deliveredAt: string | Date | null;
   createdAt: string | Date;
   updatedAt: string | Date;
-  refundedAt?: string | Date | null;
-  refundAmount?: number;
 }
 
 export interface OrdersResponse {

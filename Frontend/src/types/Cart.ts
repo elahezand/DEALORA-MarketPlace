@@ -34,10 +34,8 @@ export interface ICart {
   _id?: string;
   user: string;
   items: CartItem[];
-  /** applied coupon (the cart only stores a reference to it) */
   coupon: { _id: string; code: string } | null;
   shippingCost?: number;
-  /** items that were removed because they're no longer available (offer rejected, out of stock, ...) */
   removedItems?: { reason: string; offerId?: string; productId?: string }[];
   pricing: CartPricing;
   status: "active" | "abandoned" | "converted";
@@ -54,7 +52,8 @@ export interface CartResponse {
 export interface CheckoutResponse {
   success: boolean;
   data: {
-    order: { _id: string };
+    order: { _id: string, paymentMethod: string };
     paymentUrl: string | null;
+    paymentMethod: string | null;
   };
 }

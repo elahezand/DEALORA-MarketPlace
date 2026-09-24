@@ -1,4 +1,6 @@
 const Order = require("../../models/order");
+const User = require("../../models/user");
+const notifyUser = require("../../utils/notify");
 const logger = require("../../utils/logger");
 const { verifyPayment } = require("./zarinpal");
 const { walletSpentOn } = require("./wallet");
@@ -7,6 +9,18 @@ const { finalizeOrder, revertOrder, autoCompleteShippedOrders } = require("./ord
 // an order that never reached the payment step is dropped after this
 const ABANDON_AFTER_MS = Number(process.env.ORDER_ABANDON_MINUTES || 30) * 60 * 1000;
 const BATCH = 100;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const COD_OVERDUE_DAYS = Number(process.env.ORDER_AUTO_COMPLETE_DAYS || 7);
+const COD_REMIND_EVERY_DAYS = Number(process.env.ORDER_COD_REMIND_DAYS || 7);
+
+/** query for shipped cash orders nobody confirmed in time (shared with the admin filter) */
+const overdueCashQuery = () => ({
+  status: "shipped",
+  paymentMethod: "cash",
+  paymentStatus: "pending",
+  shippedAt: { $lte: new Date(Date.now() - COD_OVERDUE_DAYS * DAY_MS) },
+});
 
 const isIncomplete = (order) =>
   !order.items.every((i) => i.stockReserved && (!i.store || i.walletCredited));
@@ -24,10 +38,9 @@ const completeHalfFinishedOrders = async () => {
 
   let fixed = 0;
   for (const order of orders) {
-    // cash is collected on delivery, so a pending cash order is normal
     if (order.paymentMethod !== "cash" && order.paymentStatus !== "paid") continue;
-
     await finalizeOrder(order);
+    
     await order.save();
     fixed++;
     logger.info(`[sweeper] finished order ${order._id}`);
@@ -52,7 +65,7 @@ const resolvePendingPayments = async () => {
   for (const order of orders) {
     let wasPaid = false;
 
-    if (order.paymentMethod === "wallet" || order.pricing.walletUsed > 0) {
+    if (order.paymentMethod === "wallet") {
       wasPaid = (await walletSpentOn(order._id)) > 0;
     } else if (order.payment?.authority) {
       const result = await verifyPayment(order.payment.authority, order.pricing.total * 10);
@@ -74,24 +87,62 @@ const resolvePendingPayments = async () => {
     } else {
       order.status = "cancelled";
       await order.save();
-      await revertOrder(order); // frees anything that was reserved
+      await revertOrder(order);
       cancelled++;
       logger.info(`[sweeper] order ${order._id} was never paid — cancelled`);
     }
   }
-
   return { paid, cancelled };
 };
 
-/* Runs all three sweeps; safe to call again at any time */
+/*
+ * 4) cash orders shipped long ago that nobody confirmed.
+ * The system never decides about cash on its own (the courier may not have been
+ * paid); it reminds the admins, who either mark it delivered or cancel it.
+ */
+const flagOverdueCashOrders = async () => {
+  const remindBefore = new Date(Date.now() - COD_REMIND_EVERY_DAYS * DAY_MS);
+
+  const orders = await Order.find({
+    ...overdueCashQuery(),
+    $or: [{ cashOverdueNotifiedAt: null }, { cashOverdueNotifiedAt: { $lte: remindBefore } }],
+  }).limit(BATCH);
+
+  if (!orders.length) return 0;
+
+  const admins = await User.find({ role: "ADMIN" }).select("_id").lean();
+
+  for (const order of orders) {
+    const shortId = String(order._id).slice(-6).toUpperCase();
+    const days = Math.floor((Date.now() - new Date(order.shippedAt).getTime()) / DAY_MS);
+
+    for (const admin of admins) {
+      await notifyUser(
+        admin._id,
+        `Cash order #${shortId} was shipped ${days} days ago and is still unconfirmed — mark it delivered or cancel it`,
+        { type: "cod_overdue", link: `/dashboard/admin/transactions/${order._id}` }
+      );
+    }
+
+    order.cashOverdueNotifiedAt = new Date();
+    await order.save();
+    logger.info(`[sweeper] cash order ${order._id} overdue — admins reminded`);
+  }
+
+  return orders.length;
+};
+
 const runOrderSweeps = async () => {
   const finished = await completeHalfFinishedOrders();
   const payments = await resolvePendingPayments();
   const completed = await autoCompleteShippedOrders();
-  return { finished, ...payments, completed };
+  const overdueCash = await flagOverdueCashOrders();
+  return { finished, ...payments, completed, overdueCash };
 };
 
 module.exports = {
+  flagOverdueCashOrders,
+  overdueCashQuery,
   completeHalfFinishedOrders,
   resolvePendingPayments,
   runOrderSweeps,

@@ -7,7 +7,8 @@ const { round2 } = require("../../utils/pricing");
 const AppError = require("../../utils/AppError");
 const logger = require("../../utils/logger");
 const { createPayment } = require("../shared/zarinpal");
-const { buildOrderIdSearchExpr, finalizeOrder, releaseOrderFunds, revertOrder } = require("../shared/order");
+const { buildOrderIdSearchExpr, finalizeOrder, revertOrder, completeDeliveredOrder } = require("../shared/order");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -123,7 +124,6 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
         await order.save();
       }
     }
-
     // Wallet covered the whole order
     if (order.pricing.total === 0 && order.pricing.walletUsed > 0) {
       order.paymentMethod = "wallet";
@@ -143,10 +143,7 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
 
     // Wallet covered only part of the order
     // or the user selected ZarinPal directly
-    if (
-      (paymentMethod === "wallet" || paymentMethod === "zarinpal") &&
-      order.pricing.total > 0
-    ) {
+    if ((paymentMethod === "wallet" || paymentMethod === "zarinpal") && order.pricing.total > 0) {
       const payment = await createPayment(
         order.pricing.total * 10,
         `Order ${order._id}`
@@ -179,7 +176,8 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
     }
 
     return { order, paymentUrl };
-  } catch (err) {
+  }
+  catch (err) {
     await unlockCart();
     if (walletSpent > 0 && createdOrder) {
       await refundToWallet(userId, createdOrder._id, walletSpent, "checkout failed");
@@ -189,10 +187,12 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
 };
 
 const getMyOrders = async (userId, query = {}) => {
-  const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
+  const limit = listLimit(query, 20, 50);
 
-  const filters = { user: userId };
-  if (query.status && query.status !== "all") filters.status = query.status;
+  const filters = buildListQuery(query, {
+    base: { user: userId },
+    statuses: ["created", "processing", "shipped", "completed", "cancelled"],
+  });
 
   const searchExpr = buildOrderIdSearchExpr(query.q);
   if (searchExpr) filters.$expr = searchExpr;
@@ -257,13 +257,8 @@ const confirmDelivery = async (orderId, userId) => {
     );
   }
 
-  order.status = "completed";
-  order.isDelivered = true;
-  order.deliveredAt = new Date();
-  await order.save();
-
-  // delivered → the sellers can now withdraw their money
-  await releaseOrderFunds(order);
+  // completed + cash marked paid + sellers' money released (same as admin / auto-complete)
+  await completeDeliveredOrder(order);
   return order;
 };
 

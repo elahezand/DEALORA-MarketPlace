@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const Listing = require("../../models/listing");
 const OfferSeller = require("../../models/offerSeller");
 const { paginate, buildListingFilters } = require("../../utils/helper");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const invalidateCache = require("../../utils/cache");
 const AppError = require("../../utils/AppError");
 const { buildListingDetail, PROTECTED_FIELDS } = require("../shared/listing");
@@ -17,15 +16,13 @@ const STATUSES_BY_TYPE = {
 async function getAllListingsAdmin(query = {}) {
   const filters = await buildListingFilters(query, { isAdmin: true });
   const limit = Math.min(query.limit ? Number(query.limit) : 21, 99);
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
-  if (query.q) filters.title = { $regex: String(query.q).trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
 
   return paginate(Listing, {
     limit,
     cursor: query.cursor,
     filters,
     populate: ["categoryPath", "owner"],
-    sort: getAdminSort(query, ["createdAt", "updatedAt", "title", "minPrice"]) 
+    sort: { _id: -1 } 
   });
 }
 

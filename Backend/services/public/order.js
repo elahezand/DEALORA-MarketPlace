@@ -9,12 +9,6 @@ const STALE_CLAIM_MS = 2 * 60 * 1000;
 const isFinished = (order) =>
   order.items.every((i) => i.stockReserved && (!i.store || i.walletCredited));
 
-/*
- * Zarinpal callback. Safe to call any number of times:
- *  - already paid and finished  → just returns the order
- *  - already paid but half-done (server crashed) → continues where it stopped
- *  - two callbacks at once      → only one of them works on the order
- */
 const verify = async (authority) => {
   const order = await Order.findOne({ "payment.authority": authority });
   if (!order) throw new AppError(404, "Order not found");
@@ -22,7 +16,6 @@ const verify = async (authority) => {
   if (order.paymentStatus === "paid") {
     if (isFinished(order)) return order;
 
-    // a previous run died half-way → finish the remaining steps (each one is idempotent)
     await finalizeOrder(order);
     await order.save();
     return order;
@@ -39,12 +32,12 @@ const verify = async (authority) => {
     { $set: { finalizedAt: new Date() } },
     { returnDocument: "after" }
   );
-  if (!claimed) return order; // another request is handling it right now
+  if (!claimed) return order;
 
   const result = await verifyPayment(authority, claimed.pricing.total * 10);
 
   if (!result.success) {
-    claimed.finalizedAt = null; // release, so the user can pay again
+    claimed.finalizedAt = null; 
     claimed.paymentStatus = "failed";
     await claimed.save();
     return claimed;

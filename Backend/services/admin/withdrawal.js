@@ -1,21 +1,22 @@
 const Withdrawal = require("../../models/withdrawal");
 const Store = require("../../models/store");
 const { paginate } = require("../../utils/helper");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 const getAllWithdrawals = async (query = {}) => {
-  const filters = {};
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
-  if (query.status) filters.status = query.status;
+  const filters = buildListQuery(query, {
+    statuses: ["pending", "processing", "completed", "rejected"],
+    ids: { store: "store" },
+  });
 
-  const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 100);
+  const limit = listLimit(query, 20);
   return paginate(Withdrawal, {
     limit,
     cursor: query.cursor,
     filters,
     populate: [{ path: "store", select: "name owner" }],
-    sort: getAdminSort(query, ["createdAt", "updatedAt"])
+    sort: { _id: -1 }
   });
 };
 

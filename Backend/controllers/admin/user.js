@@ -3,72 +3,12 @@ const Ban = require("../../models/ban");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 const Session = require("../../models/session");
+const adminUserService = require("../../services/admin/user");
 const { revokeAllUserSessions } = require("../../services/shared/session");
-
-const parseDevice = (ua = "") => {
-  if (/iPhone|iPad/i.test(ua)) return "iPhone / iPad";
-  if (/Android/i.test(ua)) return "Android";
-  if (/Windows/i.test(ua)) return "Windows";
-  if (/Mac OS X/i.test(ua)) return "macOS";
-  if (/Linux/i.test(ua)) return "Linux";
-  return "Unknown";
-};
 
 const getAllUsers = async (req, res, next) => {
   try {
-    const { limit, cursor } = req.query;
-
-    if (limit && Number(limit) > 50) {
-      return next(new AppError(400, "Limit must be <= 50"));
-    }
-
-    const filters = {};
-    if (req.query.role && req.query.role !== "all") filters.role = req.query.role;
-
-    if (req.query.q) {
-      const q = String(req.query.q).trim().slice(0, 100);
-      filters.$or = [
-        { username: { $regex: q, $options: "i" } },
-        { phone: { $regex: q, $options: "i" } },
-        { email: { $regex: q, $options: "i" } },
-      ];
-    }
-
-    const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
-    Object.assign(filters, buildDateFilter(req.query, "createdAt"));
-
-    const result = await paginate(User, {
-      limit,
-      cursor,
-      filters,
-      sort: getAdminSort(req.query, ["createdAt", "updatedAt"]),
-    });
-
-    const ids = result.data.map((u) => u._id);
-    const sessions = ids.length
-      ? await Session.find({ user: { $in: ids } })
-          .select("user userAgent ip lastUsedAt createdAt")
-          .sort({ createdAt: -1 })
-          .lean()
-      : [];
-
-    const latest = new Map();
-    for (const session of sessions) {
-      const key = String(session.user);
-      if (!latest.has(key)) latest.set(key, session);
-    }
-
-    result.data = result.data.map((user) => {
-      const session = latest.get(String(user._id));
-      return {
-        ...user,
-        lastLogin: session?.createdAt || null,
-        lastLoginDevice: parseDevice(session?.userAgent),
-        lastLoginUserAgent: session?.userAgent || null,
-        lastLoginIp: session?.ip || null,
-      };
-    });
-
+    const result = await adminUserService.getAllUsers(req.query);
     return res.status(200).json({ success: true, ...result });
   } catch (err) {
     next(err);

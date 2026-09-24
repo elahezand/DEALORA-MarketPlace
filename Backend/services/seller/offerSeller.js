@@ -5,7 +5,8 @@ const Store = require("../../models/store");
 const Listing = require("../../models/listing");
 const { paginate, escapeRegex } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
-const { assertOfferableVariant, assertValidStatus } = require("../shared/offerSeller");
+const { assertOfferableVariant, assertValidStatus, OFFER_STATUSES } = require("../shared/offerSeller");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -126,8 +127,11 @@ const getMine = async (userId, query = {}) => {
   }
   assertValidStatus(query.status);
 
-  const filters = { store: storeId };
-  if (query.status) filters.status = query.status;
+  const filters = buildListQuery(query, {
+    base: { store: storeId },
+    statuses: OFFER_STATUSES,
+    ids: { product: "productId" },
+  });
   if (!query.status || query.status === "all") {
     filters.status = { $ne: "deleted" };
   }

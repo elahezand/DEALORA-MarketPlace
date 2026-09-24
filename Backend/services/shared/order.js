@@ -161,27 +161,36 @@ const revertOrder = async (order) => {
  * automatically after AUTO_COMPLETE_DAYS so sellers still get paid.
  */
 const AUTO_COMPLETE_DAYS = Number(process.env.ORDER_AUTO_COMPLETE_DAYS || 7);
+const completeDeliveredOrder = async (order, { auto = false } = {}) => {
+  order.status = "completed";
+  order.isDelivered = true;
+  order.deliveredAt = order.deliveredAt || new Date();
+  if (auto) order.autoCompletedAt = new Date();
+  if (order.paymentMethod === "cash") order.paymentStatus = "paid";
+  await order.save();
+
+  await releaseOrderFunds(order);
+};
+
+/* shipped orders the buyer never confirmed → completed after AUTO_COMPLETE_DAYS */
 const autoCompleteShippedOrders = async () => {
   const deadline = new Date(Date.now() - AUTO_COMPLETE_DAYS * 24 * 60 * 60 * 1000);
 
   const orders = await Order.find({
     status: "shipped",
+    paymentStatus: "paid",
     shippedAt: { $lte: deadline },
+    autoCompletedAt: null,
   }).limit(200);
 
   for (const order of orders) {
-    order.status = "completed";
-    order.isDelivered = true;
-    order.deliveredAt = order.deliveredAt || new Date();
-    order.autoCompletedAt = new Date();
-    await order.save();
-
-    await releaseOrderFunds(order);
+    await completeDeliveredOrder(order, { auto: true });
     logger.info(`[order ${order._id}] auto-completed after ${AUTO_COMPLETE_DAYS} days, seller funds released`);
   }
 
   return orders.length;
 };
+
 
 const maybeMarkOrderShipped = (order) => {
   if (["shipped", "completed", "cancelled"].includes(order.status)) return;
@@ -207,6 +216,7 @@ const assertShippable = (order) => {
 };
 
 module.exports = {
+  completeDeliveredOrder,
   autoCompleteShippedOrders,
   releaseOrderFunds,
   revertOrder,

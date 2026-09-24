@@ -27,6 +27,10 @@ const {
 } = require("../validators/user");
 
 // --- Admin Operations ---
+const { getMyWallet } = require("../controllers/user/wallet");
+
+userRouter.get("/me/wallet", authUser, getMyWallet);
+
 userRouter.get("/", authUser, authAdmin, getAllUsers);
 userRouter.get("/admins", authUser, authAdmin, getAdmins);
 userRouter.post("/", authUser, authAdmin, validate(createUserSchema), postNewUser);

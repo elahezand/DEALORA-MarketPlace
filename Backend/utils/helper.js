@@ -6,6 +6,7 @@ const Offer = require("../models/offerSeller");
 const Listing = require("../models/listing");
 const logger = require("../utils/logger");
 const { round2, variantFinalPrice } = require("./pricing");
+const { dateRangeFilter } = require("./listQuery");
 
 const isValidId = mongoose.Types.ObjectId.isValid;
 
@@ -30,7 +31,10 @@ const paginate = async (
   const query = { ...filters };
 
   if (cursor) {
-    query[sortKey] = sortOrder === 1 ? { $gt: cursor } : { $lt: cursor };
+    // added next to the filters (not over them): a date range on the same field
+    // (createdAt) must still apply on page 2, 3, ...
+    const cursorCondition = { [sortKey]: sortOrder === 1 ? { $gt: cursor } : { $lt: cursor } };
+    query.$and = [...(query.$and || []), cursorCondition];
   }
 
   let dbQuery = Model.find(query).sort(sort).limit(limit).lean();
@@ -206,6 +210,9 @@ async function buildListingFilters(query, { isAdmin = false } = {}) {
       andConditions.push({ $or: searchConditions });
     }
   }
+
+  // 13. Created-at range, shared by every dashboard table (?from / ?to / ?preset)
+  Object.assign(filters, dateRangeFilter(query, "createdAt"));
 
   if (andConditions.length > 0) filters.$and = andConditions;
 

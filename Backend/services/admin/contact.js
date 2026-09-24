@@ -1,20 +1,20 @@
 const Contact = require("../../models/contact");
 const sendEmail = require("../../utils/sendEmail");
 const { paginate } = require("../../utils/helper");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
+const { buildListQuery, listLimit, dateRangeFilter } = require("../../utils/listQuery");
 
 async function getContacts(query = {}) {
-  const limit = Math.min(Number(query.limit) || 15, 100);
-  const filters = {};
-  if (query.status && query.status !== "all") filters.status = query.status;
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
+  const limit = listLimit(query, 15);
 
   return paginate(Contact, {
     limit,
     cursor: query.cursor,
-    filters,
-    sort: getAdminSort(query, ["createdAt", "updatedAt"])
+    filters: buildListQuery(query, {
+      statuses: ["pending", "answered"],
+      search: ["name", "email", "phone", "body"],
+    }),
+    sort: { _id: -1 }
   });
 }
 

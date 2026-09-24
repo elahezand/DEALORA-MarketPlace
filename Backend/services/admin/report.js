@@ -1,23 +1,24 @@
 const Report = require("../../models/report");
 const { paginate } = require("../../utils/helper");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 const getAllReports = async (query = {}) => {
-  const filters = {};
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
-  if (query.status) filters.status = query.status;
+  const filters = buildListQuery(query, {
+    statuses: ["pending", "reviewed", "resolved", "rejected"],
+    search: ["description"],
+  });
   if (query.targetType) filters.targetType = query.targetType;
   if (query.reason) filters.reason = query.reason;
 
-  const limit = Math.min(Number(query.limit) || 15, 100);
+  const limit = listLimit(query, 15);
 
   return paginate(Report, {
     limit,
     cursor: query.cursor,
     filters,
     populate: [{ path: "reporter", select: "username phone" }],
-    sort: getAdminSort(query, ["createdAt", "updatedAt"])
+    sort: { _id: -1 }
   });
 };
 

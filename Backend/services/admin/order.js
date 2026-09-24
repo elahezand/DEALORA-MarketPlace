@@ -1,13 +1,26 @@
 const Order = require("../../models/order");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
-const { finalizeOrder } = require("../shared/order");
-const { buildOrderIdSearchExpr, maybeMarkOrderShipped, markItemShipped, assertShippable, releaseOrderFunds, revertOrder, autoCompleteShippedOrders } = require("../shared/order");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
+const { buildOrderIdSearchExpr, maybeMarkOrderShipped, markItemShipped, assertShippable, revertOrder, finalizeOrder, completeDeliveredOrder } = require("../shared/order");
+const { buildListQuery, listLimit, dateRangeFilter } = require("../../utils/listQuery");
+
+const OVERDUE_DAYS = Number(process.env.ORDER_AUTO_COMPLETE_DAYS || 7);
 
 const getAllOrders = async (query = {}) => {
-  const limit = Math.min(Number(query.limit) || 20, 100);
-  const filters = {};
+  const limit = listLimit(query, 20);
+  const filters = buildListQuery(query, {
+    statuses: ["created", "processing", "shipped", "completed", "cancelled"],
+    ids: { user: "user", store: "items.store" },
+  });
+  if (!query.status || query.status === "all") filters.status = { $ne: "cancelled" };
+  if (query.paymentStatus && query.paymentStatus !== "all") filters.paymentStatus = query.paymentStatus;
+  if (query.paymentMethod && query.paymentMethod !== "all") filters.paymentMethod = query.paymentMethod;
+
+  // shipped cash orders nobody confirmed in time → the admin decides
+  if (query.overdueCash === "true") {
+    const { overdueCashQuery } = require("../shared/orderSweeper");
+    Object.assign(filters, overdueCashQuery());
+  }
 
   if (query.needsAdminAction === "true" || query.needsAdminAction === true) {
     filters.items = {
@@ -18,14 +31,6 @@ const getAllOrders = async (query = {}) => {
     };
   }
 
-  if (query.status && query.status !== "all") filters.status = query.status;
-  if (query.paymentStatus && query.paymentStatus !== "all") filters.paymentStatus = query.paymentStatus;
-  if (query.paymentMethod && query.paymentMethod !== "all") filters.paymentMethod = query.paymentMethod;
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
-  if (!query.status || query.status === "all") {
-    filters.status = { $ne: "cancelled" };
-  }
-  
   const searchExpr = buildOrderIdSearchExpr(query.q);
   if (searchExpr) filters.$expr = searchExpr;
 
@@ -33,7 +38,7 @@ const getAllOrders = async (query = {}) => {
     limit,
     cursor: query.cursor,
     filters,
-    sort: getAdminSort(query, ["createdAt", "updatedAt"])
+    sort: { _id: -1 }
   });
 
   const data = result.data.map((order) => ({
@@ -41,6 +46,12 @@ const getAllOrders = async (query = {}) => {
     hasPendingAdminItems: order.items.some(
       (item) => item.needsAdminShipment && item.fulfillment?.status !== "shipped"
     ),
+    isCashOverdue:
+      order.status === "shipped" &&
+      order.paymentMethod === "cash" &&
+      order.paymentStatus === "pending" &&
+      !!order.shippedAt &&
+      Date.now() - new Date(order.shippedAt).getTime() >= OVERDUE_DAYS * 24 * 60 * 60 * 1000,
   }));
 
   return { data, pagination: result.pagination };
@@ -93,10 +104,7 @@ const updateOrder = async (orderId, data) => {
 
   // same money rules as the buyer's own actions
   if (wasStatus !== "completed" && order.status === "completed") {
-    order.isDelivered = true;
-    order.deliveredAt = order.deliveredAt || new Date();
-    await order.save();
-    await releaseOrderFunds(order);
+    await completeDeliveredOrder(order);
   }
   if (wasStatus !== "cancelled" && order.status === "cancelled") {
     await revertOrder(order);
@@ -108,7 +116,6 @@ const updateOrder = async (orderId, data) => {
 /* Paid orders whose finalize never completed (server died mid-way) */
 const getStuckOrders = async () => {
   const orders = await Order.find({
-    // the money step started but never finished — whatever the payment method
     finalizedAt: { $ne: null },
     status: { $ne: "cancelled" },
     $or: [
@@ -144,7 +151,19 @@ const runAutoComplete = async () => {
   return runOrderSweeps();
 };
 
+const markDelivered = async (orderId) => {
+  const order = await Order.findById(orderId);
+  if (!order) throw new AppError(404, "Order not found");
+  if (order.status !== "shipped") {
+    throw new AppError(400, "Only a shipped order can be marked as delivered");
+  }
+
+  await completeDeliveredOrder(order);
+  return order;
+};
+
 module.exports = {
+  markDelivered,
   runAutoComplete,
   getStuckOrders,
   repairOrder,

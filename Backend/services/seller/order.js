@@ -4,6 +4,7 @@ const Store = require("../../models/store");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 const { buildOrderIdSearchExpr, maybeMarkOrderShipped, markItemShipped, assertShippable } = require("../shared/order");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 /* An order counts for the seller once it's confirmed:
    paid online, or cash on delivery (cash orders stay "pending" until delivery). */
@@ -16,10 +17,12 @@ const getSellerOrders = async (userId, query = {}) => {
   const store = await Store.findOne({ owner: userId }).select("_id").lean();
   if (!store) throw new AppError(404, "Store not found");
 
-  const limit = Math.min(query.limit ? Number(query.limit) : 20, 50);
+  const limit = listLimit(query, 20, 50);
 
-  const filters = { "items.store": store._id, ...CONFIRMED_ORDER };
-  if (query.status && query.status !== "all") filters.status = query.status;
+  const filters = buildListQuery(query, {
+    base: { "items.store": store._id, ...CONFIRMED_ORDER },
+    statuses: ["created", "processing", "shipped", "completed", "cancelled"],
+  });
 
   const searchExpr = buildOrderIdSearchExpr(query.q);
   if (searchExpr) filters.$expr = searchExpr;

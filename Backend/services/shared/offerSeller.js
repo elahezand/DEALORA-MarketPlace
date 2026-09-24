@@ -22,6 +22,7 @@ const assertValidStatus = (status) => {
 };
 
 module.exports = {
+  OFFER_STATUSES,
   assertOfferableVariant,
   assertValidStatus,
 };

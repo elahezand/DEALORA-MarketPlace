@@ -3,6 +3,7 @@ const Withdrawal = require("../../models/withdrawal");
 const Store = require("../../models/store");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 /* === SELLER: create a withdrawal request === */
 const createWithdrawal = async (userId, data) => {
@@ -41,8 +42,10 @@ const getMyWithdrawals = async (userId, query = {}) => {
   const store = await Store.findOne({ owner: userId });
   if (!store) throw new AppError(404, "Store not found");
 
-  const filters = { store: store._id };
-  if (query.status) filters.status = query.status;
+  const filters = buildListQuery(query, {
+    base: { store: store._id },
+    statuses: ["pending", "processing", "completed", "rejected"],
+  });
 
   const limit = Math.min(Math.max(Number(query.limit) || 15, 1), 50);
   return paginate(Withdrawal, {

@@ -4,6 +4,7 @@ const { paginate } = require("../../utils/helper");
 const invalidateCache = require("../../utils/cache");
 const AppError = require("../../utils/AppError");
 const { buildListingDetail, findListingForDetail, PROTECTED_FIELDS } = require("../shared/listing");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 const isValidId = mongoose.Types.ObjectId.isValid;
 
@@ -75,12 +76,14 @@ async function deleteListing(id, user) {
   return true;
 }
 async function getMyListings(userId, query = {}) {
-  const limit = Math.min(query.limit ? Number(query.limit) : 21, 48);
+  const limit = listLimit(query, 21, 48);
 
-  const filters = { owner: userId, status: { $ne: "deleted" } };
-  if (query.status && query.status !== "all" && query.status !== "deleted") {
-    filters.status = query.status;
-  }
+  const filters = buildListQuery(query, {
+    base: { owner: userId, status: { $ne: "deleted" } },
+    statuses: ["pending", "accepted", "rejected"],
+    search: ["title"],
+    ids: { categoryId: "categoryPath" },
+  });
 
   return paginate(Listing, {
     limit,

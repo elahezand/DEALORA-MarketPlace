@@ -1,17 +1,17 @@
 const Coupon = require("../../models/coupon");
 const { paginate } = require("../../utils/helper");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 const getCoupons = async (query = {}) => {
   const filter = {};
-  Object.assign(filter, buildDateFilter(query, "createdAt"));
-  if (query.isActive !== undefined) filter.isActive = query.isActive === "true";
-  if (query.type) filter.type = query.type;
+  Object.assign(filter, buildListQuery(query, { search: ["code"] }));
+  if (query.isActive !== undefined && query.isActive !== "all") filter.isActive = query.isActive === "true";
+  if (query.type && query.type !== "all") filter.type = query.type;
 
-  const limit = Math.min(Number(query.limit) || 15, 100);
+  const limit = listLimit(query, 15);
   return paginate(Coupon, {
-    limit, cursor: query.cursor, filters: filter, sort: getAdminSort(query, ["createdAt", "updatedAt"])
+    limit, cursor: query.cursor, filters: filter, sort: { _id: -1 }
   });
 };
 

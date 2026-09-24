@@ -1,25 +1,23 @@
 const Store = require("../../models/store");
 const { paginate } = require("../../utils/helper");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
+const { buildListQuery, listLimit, dateRangeFilter } = require("../../utils/listQuery");
 
 const getAllStores = async (query = {}) => {
-  const { limit, cursor } = query;
-  if (limit && Number(limit) > 50) {
-    throw new AppError(400, "limit must be <= 50");
+  const filters = buildListQuery(query, {
+    search: ["name", "slug", "phone"],
+    ids: { category: "category", owner: "owner" },
+  });
+  if (query.isVerified !== undefined && query.isVerified !== "all") {
+    filters.isVerified = query.isVerified === "true";
   }
 
-  const filters = {};
-  if (query.q) filters.name = { $regex: String(query.q).trim().slice(0, 100), $options: "i" };
-  if (query.isVerified !== undefined) filters.isVerified = query.isVerified === "true";
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
-
   return paginate(Store, {
-    limit,
-    cursor,
+    limit: listLimit(query, 20, 50),
+    cursor: query.cursor,
     filters,
     populate: "owner",
-    sort: getAdminSort(query, ["createdAt", "updatedAt"])
+    sort: { _id: -1 }
   });
 };
 

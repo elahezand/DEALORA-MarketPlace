@@ -1,15 +1,14 @@
 const Article = require("../../models/article");
 const { paginate } = require("../../utils/helper");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 const getAllArticlesAdmin = async (query = {}) => {
-  const limit = Math.min(Number(query.limit) || 15, 100);
+  const limit = listLimit(query, 15);
 
-  const filters = {};
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
+  const filters = buildListQuery(query, { search: ["title"] });
   if (query.category) filters.category = query.category;
-  if (query.isPublished !== undefined) {
+  if (query.isPublished !== undefined && query.isPublished !== "all") {
     filters.isPublished = query.isPublished === "true";
   }
 
@@ -18,7 +17,7 @@ const getAllArticlesAdmin = async (query = {}) => {
     cursor: query.cursor,
     filters,
     populate: { path: "category", select: "title slug" },
-    sort: getAdminSort(query, ["createdAt", "updatedAt"]),
+    sort: { createdAt: -1 },
   });
 };
 

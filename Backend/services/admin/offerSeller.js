@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 const OfferSeller = require("../../models/offerSeller");
 const Listing = require("../../models/listing");
 const { paginate } = require("../../utils/helper");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 const AppError = require("../../utils/AppError");
-const { assertOfferableVariant, assertValidStatus } = require("../shared/offerSeller");
+const { assertOfferableVariant, assertValidStatus, OFFER_STATUSES } = require("../shared/offerSeller");
+const { buildListQuery, listLimit, dateRangeFilter } = require("../../utils/listQuery");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -14,23 +14,23 @@ const getAll = async (query = {}) => {
   if (Number(query.limit) > 100) throw new AppError(400, "Limit must be <= 100");
   assertValidStatus(query.status);
 
-  const filters = {};
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
-  if (query.status) filters.status = query.status;
+  const filters = buildListQuery(query, {
+    statuses: OFFER_STATUSES,
+    ids: { store: "store", product: "productId" },
+  });
   if (!query.status || query.status === "all") {
     filters.status = { $ne: "deleted" };
   }
 
-
   return paginate(OfferSeller, {
-    limit: query.limit,
+    limit: listLimit(query, 20),
     cursor: query.cursor,
     filters,
     populate: [
       { path: "productId", select: PRODUCT_FIELDS },
       { path: "store", select: "name slug owner", populate: { path: "owner", select: "name username phone" } },
     ],
-    sort: getAdminSort(query, ["createdAt", "updatedAt"])
+    sort: { _id: -1 }
   });
 };
 

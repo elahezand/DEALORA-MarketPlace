@@ -1,38 +1,70 @@
 const Comment = require("../../models/comment");
 const mongoose = require("mongoose");
 const { paginate } = require("../../utils/helper");
+const { buildListQuery, listLimit } = require("../../utils/listQuery");
 const AppError = require("../../utils/AppError");
-const { buildDateFilter, getAdminSort } = require("../../utils/adminQuery");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const getAdmin = async (query = {}) => {
-  const filters = {};
-  if (query.status && query.status !== "all") filters.status = query.status;
+  const filters = buildListQuery(query, {
+    statuses: ["pending", "approved", "rejected", "spam", "deleted"],
+    search: ["body"],
+    ids: { listing: "listing", user: "user", store: "store" },
+  });
+
+  // type=review → top-level reviews, type=reply → answers to a review
+  if (query.type === "review") filters.parentId = null;
   if (query.type === "reply") filters.parentId = { $ne: null };
-  if (query.type === "comment") filters.parentId = null;
-  if (query.replyStatus === "replied" || query.replyStatus === "unreplied") {
-    const repliedIds = await Comment.distinct("parentId", { parentId: { $ne: null } });
+  // answered=true / false → reviews that do / don't have a reply yet (filtered in the DB,
+  // so every page is full). Only meaningful for reviews — ignored for replies.
+  if (query.type !== "reply" && (query.answered === "true" || query.answered === "false")) {
+    const answeredIds = await Comment.distinct("parentId", { parentId: { $ne: null }, deletedAt: null });
     filters.parentId = null;
-    filters._id = query.replyStatus === "replied" ? { $in: repliedIds } : { $nin: repliedIds };
+    filters._id = query.answered === "true" ? { $in: answeredIds } : { $nin: answeredIds };
   }
-  Object.assign(filters, buildDateFilter(query, "createdAt"));
-  if (query.listing && isValidId(query.listing)) filters.listing = query.listing;
 
-  const limit = Math.min(Number(query.limit) || 15, 100);
-
-  return paginate(Comment, {
-    limit,
+  const result = await paginate(Comment, {
+    limit: listLimit(query, 15),
     cursor: query.cursor,
     filters,
     populate: [
-      { path: "user", select: "username phone" },
-      { path: "listing", select: "title" },
-      { path: "parentId", select: "body" },
+      { path: "user", select: "_id name username phone" },
+      { path: "listing", select: "_id title slug images" },
+      { path: "store", select: "_id name slug" },
+      { path: "moderation.moderatedBy", select: "_id name username" },
+      { path: "parentId", select: "_id body user createdAt", populate: { path: "user", select: "_id name username" } },
     ],
-    sort: getAdminSort(query, ["createdAt"])
   });
+
+  // tell the admin which reviews were already answered (and let them filter on it)
+  const reviewIds = result.data.filter((c) => !c.parentId).map((c) => c._id);
+  const replies = reviewIds.length
+    ? await Comment.find({ parentId: { $in: reviewIds }, deletedAt: null })
+      .select("parentId body status createdAt user")
+      .populate("user", "_id name username")
+      .sort({ createdAt: 1 })
+      .lean()
+    : [];
+
+  const repliesByReview = replies.reduce((acc, r) => {
+    const key = String(r.parentId);
+    (acc[key] ||= []).push(r);
+    return acc;
+  }, {});
+
+  const data = result.data.map((comment) => ({
+    ...comment,
+    isReply: !!comment.parentId,
+    // the review this answer belongs to, so the admin can read it in the table
+    parentComment: comment.parentId || null,
+    replies: repliesByReview[String(comment._id)] || [],
+    answered: (repliesByReview[String(comment._id)] || []).length > 0,
+  }));
+
+  return { data, pagination: result.pagination };
 };
+
 
 const replyToComment = async (adminId, parentId, body) => {
   if (!isValidId(parentId)) {

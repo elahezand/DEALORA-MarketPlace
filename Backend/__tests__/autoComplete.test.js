@@ -46,6 +46,7 @@ test("only shipped orders older than the deadline are picked", async () => {
   found = [];
   await autoCompleteShippedOrders();
   assert.equal(lastQuery.status, "shipped");
+  assert.equal(lastQuery.paymentStatus, "paid");   // cash is never auto-completed
   const deadline = lastQuery.shippedAt.$lte.getTime();
   const days = (Date.now() - deadline) / (24 * 60 * 60 * 1000);
   assert.ok(days > 6.9 && days < 7.1);
@@ -65,4 +66,18 @@ test("a forgotten order is completed and the seller is paid", async () => {
   assert.equal(order.isDelivered, true);
   assert.ok(order.autoCompletedAt);
   assert.deepEqual(wallet, { pending: 0, balance: 100 });
+});
+
+test("delivery marks a CASH order as paid, an online one stays paid", async () => {
+  const { completeDeliveredOrder } = require("../services/shared/order");
+  const cash = { _id: "c1", status: "shipped", paymentMethod: "cash", paymentStatus: "pending", items: [], save: async () => {} };
+  await completeDeliveredOrder(cash);
+  assert.equal(cash.status, "completed");
+  assert.equal(cash.paymentStatus, "paid");
+  assert.equal(cash.autoCompletedAt, undefined);   // manual, not automatic
+
+  const online = { _id: "z1", status: "shipped", paymentMethod: "zarinpal", paymentStatus: "paid", items: [], save: async () => {} };
+  await completeDeliveredOrder(online, { auto: true });
+  assert.equal(online.paymentStatus, "paid");
+  assert.ok(online.autoCompletedAt);
 });

@@ -65,13 +65,10 @@ const shippingAddressSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     postalCode: { type: String, required: true },
-    location: {
-      lat: { type: Number, required: true },
-      lng: { type: Number, required: true },
-    },
     address: { type: String, required: true, trim: true },
     state: { type: String, required: true },
     city: { type: String, required: true },
+    phone: { type: String, default: null },
   },
   { _id: false }
 );
@@ -109,6 +106,7 @@ const orderSchema = new Schema(
     finalizedAt: { type: Date, default: null },
     shippedAt: { type: Date, default: null },
     autoCompletedAt: { type: Date, default: null },
+    cashOverdueNotifiedAt: { type: Date, default: null },
     refundedAt: { type: Date, default: null },
     refundAmount: { type: Number, default: 0, min: 0 },
     isDelivered: { type: Boolean, default: false },

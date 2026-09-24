@@ -41,6 +41,14 @@ orderRouter.post(
 );
 
 orderRouter.post(
+    "/admin/:id/delivered",
+    authUser,
+    authAdmin,
+    validateObjectIdParam("id"),
+    adminController.markDelivered
+);
+
+orderRouter.post(
     "/admin/:id/repair",
     authUser,
     authAdmin,

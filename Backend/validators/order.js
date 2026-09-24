@@ -4,23 +4,17 @@ const { z } = require("zod");
 const shippingAddressSchema = z.object({
     _id: z.string().optional(),
     name: z.string().min(2),
-    phone: z.string().optional(),
+    phone: z.string().min(5).max(20).optional(),
     address: z.string().min(5),
     city: z.string().min(2),
     state: z.string().min(2),
     postalCode: z.string().min(3),
-    location: z.object({
-        lat: z.number(),
-        lng: z.number(),
-    }),
 });
 
 const checkoutSchema = z.object({
     shippingAddress: shippingAddressSchema,
     paymentMethod: z.enum(["cash", "zarinpal", "wallet"]),
-    // same key on a retry → the same order is returned instead of a second one
     idempotencyKey: z.string().min(8).max(100).optional(),
-    // spend the buyer's wallet balance first
     useWallet: z.boolean().optional(),
 });
 

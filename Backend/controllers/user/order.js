@@ -5,9 +5,12 @@ const checkout = async (req, res, next) => {
     const userId = req.user._id;
     const { shippingAddress, paymentMethod, idempotencyKey, useWallet } = req.parsed.data;
 
+    // the receiver's phone: from the form, otherwise the buyer's own number
+    const address = { ...shippingAddress, phone: shippingAddress.phone || req.user.phone || null };
+
     const result = await userOrderService.checkout(
       userId,
-      shippingAddress,
+      address,
       paymentMethod,
       idempotencyKey || req.get("Idempotency-Key") || null,
       useWallet === true

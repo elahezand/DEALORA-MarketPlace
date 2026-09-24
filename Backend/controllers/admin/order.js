@@ -84,7 +84,17 @@ const runAutoComplete = async (req, res, next) => {
   }
 };
 
+const markDelivered = async (req, res, next) => {
+  try {
+    const order = await adminOrderService.markDelivered(req.params.id);
+    res.status(200).json({ success: true, message: "Order marked as delivered", data: order });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
+  markDelivered,
   runAutoComplete,
   getStuckOrders,
   repairOrder,

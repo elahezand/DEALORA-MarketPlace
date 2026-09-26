@@ -50,7 +50,7 @@ export default async function PostsPage({ params, searchParams }: PageProps) {
         .slice(0, 4);
 
     return (
-        <main className="max-w-7xl w-full p-4 md:p-6 antialiased overflow-x-hidden mx-auto space-y-6">
+        <div className="max-w-7xl w-full p-4 md:p-6 antialiased overflow-x-hidden mx-auto space-y-6">
             {previewEndpoint && (
                 <div className="rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
                     Preview — status: <span className="font-bold">{listingData?.status}</span>
@@ -71,6 +71,6 @@ export default async function PostsPage({ params, searchParams }: PageProps) {
             {similarListings.length > 0 && (
                 <SimilarListing listings={similarListings} />
             )}
-        </main>
+        </div>
     );
 }

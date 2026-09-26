@@ -29,7 +29,7 @@ interface LogoProps {
           <span className="font-sans font-black text-xl tracking-tight text-[var(--primary-600)] leading-none">
             DEAL<span className="text-[var(--destructive)] font-medium">ORA</span>
           </span>
-          <span className="text-[8px] font-bold tracking-[0.25em] text-slate-400 uppercase mt-1">
+          <span className="text-[8px] font-bold tracking-[0.25em] text-[var(--foreground-muted)] uppercase mt-1">
             MARKETPLACE
           </span>
         </div>

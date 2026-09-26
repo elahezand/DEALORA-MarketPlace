@@ -21,6 +21,9 @@ export default function ClientLayout({
 
   return (
     <>
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <Header />
       <div className="page min-h-screen flex flex-col relative [overflow:clip] antialiased">
         <MotionDiv
@@ -49,7 +52,9 @@ export default function ClientLayout({
           aria-hidden
         />
 
-        {children}
+        <main id="main-content" className="flex-1 flex flex-col relative">
+          {children}
+        </main>
       </div>
 
       {showFooter && <Footer />}

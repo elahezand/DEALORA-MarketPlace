@@ -345,7 +345,7 @@ export default function ProductForm({ product }: ProductFormProps) {
           {images.map((src) => (
             <div key={src} className="relative w-24 h-24 rounded-xl overflow-hidden border border-[var(--border)]">
               <img src={getUrl(src) ?? ""} alt="" className="w-full h-full object-cover" />
-              <button
+              <button aria-label="Remove image"
                 type="button"
                 onClick={() => setImages((prev) => prev.filter((s) => s !== src))}
                 className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
@@ -357,7 +357,7 @@ export default function ProductForm({ product }: ProductFormProps) {
           {files.map((file, i) => (
             <div key={`${file.name}-${i}`} className="relative w-24 h-24 rounded-xl overflow-hidden border border-dashed border-[var(--primary-500)]">
               <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-              <button
+              <button aria-label="Remove new image"
                 type="button"
                 onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
                 className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"

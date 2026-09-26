@@ -130,7 +130,7 @@ export default function StepMedia() {
 
                             <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-slate-900/30 transition-all duration-300" />
 
-                            <button
+                            <button aria-label="Remove image"
                                 type="button"
                                 className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 text-white w-7 h-7 rounded-full flex items-center justify-center shadow-md hover:scale-105"
                                 style={{ backgroundColor: "var(--destructive)" }}

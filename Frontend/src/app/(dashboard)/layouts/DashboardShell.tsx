@@ -49,6 +49,7 @@ export default function DashboardShell({
       )}
 
       <main
+        id="main-content"
         className={clsx(
           "dash-main transition-[margin] duration-300",
           // the sidebar only pushes content on desktop; on phones it overlays

@@ -3,9 +3,19 @@
 import React, { useMemo, useEffect } from "react";
 import { Field, useFormikContext } from "formik";
 import { useLocation } from "@/services/Location/useGetLocations";
-import Location from "./Location";
 import { getCoords } from "@/utils/getCoords";
 import { FormValues } from "@/types/listingFormValue";
+
+import dynamic from "next/dynamic";
+
+const Location = dynamic(() => import("./Location"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] flex items-center justify-center">
+      Loading map...
+    </div>
+  ),
+});
 
 export default function StepChooseState() {
   const { setFieldValue, values } = useFormikContext<FormValues>();
@@ -40,7 +50,7 @@ export default function StepChooseState() {
     const cityName = e.target.value;
     setFieldValue("location.city", cityName);
 
-    const coords = await getCoords(cityName, selectedState);    
+    const coords = await getCoords(cityName, selectedState);
     if (!active) return;
 
     if (coords) {

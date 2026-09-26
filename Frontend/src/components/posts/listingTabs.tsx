@@ -57,7 +57,7 @@ export default function ListingTypeTabs({ currentType }: ListingTypeTabsProps) {
         </div>
         <span className={clsx(
           "text-[10px] font-medium tracking-tight transition-colors",
-          currentType === "store_product" ? "text-blue-100/90" : "text-gray-400"
+          currentType === "store_product" ? "text-blue-100/90" : "text-[var(--foreground-muted)]"
         )}>
           Verified businesses & brand warranty
         </span>
@@ -90,7 +90,7 @@ export default function ListingTypeTabs({ currentType }: ListingTypeTabsProps) {
         </div>
         <span className={clsx(
           "text-[10px] font-medium tracking-tight transition-colors",
-          currentType === "user_ad" ? "text-white" : "text-gray-400"
+          currentType === "user_ad" ? "text-white" : "text-[var(--foreground-muted)]"
         )}>
           Peer-to-peer deals & direct buying
         </span>

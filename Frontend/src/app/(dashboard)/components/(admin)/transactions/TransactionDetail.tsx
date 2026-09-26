@@ -149,7 +149,7 @@ export default function TransactionDetail({
     <div className="flex flex-col gap-6 pb-10mx-auto w-full">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Link
+          <Link aria-label="Back to transactions"
             href="/dashboard/admin/transactions"
             className="p-2 rounded-lg hover:bg-[var(--background-soft)] transition-colors"
           >

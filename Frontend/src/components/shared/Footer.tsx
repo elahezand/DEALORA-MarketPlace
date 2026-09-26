@@ -103,16 +103,19 @@ export default function Footer() {
 
           {footerLinks.map((col) => (
             <div key={col.title} className="flex flex-col">
-              <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-[var(--primary-500)] dark:text-[var(--accent-400)]">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-[var(--primary-500)] dark:text-[var(--accent-400)]">
                 {col.title}
-              </h4>
+              </h2>
               <ul className="space-y-3">
                 {col.links.map((link) => (
-                  <Link
-                    key={link.label}
-                    href={link.href} className="text-sm transition-all duration-300 hover:text-[var(--primary-600)] hover:pl-1 block">
-                    {link.label}
-                  </Link>
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-sm transition-all duration-300 hover:text-[var(--primary-600)] hover:pl-1 block"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
                 ))}
               </ul>
             </div>

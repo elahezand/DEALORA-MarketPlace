@@ -43,7 +43,7 @@ export function AdminFormModal({
               {title}
             </h3>
           </div>
-          <button
+          <button aria-label="Close"
             onClick={onClose}
             type="button"
             className="p-1.5 rounded-xl text-[var(--foreground-subtle)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"

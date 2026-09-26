@@ -135,7 +135,7 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Link
+          <Link aria-label="Back to my orders"
             href="/dashboard/orders"
             className="p-2 rounded-lg hover:bg-[var(--background-soft)] transition-colors"
           >

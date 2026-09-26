@@ -8,7 +8,6 @@ export interface IAddress {
   address: string;
   city: string;
   state: string;
-  phone:string
 }
 
 export interface IUser {

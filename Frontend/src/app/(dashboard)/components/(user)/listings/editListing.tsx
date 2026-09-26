@@ -110,7 +110,7 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
   return (
     <div className="flex flex-col gap-6 pb-10 mx-auto w-full">
       <div className="flex items-center gap-3">
-        <Link
+        <Link aria-label="Back to my listings"
           href="/dashboard/listings"
           className="p-2 rounded-lg hover:bg-[var(--background-soft)] transition-colors"
         >

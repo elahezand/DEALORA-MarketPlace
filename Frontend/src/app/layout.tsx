@@ -2,6 +2,7 @@ import QueryProvider from "../utils/providers/providers";
 import { Providers } from "../utils/providers/ProvidersHeroUi";
 import { Inter, Roboto, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
+import type { Metadata, Viewport } from "next";
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -16,13 +17,26 @@ const playfairDisplay = Playfair_Display({
   variable: "--font-playfair",
 });
 
+export const metadata: Metadata = {
+  title: {
+    default: "Dealora — Buy and sell anything",
+    template: "%s | Dealora",
+  },
+  description: "Marketplace for new products from verified stores and ads from people near you.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html dir="ltr">
+    <html lang="en" dir="ltr">
       <body
         className={`${inter.variable} ${roboto.variable} ${playfairDisplay.variable}`}
       >

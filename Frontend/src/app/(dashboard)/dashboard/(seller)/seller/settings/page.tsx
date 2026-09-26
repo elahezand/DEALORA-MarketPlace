@@ -99,7 +99,7 @@ export default function EditStorePage() {
     return (
         <div className="flex flex-col gap-6 pb-10 mx-auto w-full">
             <div className="flex items-center gap-3">
-                <Link
+                <Link aria-label="Back to my store"
                     href="/dashboard/seller/my-store"
                     className="p-2 rounded-lg hover:bg-[var(--background-soft)] transition-colors"
                 >

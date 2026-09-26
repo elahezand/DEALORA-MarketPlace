@@ -124,7 +124,7 @@ export default function LocationSearch() {
       </div>
 
       {/* ── Search button ── */}
-      <button
+      <button aria-label="Search"
         onClick={handleSearch}
         disabled={isPending}
         className="btn-primary shrink-0 !w-11 sm:!w-12 !px-0 ml-2"

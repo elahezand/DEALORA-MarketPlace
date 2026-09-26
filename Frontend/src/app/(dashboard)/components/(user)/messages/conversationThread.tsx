@@ -75,7 +75,7 @@ export default function ConversationThread({
     <div className="flex flex-col gap-4 pb-10 h-[calc(100vh-96px)]">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link
+        <Link aria-label="Back to messages"
           href="/dashboard/messages"
           className="p-2 rounded-lg hover:bg-[var(--background-soft)] transition-colors flex-shrink-0"
         >

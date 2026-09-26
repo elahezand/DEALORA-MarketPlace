@@ -6,7 +6,7 @@ import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { Offer, OfferStatus, OffersResponse } from "@/types/Offer";
-
+import { getUrl } from "@/utils/helper";
 const STATUS_TONE: Record<OfferStatus, "success" | "warning" | "destructive"> = {
   pending: "warning",
   accepted: "success",
@@ -47,7 +47,7 @@ export default function RecentOffers() {
         {offers.map((offer) => {
           const product = typeof offer.productId === "object" ? offer.productId : null;
           const title = product?.title || "—";
-          const image = product?.images?.[0] || null;
+          const src = getUrl(product?.images?.[0] || null);
           const store = typeof offer.store === "object" ? offer.store : null;
           const seller = store && typeof store.owner === "object" ? store.owner : null;
           const tone = STATUS_TONE[offer.status] ?? "warning";
@@ -60,7 +60,7 @@ export default function RecentOffers() {
             >
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  <EntityAvatar src={image} alt={title} fallback={title.charAt(0)} shape="square" />
+                  <EntityAvatar src={src} alt={title} fallback={title.charAt(0)} shape="square" />
                   <p className="text-sm font-bold text-[var(--foreground)] truncate max-w-[160px]">
                     {title}
                   </p>

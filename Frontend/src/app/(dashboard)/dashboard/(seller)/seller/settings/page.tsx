@@ -120,7 +120,7 @@ export default function EditStorePage() {
                 <div className="flex items-center gap-5 pb-2 border-b border-[var(--border)]">
                     <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
                         {logo ? (
-                            <img src={logo} alt={name} className="w-full h-full object-cover" />
+                            <img loading="lazy" decoding="async" src={logo} alt={name} className="w-full h-full object-cover" />
                         ) : (
                             <HiOutlineBuildingStorefront className="w-6 h-6 text-[var(--foreground-muted)]" />
                         )}

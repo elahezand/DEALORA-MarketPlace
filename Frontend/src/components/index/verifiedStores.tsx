@@ -42,7 +42,7 @@ export default function VerifiedStores() {
                 >
                   {store.logo ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={store.logo} alt={store.name} className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={store.logo} alt={store.name} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-xs font-bold text-primary-600 dark:text-primary-400">
                       {store.name.charAt(0)}

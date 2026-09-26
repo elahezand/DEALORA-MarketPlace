@@ -33,7 +33,7 @@ export default async function StoreDetailPage({
         <div className="flex flex-col items-center text-center gap-4 mb-12">
           <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center">
             {store.logo ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={store.logo}
                 alt={store.name}
                 className="w-full h-full object-cover"

@@ -98,10 +98,10 @@ export default function DetailSearchModal({
                 return (
                   <SwiperSlide key={index}>
                     <Image
-                      unoptimized
                       src={src}
                       alt={post.title || "Listing Image"}
                       fill
+                      sizes="(max-width: 640px) 100vw, 400px"
                       className="object-cover"
                     />
                   </SwiperSlide>

@@ -152,7 +152,7 @@ export default function GlobalSearch({ inputRef, role }: GlobalSearchProps) {
                                 >
                                     <div className="w-8 h-8 rounded-lg overflow-hidden bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
                                         {listing.images?.[0] ? (
-                                            <img src={getUrl(listing.images[0]) || ""} alt={listing.title} className="w-full h-full object-cover" />
+                                            <img loading="lazy" decoding="async" src={getUrl(listing.images[0]) || ""} alt={listing.title} className="w-full h-full object-cover" />
                                         ) : (
                                             <HiOutlineTag className="w-4 h-4 text-[var(--foreground-subtle)]" />
                                         )}
@@ -179,7 +179,7 @@ export default function GlobalSearch({ inputRef, role }: GlobalSearchProps) {
                                     >
                                         <div className="w-8 h-8 rounded-lg overflow-hidden bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
                                             {product?.images?.[0] ? (
-                                                <img src={getUrl(product.images[0]) || ""} alt={product?.title ?? "product"} className="w-full h-full object-cover" />
+                                                <img loading="lazy" decoding="async" src={getUrl(product.images[0]) || ""} alt={product?.title ?? "product"} className="w-full h-full object-cover" />
                                             ) : (
                                                 <HiOutlineTag className="w-4 h-4 text-[var(--foreground-subtle)]" />
                                             )}

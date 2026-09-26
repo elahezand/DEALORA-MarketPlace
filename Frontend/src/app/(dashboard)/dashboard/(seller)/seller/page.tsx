@@ -89,7 +89,7 @@ export default function SellerDashboardPage() {
       <div className="card rounded-2xl border border-[var(--border)] bg-[var(--card-solid)] p-6 flex items-center gap-5">
         <div className="w-14 h-14 rounded-2xl overflow-hidden bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
           {store.logo ? (
-            <img src={store.logo} alt={store.name} className="w-full h-full object-cover" />
+            <img loading="lazy" decoding="async" src={store.logo} alt={store.name} className="w-full h-full object-cover" />
           ) : (
             <HiOutlineBuildingStorefront className="w-6 h-6 text-[var(--foreground-muted)]" />
           )}

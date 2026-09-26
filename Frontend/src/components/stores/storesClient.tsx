@@ -1,5 +1,4 @@
 "use client";
-import React from 'react';
 import dynamic from "next/dynamic";
 import { HiChevronRight } from 'react-icons/hi';
 import { useInfiniteGet } from '@/utils/hooks/useReactQueryHooks';

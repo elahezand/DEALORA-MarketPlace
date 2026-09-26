@@ -24,7 +24,7 @@ export default function Store({isOpen}:any) {
                     >
                         <div className="w-9 h-9 rounded-lg overflow-hidden bg-[var(--card-solid)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
                             {store.logo ? (
-                                <img src={store.logo} alt={store.name} className="w-full h-full object-cover" />
+                                <img loading="lazy" decoding="async" src={store.logo} alt={store.name} className="w-full h-full object-cover" />
                             ) : (
                                 <HiOutlineBuildingStorefront className="w-4 h-4 text-[var(--foreground-muted)]" />
                             )}
@@ -52,7 +52,7 @@ export default function Store({isOpen}:any) {
                         className="w-11 h-11 rounded-xl overflow-hidden bg-[var(--background-soft)] border border-[var(--border-strong)] flex items-center justify-center flex-shrink-0 group relative"
                     >
                         {store.logo ? (
-                            <img src={store.logo} alt={store.name} className="w-full h-full object-cover" />
+                            <img loading="lazy" decoding="async" src={store.logo} alt={store.name} className="w-full h-full object-cover" />
                         ) : (
                             <HiOutlineBuildingStorefront className="w-4 h-4 text-[var(--foreground-muted)]" />
                         )}

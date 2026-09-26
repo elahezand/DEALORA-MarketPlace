@@ -83,8 +83,8 @@ export default function ListingsSection({ listings }: Props) {
                                                         <Image
                                                             src={src||""}
                                                             alt={`${title}-photo-${idx + 1}`}
-                                                            unoptimized
                                                             fill
+                                                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                                                             loading="lazy"
                                                             onError={() => handleImageError(item._id, idx)}
                                                             className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"

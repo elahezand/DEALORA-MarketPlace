@@ -31,7 +31,7 @@ function ImagePreview({
 
     if (!url) return null;
 
-    return <img src={url} alt={alt} className={className} />;
+    return <img loading="lazy" decoding="async" src={url} alt={alt} className={className} />;
 }
 
 export default function StepMedia() {

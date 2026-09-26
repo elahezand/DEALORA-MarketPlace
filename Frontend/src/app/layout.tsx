@@ -1,21 +1,9 @@
 import QueryProvider from "../utils/providers/providers";
 import { Providers } from "../utils/providers/ProvidersHeroUi";
-import { Inter, Roboto, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import type { Metadata, Viewport } from "next";
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const roboto = Roboto({
-  weight: ["400", "700"],
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-roboto",
-});
-const playfairDisplay = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -37,9 +25,7 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="en" dir="ltr">
-      <body
-        className={`${inter.variable} ${roboto.variable} ${playfairDisplay.variable}`}
-      >
+      <body>
         <Toaster
           position="bottom-right"
           richColors

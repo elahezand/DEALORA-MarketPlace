@@ -93,7 +93,7 @@ export function PersonalInfoForm({
             {isUpdating ? (
               <Spinner size="sm" color="primary" />
             ) : avatarSrc ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={avatarSrc}
                 alt={username || "avatar"}
                 className="w-full h-full object-cover"

@@ -84,7 +84,7 @@ export default function ConversationThread({
 
         <div className="w-10 h-10 rounded-full bg-[var(--background-soft)] border border-[var(--border)] overflow-hidden flex-shrink-0 flex items-center justify-center">
           {avatarUrl ? (
-            <img
+            <img loading="lazy" decoding="async"
               src={avatarUrl}
               alt={otherParticipant?.username || "User"}
               className="w-full h-full object-cover"

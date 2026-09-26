@@ -5,6 +5,7 @@ import { HiOutlineShoppingCart } from "react-icons/hi2";
 import { useGetMyCart } from "@/services/Cart/useGetMyCart";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { CartItem } from "@/types/Cart";
+import { getUrl } from "@/utils/helper";
 
 function ItemSkeleton() {
   return (
@@ -49,6 +50,7 @@ export default function CartPreview() {
         <ul className="divide-y divide-[var(--border)]">
           {items.slice(0, 4).map((item, index) => {
             const product = typeof item.productId === "object" ? item.productId : null;
+            const src = getUrl(product?.images?.[0]);
             const key =
               (typeof item.offer === "object" ? item.offer?._id : item.offer) ??
               product?._id ??
@@ -63,8 +65,8 @@ export default function CartPreview() {
                 >
                   <div className="w-10 h-10 rounded-lg bg-[var(--background-soft)] border border-[var(--border)] flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {product?.images?.[0] ? (
-                      <img
-                        src={product.images[0]}
+                      <img loading="lazy" decoding="async"
+                        src={src || ""}
                         alt={product?.title || ""}
                         className="w-full h-full object-cover"
                       />

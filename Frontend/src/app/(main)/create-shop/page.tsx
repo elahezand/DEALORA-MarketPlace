@@ -502,7 +502,7 @@ export default function CreateShop() {
                       className="w-32 h-32 rounded-2xl border-2 border-dashed border-[var(--border)] flex items-center justify-center cursor-pointer hover:bg-[var(--background-soft)] transition overflow-hidden"
                     >
                       {values.logo ? (
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={values.logo}
                           alt="Store logo"
                           className="w-full h-full object-cover"
@@ -538,7 +538,7 @@ export default function CreateShop() {
                   <div className="rounded-xl border border-[var(--border)] bg-[var(--background-soft)] p-6 flex items-center gap-4">
                     <div className="w-16 h-16 rounded-xl overflow-hidden bg-[var(--card)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
                       {values.logo ? (
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={values.logo}
                           alt="Store logo"
                           className="w-full h-full object-cover"

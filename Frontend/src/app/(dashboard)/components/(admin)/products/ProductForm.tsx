@@ -344,7 +344,7 @@ export default function ProductForm({ product }: ProductFormProps) {
         <div className="flex flex-wrap gap-3">
           {images.map((src) => (
             <div key={src} className="relative w-24 h-24 rounded-xl overflow-hidden border border-[var(--border)]">
-              <img src={getUrl(src) ?? ""} alt="" className="w-full h-full object-cover" />
+              <img loading="lazy" decoding="async" src={getUrl(src) ?? ""} alt="" className="w-full h-full object-cover" />
               <button aria-label="Remove image"
                 type="button"
                 onClick={() => setImages((prev) => prev.filter((s) => s !== src))}
@@ -356,7 +356,7 @@ export default function ProductForm({ product }: ProductFormProps) {
           ))}
           {files.map((file, i) => (
             <div key={`${file.name}-${i}`} className="relative w-24 h-24 rounded-xl overflow-hidden border border-dashed border-[var(--primary-500)]">
-              <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+              <img loading="lazy" decoding="async" src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
               <button aria-label="Remove new image"
                 type="button"
                 onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}

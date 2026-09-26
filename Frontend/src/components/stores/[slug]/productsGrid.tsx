@@ -39,7 +39,7 @@ export default function ProductsGrid({ data }: { data: Product[] }) {
         >
           <div className="w-full aspect-square bg-[var(--background-soft)] overflow-hidden">
             {product.images?.[0] ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={getUrl(product.images[0])||""}
                 alt={product.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

@@ -40,7 +40,7 @@ export default function SupportSection() {
   }, []);
 
   return (
-    <div className="w-full max-w-7xl max-auto relative z-10">
+    <div className="w-full max-w-7xl mx-auto relative z-10">
       <div className="card p-8 md:p-12 text-center relative z-20">
         <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-transparent via-[var(--primary-400)] to-transparent rounded-t-[inherit]" />
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-10">

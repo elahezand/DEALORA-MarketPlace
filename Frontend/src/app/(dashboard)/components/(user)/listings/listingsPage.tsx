@@ -167,7 +167,7 @@ export default function ListingsPage({
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-[var(--background-soft)] rounded-lg overflow-hidden flex-shrink-0 border border-[var(--border)]">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={getUrl(listing.images?.[0])
                           || "/placeholder.png"}
                         alt={listing.title}

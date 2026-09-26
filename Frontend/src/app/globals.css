@@ -1405,3 +1405,59 @@ textarea:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* =========================================================
+   STOREFRONT BACKGROUND GLOW — dark theme only
+   Two soft lights drifting behind the whole screen. Fixed to the viewport, so
+   they stay behind the content while scrolling. Animated with transform/opacity
+   (GPU), not by repainting a full-page background.
+   ========================================================= */
+
+.page-glow {
+  display: none; /* light theme: no glow */
+}
+
+.dark .page-glow {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+
+.page-glow > span {
+  position: absolute;
+  width: 80vmax;
+  height: 80vmax;
+  border-radius: 999px;
+  will-change: transform, opacity;
+}
+
+.page-glow-a {
+  top: -40vmax;
+  left: -30vmax;
+  background: radial-gradient(circle, rgb(37 99 235 / 0.35) 0%, transparent 60%);
+  animation: page-glow-a 26s ease-in-out infinite alternate;
+}
+
+.page-glow-b {
+  bottom: -40vmax;
+  right: -30vmax;
+  background: radial-gradient(circle, rgb(30 58 138 / 0.45) 0%, transparent 60%);
+  animation: page-glow-b 32s ease-in-out infinite alternate;
+}
+
+/* each light travels across the whole screen, corner to corner */
+@keyframes page-glow-a {
+  0% { transform: translate3d(0, 0, 0); opacity: 1; }
+  50% { transform: translate3d(55vw, 35vh, 0); opacity: 0.6; }
+  100% { transform: translate3d(95vw, 70vh, 0); opacity: 0.9; }
+}
+
+@keyframes page-glow-b {
+  0% { transform: translate3d(0, 0, 0); opacity: 0.7; }
+  50% { transform: translate3d(-55vw, -35vh, 0); opacity: 1; }
+  100% { transform: translate3d(-95vw, -70vh, 0); opacity: 0.6; }
+}

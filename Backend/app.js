@@ -73,14 +73,17 @@ app.use(
   "/users/avatars",
   express.static(path.join(__dirname, "public", "users", "avatars"), {
     index: false,
-    maxAge: "1d",
+    maxAge: "365d",
+    immutable: true,
   })
 );
+// every upload gets a random, never-reused filename, so the browser can keep it for a year
 app.use(
   "/listings/images",
   express.static(path.join(__dirname, "public", "listings", "images"), {
     index: false,
-    maxAge: "1d",
+    maxAge: "365d",
+    immutable: true,
   })
 );
 

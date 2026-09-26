@@ -151,7 +151,7 @@ export default function EditListing({ listing, listingId }: EditListingProps) {
                         src={getUrl(img) || ""}
                         alt={`${listing.title} photo ${i + 1}`}
                         fill
-                        unoptimized
+                        sizes="160px"
                         className="object-cover"
                       />
                     </div>

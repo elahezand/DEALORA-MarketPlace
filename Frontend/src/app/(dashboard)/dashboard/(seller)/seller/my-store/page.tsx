@@ -91,7 +91,7 @@ export default function SellerStorePage() {
         <div className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
           <div className="w-24 h-24 rounded-2xl overflow-hidden bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
             {store.logo ? (
-              <img src={store.logo} alt={store.name} className="w-full h-full object-cover" />
+              <img loading="lazy" decoding="async" src={store.logo} alt={store.name} className="w-full h-full object-cover" />
             ) : (
               <HiOutlineBuildingStorefront className="w-10 h-10 text-[var(--foreground-muted)]" />
             )}

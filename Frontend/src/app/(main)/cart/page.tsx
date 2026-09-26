@@ -5,6 +5,7 @@ import { useGetMyCart } from "@/services/Cart/useGetMyCart";
 import { useRemoveFromCart } from "@/services/Cart/useRemoveFromCart";
 import { useUpdateCart, } from "@/services/Cart/useUpdateCart";
 import { useApplyCoupon } from "@/services/Cart/useApplyCoupon";
+import { getUrl } from '@/utils/helper';
 
 import { CartItem } from "@/types/Cart";
 import { Trash2, ShoppingBag, Truck, Plus, Minus, AlertCircle, ArrowLeft, ShieldCheck, Tag } from "lucide-react";
@@ -76,7 +77,7 @@ export default function CartPage() {
     );
 
   return (
-    <div className="w-full px-8 mx-auto grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-8">
+    <div className="w-full px-8 mx-auto grid grid-cols-1 lg:grid-cols-[1fr,480px]  gap-8">
       <div className="flex items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
         <h1 className="!text-2xl font-bold text-[var(--foreground)] flex items-center gap-3 tracking-tight">
           <ShoppingBag className="w-7 h-7 text-[var(--primary-400)]" />
@@ -116,6 +117,7 @@ export default function CartPage() {
               const product = typeof item.productId === "object" ? item.productId : null;
               const offer = typeof item.offer === "object" ? item.offer : null;
               const offerStoreName = typeof offer?.store === "object" ? offer.store?.name : undefined;
+              const src = getUrl(product?.images?.[0])
               return (
                 <div
                   key={`${getOfferId(item)}-${item.variantId}-${index}`}
@@ -124,8 +126,8 @@ export default function CartPage() {
                   {/* Product Image */}
                   <div className="w-24 h-24 bg-[var(--input-bg)] rounded-2xl flex-shrink-0 border border-[var(--border)] overflow-hidden flex items-center justify-center">
                     {product?.images?.[0] ? (
-                      <img
-                        src={product.images[0]}
+                      <img loading="lazy" decoding="async"
+                        src={src || ""}
                         alt={product?.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />

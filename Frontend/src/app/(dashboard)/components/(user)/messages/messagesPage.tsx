@@ -100,7 +100,7 @@ export default function MessagesPage({
                 {/* Avatar */}
                 <div className="w-12 h-12 rounded-full bg-[var(--background-soft)] border border-[var(--border)] overflow-hidden flex-shrink-0 flex items-center justify-center">
                   {avatarUrl ? (
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={avatarUrl}
                       alt={otherParticipant?.username || "User"}
                       className="w-full h-full object-cover"
@@ -150,7 +150,7 @@ export default function MessagesPage({
                   {conversation.listing && (
                     <div className="flex items-center gap-1.5 mt-1.5">
                       {listingImage && (
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={listingImage}
                           alt={conversation.listing.title}
                           className="w-4 h-4 rounded object-cover"

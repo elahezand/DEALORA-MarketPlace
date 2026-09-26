@@ -13,11 +13,8 @@ export interface CartItem {
     sku?: string | null;
   };
   quantity: number;
-  /** unit price before discount (server snapshot) */
   price: number;
-  /** percent 0-100 */
   discount: number;
-  /** unit price the user pays */
   finalPrice: number;
 }
 

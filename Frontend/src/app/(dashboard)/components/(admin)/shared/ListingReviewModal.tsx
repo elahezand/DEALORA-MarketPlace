@@ -80,7 +80,7 @@ export default function ListingReviewModal({ listingId, onClose, renderActions }
             <div className="aspect-square w-full rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--background-soft)] flex items-center justify-center">
               {listing.images?.length ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <img loading="lazy" decoding="async"
                   src={getUrl(listing.images[activeImage]) ?? ""}
                   alt={listing.title}
                   className="w-full h-full object-cover"
@@ -99,7 +99,7 @@ export default function ListingReviewModal({ listingId, onClose, renderActions }
                     className={`w-14 h-14 rounded-lg overflow-hidden border-2 ${i === activeImage ? "border-[var(--primary-500)]" : "border-[var(--border)]"}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={getUrl(img) ?? ""} alt="" className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={getUrl(img) ?? ""} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

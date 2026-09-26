@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { IStore } from "@/types/Store";
 
+
 export default function StoresList({ data }: { data: IStore[] }) {
   if (!data || data.length === 0) {
     return (
@@ -28,7 +29,7 @@ export default function StoresList({ data }: { data: IStore[] }) {
         >
           <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center">
             {store.logo ? (
-              <img src={store.logo} alt={store.name} className="w-full h-full object-cover" />
+              <img loading="lazy" decoding="async" src={store.logo} alt={store.name} className="w-full h-full object-cover" />
             ) : (
               <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
                 {store.name.charAt(0)}

@@ -61,7 +61,7 @@ export function EntityAvatar({
       className={`w-10 h-10 bg-[var(--background-soft)] ${shapeClass} overflow-hidden flex-shrink-0 border border-[var(--border)]`}
     >
       {src ? (
-        <img src={src} alt={alt} className="w-full h-full object-cover" />
+        <img loading="lazy" decoding="async" src={src} alt={alt} className="w-full h-full object-cover" />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[var(--foreground-muted)]">
           {fallback}

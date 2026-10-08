@@ -7,6 +7,8 @@ export interface IOrderFulfillment {
   status: "pending" | "shipped";
   trackingCode: string | null;
   shippedAt: string | Date | null;
+  /** when the shipper expects it to reach the buyer */
+  estimatedDeliveryAt?: string | Date | null;
 }
 
 export interface IOrderProductSnapshot {
@@ -35,6 +37,10 @@ export interface IOrderItem {
   fulfillment?: IOrderFulfillment;
   estimatedShipBy?: string | Date | null;
   needsAdminShipment?: boolean;
+  /** cash on delivery for a store's item: the buyer pays the store directly */
+  paidDirectToStore?: boolean;
+  /** cash on delivery: when whoever received the money (store or site) confirmed it */
+  cashCollectedAt?: string | Date | null;
 }
 
 export interface ICoupon {
@@ -83,6 +89,19 @@ export interface IOrder {
   status: OrderStatus;
   isDelivered: boolean;
   deliveredAt: string | Date | null;
+  /** set once every item has shipped */
+  shippedAt?: string | Date | null;
+  /** latest expected arrival among the shipped items */
+  expectedDeliveryAt?: string | Date | null;
+  /** when the buyer pressed "I received it" (for cash this isn't proof of payment) */
+  buyerConfirmedAt?: string | Date | null;
+  /** cash on delivery: whoever should have received the cash reported they didn't */
+  cashDispute?: { reportedAt?: string | Date | null; note?: string | null } | null;
+  /** admin list only */
+  isCashOverdue?: boolean;
+  isCashDisputed?: boolean;
+  /** set when the order was completed automatically (buyer never confirmed receipt) */
+  autoCompletedAt?: string | Date | null;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
@@ -141,6 +160,10 @@ export interface ISellerOrderItem {
   variantSnapshot: IOrderVariantSnapshot;
   fulfillment?: IOrderFulfillment;
   estimatedShipBy?: string | Date | null;
+  /** cash on delivery for a store's item: the buyer pays the store directly */
+  paidDirectToStore?: boolean;
+  /** cash on delivery: when whoever received the money (store or site) confirmed it */
+  cashCollectedAt?: string | Date | null;
 }
 
 export interface ISellerOrder extends Omit<IOrder, "items" | "user"> {

@@ -82,7 +82,7 @@ export default function DiscoverTabs({ listings }: { listings: ListingProps[] })
       </div>
 
       {activeList.length > 0 ? (
-        <ListingsCarousel listings={activeList} />
+        <ListingsCarousel key={active} listings={activeList} />
       ) : (
         <p className="text-sm text-[var(--foreground-muted)] py-8 text-center">
           Nothing here yet — check back soon.

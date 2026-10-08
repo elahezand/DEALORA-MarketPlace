@@ -8,7 +8,7 @@ const validate = require("../middlewares/validate");
 
 const createNewsletterSchema = require("../validators/newsLetter");
 
-// GET all (admin)
+// ADMIN
 newsLetterRouter.get(
   "/",
   authUser,
@@ -16,7 +16,7 @@ newsLetterRouter.get(
   adminController.getAll
 );
 
-// POST subscribe (public)
+//PUBLIC
 newsLetterRouter.post(
   "/",
   validate(createNewsletterSchema),

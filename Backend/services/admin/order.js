@@ -1,10 +1,15 @@
 const Order = require("../../models/order");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
-const { buildOrderIdSearchExpr, maybeMarkOrderShipped, markItemShipped, assertShippable, revertOrder, finalizeOrder, completeDeliveredOrder } = require("../shared/order");
+const {
+  buildOrderIdSearchExpr, maybeMarkOrderShipped, markItemShipped, assertShippable, revertOrder,
+  finalizeOrder, completeDeliveredOrder, refreshExpectedDelivery, setItemDeliveryEstimate,
+  markCashCollected, reportCashNotReceived,
+} = require("../shared/order");
+const { notifyCashNotReceived } = require("../shared/cashNotice");
+const { notifyItemShipped, notifyDeliveryUpdated } = require("../shared/deliveryNotice");
 const { buildListQuery, listLimit, dateRangeFilter } = require("../../utils/listQuery");
 
-const OVERDUE_DAYS = Number(process.env.ORDER_AUTO_COMPLETE_DAYS || 7);
 
 const getAllOrders = async (query = {}) => {
   const limit = listLimit(query, 20);
@@ -16,10 +21,12 @@ const getAllOrders = async (query = {}) => {
   if (query.paymentStatus && query.paymentStatus !== "all") filters.paymentStatus = query.paymentStatus;
   if (query.paymentMethod && query.paymentMethod !== "all") filters.paymentMethod = query.paymentMethod;
 
-  // shipped cash orders nobody confirmed in time → the admin decides
+  // cash orders an admin has to look at: nobody confirmed the cash in time, or a dispute
   if (query.overdueCash === "true") {
     const { overdueCashQuery } = require("../shared/orderSweeper");
-    Object.assign(filters, overdueCashQuery());
+    const { $or, ...rest } = overdueCashQuery();
+    Object.assign(filters, rest);
+    filters.$and = [...(filters.$and || []), { $or }];
   }
 
   if (query.needsAdminAction === "true" || query.needsAdminAction === true) {
@@ -47,17 +54,20 @@ const getAllOrders = async (query = {}) => {
       (item) => item.needsAdminShipment && item.fulfillment?.status !== "shipped"
     ),
     isCashOverdue:
-      order.status === "shipped" &&
+      ["processing", "shipped"].includes(order.status) &&
       order.paymentMethod === "cash" &&
       order.paymentStatus === "pending" &&
-      !!order.shippedAt &&
-      Date.now() - new Date(order.shippedAt).getTime() >= OVERDUE_DAYS * 24 * 60 * 60 * 1000,
+      !!order.cashOverdueNotifiedAt,
+    isCashDisputed:
+      ["processing", "shipped"].includes(order.status) &&
+      order.paymentMethod === "cash" &&
+      !!order.cashDispute?.reportedAt,
   }));
 
   return { data, pagination: result.pagination };
 };
 
-const adminShipItem = async (orderId, itemId, trackingCode) => {
+const adminShipItem = async (orderId, itemId, trackingCode, estimatedDeliveryAt = null) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError(404, "Order not found");
 
@@ -72,10 +82,28 @@ const adminShipItem = async (orderId, itemId, trackingCode) => {
     throw new AppError(403, "This item belongs to a seller — only they can mark it as shipped");
   }
 
-  markItemShipped(item, trackingCode);
+  markItemShipped(item, trackingCode, estimatedDeliveryAt);
   order.markModified("items");
+  refreshExpectedDelivery(order);
   maybeMarkOrderShipped(order);
   await order.save();
+
+  await notifyItemShipped(order, item);
+  return order;
+};
+
+/* admin can change the expected arrival of ANY shipped item (theirs or a seller's) */
+const adminSetDeliveryEstimate = async (orderId, itemId, estimatedDeliveryAt) => {
+  const order = await Order.findById(orderId);
+  if (!order) throw new AppError(404, "Order not found");
+
+  const item = order.items.id(itemId);
+  if (!item) throw new AppError(404, "Item not found in this order");
+
+  setItemDeliveryEstimate(order, item, estimatedDeliveryAt);
+  await order.save();
+
+  await notifyDeliveryUpdated(order, item);
   return order;
 };
 
@@ -89,11 +117,55 @@ const getOrderByIdAdmin = async (orderId) => {
   return order;
 };
 
-const ADMIN_UPDATABLE_FIELDS = ["paymentStatus", "status", "isDelivered", "deliveredAt"];
+const ADMIN_UPDATABLE_FIELDS = ["paymentStatus", "status"];
+
+/*
+ * Status moves an admin may make by hand — only cancelling.
+ * Completing an order is NOT an admin action:
+ *  - online orders: the buyer confirms receipt, or the system completes them automatically
+ *  - cash orders: the buyer confirms, or whoever received the cash confirms it
+ *    (the store for its items, an admin only for the site's own items)
+ * A completed order can't be cancelled: the seller was already paid, a refund would pay twice.
+ */
+const ALLOWED_STATUS_MOVES = {
+  created: ["cancelled"],
+  processing: ["cancelled"],
+  shipped: ["cancelled"],
+  completed: [],
+  cancelled: [],
+};
+
+// payment status an admin may set by hand (paid/refunded are set by the payment flows,
+// cash is confirmed through "cash received")
+const ALLOWED_PAYMENT_MOVES = {
+  pending: ["failed"],
+  failed: [],
+  paid: [],
+  refunded: [],
+};
+
+const assertAdminOrderChange = (order, data) => {
+  if (data.status && data.status !== order.status) {
+    const allowed = ALLOWED_STATUS_MOVES[order.status] || [];
+    if (!allowed.includes(data.status)) {
+      throw new AppError(400, `An order can't go from "${order.status}" to "${data.status}"`);
+    }
+  }
+
+  if (data.paymentStatus && data.paymentStatus !== order.paymentStatus) {
+    // cash payments are only confirmed by whoever received the money ("cash received")
+    const allowed = order.paymentMethod === "cash" ? [] : ALLOWED_PAYMENT_MOVES[order.paymentStatus] || [];
+    if (!allowed.includes(data.paymentStatus)) {
+      throw new AppError(400, `Payment status can't go from "${order.paymentStatus}" to "${data.paymentStatus}"`);
+    }
+  }
+};
 
 const updateOrder = async (orderId, data) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError(404, "Order not found");
+
+  assertAdminOrderChange(order, data);
 
   const wasStatus = order.status;
 
@@ -151,19 +223,44 @@ const runAutoComplete = async () => {
   return runOrderSweeps();
 };
 
-const markDelivered = async (orderId) => {
+/*
+ * Cash on delivery for the SITE's own items (and personal ads): an admin confirms the money
+ * arrived. A store's items are confirmed by that store — the admin never received that cash.
+ */
+const adminConfirmCash = async (orderId, itemId, adminId) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError(404, "Order not found");
-  if (order.status !== "shipped") {
-    throw new AppError(400, "Only a shipped order can be marked as delivered");
+
+  const item = order.items.id(itemId);
+  if (!item) throw new AppError(404, "Item not found in this order");
+  if (item.store) {
+    throw new AppError(403, "This item's cash was paid to the store — only the store can confirm it");
   }
 
-  await completeDeliveredOrder(order);
-  return order;
+  return markCashCollected(order, [item], adminId);
+};
+
+/* the SITE did not receive the cash for one of its own items */
+const adminReportCashMissing = async (orderId, itemId, adminId, note) => {
+  const order = await Order.findById(orderId);
+  if (!order) throw new AppError(404, "Order not found");
+
+  const item = order.items.id(itemId);
+  if (!item) throw new AppError(404, "Item not found in this order");
+  if (item.store) {
+    throw new AppError(403, "This item's cash was paid to the store — only the store can report it");
+  }
+
+  const result = await reportCashNotReceived(order, [item], adminId, note);
+  await notifyCashNotReceived(result.order, result.outcome);
+  return result;
 };
 
 module.exports = {
-  markDelivered,
+  ALLOWED_STATUS_MOVES,
+  adminSetDeliveryEstimate,
+  adminConfirmCash,
+  adminReportCashMissing,
   runAutoComplete,
   getStuckOrders,
   repairOrder,

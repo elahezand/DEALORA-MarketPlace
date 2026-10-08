@@ -16,6 +16,7 @@ import {
 } from "@heroui/react";
 import dynamic from "next/dynamic";
 import CartIcon from "./CartIcon";
+import NotificationsBell from "@/app/(dashboard)/components/shared/NotificationsBell";
 import { HiOutlineUser, HiOutlineBellAlert } from "react-icons/hi2";
 import { usePathname, useRouter } from "next/navigation";
 import { api } from "@/services/interceptor";
@@ -119,13 +120,15 @@ export default function Header() {
   }, [router, queryClient]);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300">
+    <div className="fixed top-0 left-0 right-0 z-50 w-full">
       <Navbar
         isMenuOpen={isMenuOpen}
         onMenuOpenChange={setIsMenuOpen}
         maxWidth="xl"
         className={clsx(
-          "transition-all duration-500 ease-out",
+          // only paint properties animate; animating height/margin/max-width on every
+          // scroll-state change caused layout work and showed up as non-composited animation
+          "transition-[background-color,box-shadow,border-color] duration-300 ease-out",
           isScrolled
             ? "glass-navbar h-18 max-w-[calc(100%-2rem)] mx-auto mt-4"
             : "bg-transparent h-20"
@@ -197,6 +200,11 @@ export default function Header() {
           <NavbarItem className="text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors">
             <CartIcon />
           </NavbarItem>
+          {user && (
+            <NavbarItem>
+              <NotificationsBell />
+            </NavbarItem>
+          )}
           {isAdmin && (
             <NavbarItem>
               <button

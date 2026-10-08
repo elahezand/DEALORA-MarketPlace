@@ -47,7 +47,11 @@ async function createListing(user, data, files = []) {
 async function updateListing(id, user, data, files = []) {
   const listing = await findOwnAd(id, user._id);
 
+  // same protection as createListing: an owner edit can never publish the ad,
+  // turn it into a store product or add variants — that would skip moderation
   const updateData = { ...data };
+  PROTECTED_FIELDS.forEach((f) => delete updateData[f]);
+  delete updateData.variants;
 
   if (files?.length) {
     updateData.images = files.map((f) => `/listings/images/${f.filename}`);

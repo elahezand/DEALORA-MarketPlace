@@ -10,7 +10,7 @@ const validateObjectIdParam = require("../middlewares/objectId")
 const { storeSchema, storeUpdateSchema } = require("../validators/seller")
 const cacheMiddleware = require("../middlewares/cache");
 
-/*  PUBLIC  */
+//PUBLIC
 storeRouter.get("/verified",
     cacheMiddleware(300),
     publicController.getVerified);
@@ -24,15 +24,19 @@ storeRouter.get("/",
     authAdmin,
     adminController.getAll);
 
-storeRouter.get("/:id",
-    authUser,
-    authSeller,
-    sellerController.get);
-
+//USER
 storeRouter.post("/",
     authUser,
     validate(storeSchema),
     userController.create);
+
+//SELLER
+storeRouter.get("/:id",
+    authUser,
+    authSeller,
+    validateObjectIdParam("id"),
+    sellerController.get);
+
 
 storeRouter.patch("/:id",
     authUser,
@@ -47,7 +51,7 @@ storeRouter.delete("/:id",
     validateObjectIdParam("id"),
     sellerController.deleteStore)
 
-/* ADMIN */
+//ADMIN
 storeRouter.patch("/:id/verify",
     authUser,
     authAdmin,

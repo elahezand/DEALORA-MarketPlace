@@ -19,6 +19,8 @@ export const useUpdateOrder = (orderId: string) => {
     onSuccess: () => {
       toast.success("Order updated");
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      // the detail page itself — before this it kept showing the old status
+      queryClient.invalidateQueries({ queryKey: ["admin-order", orderId] });
     },
     errorFallback: "Update failed",
   });

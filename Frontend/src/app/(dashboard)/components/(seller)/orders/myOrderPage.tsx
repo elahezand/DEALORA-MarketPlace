@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { HiOutlineClipboardDocumentList, HiOutlineTruck, HiOutlineEye, HiOutlineMagnifyingGlass, HiOutlineArrowDownTray } from "react-icons/hi2";
+import { HiOutlineClipboardDocumentList, HiOutlineTruck, HiOutlineEye, HiOutlineMagnifyingGlass, HiOutlineArrowDownTray, HiOutlineClock, HiOutlineBanknotes } from "react-icons/hi2";
 import { HiChevronRight } from "react-icons/hi";
 import { InfiniteData } from "@tanstack/react-query";
 import TableCard from "../../shared/table/TableCard";
@@ -9,12 +9,48 @@ import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { AdminFormModal, FormField, inputClass } from "../../(admin)/shared/AdminFormModal";
 import { useShipOrder } from "@/services/Order/useShipOrder";
+import { useSellerSetDeliveryEstimate } from "@/services/Order/useSetDeliveryEstimate";
+import { useSellerCashReceived, useSellerCashNotReceived, askCashNotReceived } from "@/services/Order/useCashReceived";
+import DeliveryTimeFields, {
+    DeliveryTimeValue,
+    defaultDeliveryTime,
+    deliveryTimeError,
+    deliveryTimeToIso,
+} from "../../shared/DeliveryTimeFields";
+import { formatDateTime } from "@/utils/orderDates";
 import { OrderStatus, ISellerOrder, SellerOrdersResponse } from "@/types/Order";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { getUrl } from "@/utils/helper";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
+/** latest expected arrival among this seller's shipped items */
+const getSellerEta = (order: ISellerOrder): Date | null => {
+    const times = order.items
+        .map((item) => item.fulfillment?.estimatedDeliveryAt)
+        .filter(Boolean)
+        .map((d) => new Date(d as string).getTime());
+    return times.length ? new Date(Math.max(...times)) : null;
+};
+
+/** cash-on-delivery order where this store delivered its items but hasn't confirmed the cash yet */
+const awaitingMyCash = (order: ISellerOrder) =>
+    order.paymentMethod === "cash" &&
+    ["processing", "shipped"].includes(order.status) &&
+    order.items.length > 0 &&
+    order.items.every((item) => item.fulfillment?.status === "shipped") &&
+    order.items.some((item) => !item.cashCollectedAt) &&
+    !order.cashDispute?.reportedAt;
+// "Not received" only after every item's delivery time
+const pastDeliveryTime = (order: ISellerOrder) =>
+    order.items.every((item) => {
+        const eta = item.fulfillment?.estimatedDeliveryAt;
+        const shipped = item.fulfillment?.shippedAt;
+        const due = eta
+            ? new Date(eta).getTime()
+            : shipped ? new Date(shipped).getTime() + 3 * 24 * 60 * 60 * 1000 : 0;
+        return Date.now() >= due;
+    });
 const getTrackingCode = (order: ISellerOrder) =>
     order.items.find((item) => item.fulfillment?.trackingCode)?.fulfillment?.trackingCode ?? "";
 
@@ -41,12 +77,16 @@ interface MyOrdersPageProps {
 const ENDPOINT = "/orders/seller"
 
 export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
-  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
+    const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
     const [status, setStatus] = useState<OrderStatus | "all">("processing");
     const [searchQuery, setSearchQuery] = useState("");
     const [viewTarget, setViewTarget] = useState<ISellerOrder | null>(null);
     const [shipTarget, setShipTarget] = useState<ISellerOrder | null>(null);
     const [trackingCode, setTrackingCode] = useState("");
+    const [delivery, setDelivery] = useState<DeliveryTimeValue>(defaultDeliveryTime());
+    const [deliveryError, setDeliveryError] = useState<string | null>(null);
+    // order whose (already shipped) delivery time is being changed
+    const [etaTarget, setEtaTarget] = useState<ISellerOrder | null>(null);
 
     const params: QueryParams = { limit: 20, ...(status !== "all" && { status }), ...filtersToParams(filters) };
 
@@ -67,7 +107,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
         data?.pages?.flatMap((page: SellerOrdersResponse) => page?.data ?? []) || []
     ).filter(Boolean);
 
-  
+
     const filteredOrders = orders.filter((order) => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.trim().toLowerCase();
@@ -123,16 +163,56 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
         setShipTarget(null);
         setTrackingCode("");
     });
+    const { mutate: setEstimate, isPending: isSavingEta } = useSellerSetDeliveryEstimate(() => setEtaTarget(null));
+    const { mutate: confirmCash, isPending: isConfirmingCash, variables: cashOrderId } = useSellerCashReceived();
+
+    const { mutate: reportMissing, isPending: isReporting, variables: reportVars } = useSellerCashNotReceived();
+
+    function handleCashNotReceived(order: ISellerOrder) {
+        const note = askCashNotReceived(order);
+        if (note === null) return;
+        reportMissing({ orderId: order._id, note: note || undefined });
+    }
+
+    function handleCashReceived(order: ISellerOrder) {
+        const amount = order.mySubtotal?.toLocaleString() ?? "";
+        if (!window.confirm(`Confirm you received ${amount ? `$${amount} ` : ""}in cash for order #${order._id.slice(-6).toUpperCase()}?`)) return;
+        confirmCash(order._id);
+    }
 
     function openShip(order: ISellerOrder) {
         setShipTarget(order);
         setTrackingCode("");
+        setDelivery(defaultDeliveryTime());
+        setDeliveryError(null);
+    }
+
+    function openEta(order: ISellerOrder) {
+        setEtaTarget(order);
+        setDelivery(defaultDeliveryTime(getSellerEta(order)));
+        setDeliveryError(null);
     }
 
     function submitShip(e: React.FormEvent) {
         e.preventDefault();
         if (!shipTarget) return;
-        shipOrder({ order: shipTarget, trackingCode: trackingCode.trim() || undefined });
+        const error = deliveryTimeError(delivery);
+        setDeliveryError(error);
+        if (error) return;
+        shipOrder({
+            order: shipTarget,
+            trackingCode: trackingCode.trim() || undefined,
+            estimatedDeliveryAt: deliveryTimeToIso(delivery) ?? undefined,
+        });
+    }
+
+    function submitEta(e: React.FormEvent) {
+        e.preventDefault();
+        if (!etaTarget) return;
+        const error = deliveryTimeError(delivery);
+        setDeliveryError(error);
+        if (error) return;
+        setEstimate({ order: etaTarget, estimatedDeliveryAt: deliveryTimeToIso(delivery)! });
     }
 
     return (
@@ -150,8 +230,8 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                             type="button"
                             onClick={() => setStatus(tab.value)}
                             className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
-                                    ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                                    : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+                                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+                                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
                                 }`}
                         >
                             {tab.label}
@@ -237,6 +317,30 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                                 </td>
                                 <td className="px-6 py-4">
                                     <Badge tone={STATUS_TONE[order.status] ?? "neutral"} label={order.status} />
+                                    {order.paymentMethod === "cash" && (
+                                        <p className={`text-[11px] font-semibold mt-1 whitespace-nowrap ${order.items.every((i) => i.cashCollectedAt)
+                                            ? "text-[var(--success-500)]"
+                                            : "text-[var(--warning-500)]"}`}>
+                                            {order.items.every((i) => i.cashCollectedAt)
+                                                ? "💵 Cash received"
+                                                : "💵 Cash on delivery — paid to you"}
+                                        </p>
+                                    )}
+                                    {order.cashDispute?.reportedAt && order.status !== "cancelled" && (
+                                        <p className="text-[11px] font-semibold mt-1 whitespace-nowrap text-[var(--destructive)]">
+                                            ⚠ Cash reported missing — admin reviewing
+                                        </p>
+                                    )}
+                                    {order.paymentMethod === "cash" && order.buyerConfirmedAt && order.paymentStatus !== "paid" && !order.cashDispute?.reportedAt && (
+                                        <p className="text-[11px] mt-1 whitespace-nowrap text-[var(--foreground-muted)]">
+                                            Buyer confirmed receipt
+                                        </p>
+                                    )}
+                                    {getSellerEta(order) && order.status !== "completed" && order.status !== "cancelled" && (
+                                        <p className="text-[11px] text-[var(--foreground-muted)] mt-1 whitespace-nowrap">
+                                            Arrives {formatDateTime(getSellerEta(order))}
+                                        </p>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-xs text-right text-[var(--foreground-muted)]">
                                     {new Date(order.createdAt).toLocaleDateString()}
@@ -252,7 +356,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                                         >
                                             <HiOutlineEye className="w-4 h-4" />
                                         </button>
-                                        {order.status === "processing" && (
+                                        {order.status === "processing" && order.myFulfillmentStatus !== "shipped" && (
                                             <button
                                                 type="button"
                                                 onClick={() => openShip(order)}
@@ -260,6 +364,38 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                                             >
                                                 <HiOutlineTruck className="w-4 h-4" />
                                                 Ship
+                                            </button>
+                                        )}
+                                        {awaitingMyCash(order) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCashReceived(order)}
+                                                disabled={isConfirmingCash && cashOrderId === order._id}
+                                                className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--success-500)]/40 text-[var(--success-500)] hover:bg-[var(--success-bg)] transition-colors flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
+                                            >
+                                                <HiOutlineBanknotes className="w-4 h-4" />
+                                                {isConfirmingCash && cashOrderId === order._id ? "Saving..." : "Cash received"}
+                                            </button>
+                                        )}
+                                        {awaitingMyCash(order) && pastDeliveryTime(order) && 
+                                        (<button
+                                            type="button"
+                                            onClick={() => handleCashNotReceived(order)}
+                                            disabled={isReporting && reportVars?.orderId === order._id}
+                                            className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-50 whitespace-nowrap"
+                                        >
+                                            {isReporting && reportVars?.orderId === order._id ? "Saving..." : "Not received"}
+                                        </button>
+                                        )}
+                                        {order.myFulfillmentStatus !== "pending" && ["processing", "shipped"].includes(order.status) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openEta(order)}
+                                                title="Change delivery time"
+                                                aria-label="Change delivery time"
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
+                                            >
+                                                <HiOutlineClock className="w-4 h-4" />
                                             </button>
                                         )}
                                     </div>
@@ -394,6 +530,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                     <p className="text-sm text-[var(--foreground)]">
                         Confirm order #{shipTarget?._id.slice(-6).toUpperCase()} has been handed off for delivery.
                     </p>
+                    <DeliveryTimeFields value={delivery} onChange={setDelivery} error={deliveryError} />
                     <FormField label="Tracking code (optional)">
                         <input
                             type="text"
@@ -403,6 +540,40 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                             placeholder="e.g. postal tracking number"
                         />
                     </FormField>
+                </form>
+            </AdminFormModal>
+
+            {/* CHANGE DELIVERY TIME MODAL */}
+            <AdminFormModal
+                isOpen={!!etaTarget}
+                onClose={() => setEtaTarget(null)}
+                title="Change Delivery Time"
+                icon={HiOutlineClock}
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => setEtaTarget(null)}
+                            className="text-xs font-bold px-4 h-9 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            form="eta-order-form"
+                            disabled={isSavingEta}
+                            className="btn-primary !w-auto px-5 h-9 text-xs disabled:opacity-50"
+                        >
+                            {isSavingEta ? "Saving..." : "Save & notify buyer"}
+                        </button>
+                    </>
+                }
+            >
+                <form id="eta-order-form" onSubmit={submitEta} className="flex flex-col gap-4">
+                    <p className="text-sm text-[var(--foreground)]">
+                        New expected arrival for order #{etaTarget?._id.slice(-6).toUpperCase()}.
+                    </p>
+                    <DeliveryTimeFields value={delivery} onChange={setDelivery} error={deliveryError} />
                 </form>
             </AdminFormModal>
         </div>

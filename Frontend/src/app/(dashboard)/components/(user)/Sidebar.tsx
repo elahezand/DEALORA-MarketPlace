@@ -45,7 +45,7 @@ export function AppSidebar({ isOpen }: AppSidebarProps) {
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 

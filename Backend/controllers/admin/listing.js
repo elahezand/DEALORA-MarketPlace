@@ -13,7 +13,7 @@ const changeStatus = async (req, res, next) => {
   try {
     const listing = await adminListingService.changeStatus(
       req.params.id,
-      req.body.status
+      req.parsed.data.status
     );
 
     res.status(200).json({

@@ -16,22 +16,16 @@ const {
     updateOrderOwnerSchema,
     cancelOrderSchema,
     shipOrderSchema,
+    deliveryEstimateSchema,
+    cashNotReceivedSchema,
 } = require("../validators/order");
 
 
-// ADMIN ROUTES 
+// ADMIN  
 orderRouter.get("/admin",
     authUser,
     authAdmin,
     adminController.getAdmin);
-
-// orders whose finalize never completed (server crash) + a way to finish them
-orderRouter.get(
-    "/admin/stuck",
-    authUser,
-    authAdmin,
-    adminController.getStuckOrders
-);
 
 orderRouter.post(
     "/admin/auto-complete",
@@ -40,20 +34,25 @@ orderRouter.post(
     adminController.runAutoComplete
 );
 
-orderRouter.post(
-    "/admin/:id/delivered",
+/*cash received (site items)*/
+orderRouter.patch(
+    "/admin/:id/items/:itemId/cash-received",
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    adminController.markDelivered
+    validateObjectIdParam("itemId"),
+    adminController.adminConfirmCash
 );
 
-orderRouter.post(
-    "/admin/:id/repair",
+/*cash not received (site items)*/
+orderRouter.patch(
+    "/admin/:id/items/:itemId/cash-not-received",
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    adminController.repairOrder
+    validateObjectIdParam("itemId"),
+    validate(cashNotReceivedSchema),
+    adminController.adminReportCashMissing
 );
 
 orderRouter.get(
@@ -83,23 +82,70 @@ orderRouter.patch(
     adminController.adminShipItem
 );
 
-// USER ROUTES 
+/*change delivery time(site)*/
+orderRouter.patch(
+    "/admin/:id/items/:itemId/delivery-estimate",
+    authUser,
+    authAdmin,
+    validateObjectIdParam("id"),
+    validateObjectIdParam("itemId"),
+    validate(deliveryEstimateSchema),
+    adminController.adminSetDeliveryEstimate
+);
+
+
+
+// USER  
 orderRouter.post(
     "/checkout",
     authUser,
     validate(checkoutSchema),
     userController.checkout
 );
+
 orderRouter.get(
     "/verify",
     publicController.verify
 );
-
 orderRouter.get("/my"
-    ,authUser,
+    , authUser,
     userController.getMyOrders);
 
-// SELLER — orders containing at least one of this seller's items.
+/* buyer confirms delivery*/
+orderRouter.patch(
+    "/:id/confirm-delivery",
+    authUser,
+    validateObjectIdParam("id"),
+    userController.confirmDelivery
+);
+
+orderRouter.get(
+    "/:id",
+    authUser,
+    validateObjectIdParam("id"),
+    userController.getMyOrderById
+);
+
+/*update address*/
+orderRouter.patch(
+    "/:id",
+    authUser,
+    validateObjectIdParam("id"),
+    validate(updateOrderOwnerSchema),
+    userController.patch
+);
+
+orderRouter.delete(
+    "/:id",
+    authUser,
+    validateObjectIdParam("id"),
+    validate(cancelOrderSchema),
+    userController.cancel
+);
+
+
+
+// SELLER
 orderRouter.get("/seller",
     authUser,
     authSeller,
@@ -113,33 +159,31 @@ orderRouter.patch("/seller/:id/items/:itemId/ship",
     validate(shipOrderSchema),
     sellerController.sellerShipItem);
 
-orderRouter.get(
-    "/:id",
+/* cash received*/
+orderRouter.patch("/seller/:id/cash-received",
     authUser,
+    authSeller,
     validateObjectIdParam("id"),
-    userController.getMyOrderById
-);
-orderRouter.patch(
-    "/:id",
-    authUser,
-    validateObjectIdParam("id"),
-    validate(updateOrderOwnerSchema),
-    userController.patch
-);
-orderRouter.delete(
-    "/:id",
-    authUser,
-    validateObjectIdParam("id"),
-    validate(cancelOrderSchema),
-    userController.cancel
-);
+    sellerController.sellerConfirmCash);
 
-// Buyer confirms they received the order — the only way status becomes "completed".
-orderRouter.patch(
-    "/:id/confirm-delivery",
+/*cash not received*/
+orderRouter.patch("/seller/:id/cash-not-received",
     authUser,
+    authSeller,
     validateObjectIdParam("id"),
-    userController.confirmDelivery
-);
+    validate(cashNotReceivedSchema),
+    sellerController.sellerReportCashMissing);
+
+/* change delivery time*/
+orderRouter.patch("/seller/:id/items/:itemId/delivery-estimate",
+    authUser,
+    authSeller,
+    validateObjectIdParam("id"),
+    validateObjectIdParam("itemId"),
+    validate(deliveryEstimateSchema),
+    sellerController.sellerSetDeliveryEstimate);
+
+
+
 
 module.exports = orderRouter;

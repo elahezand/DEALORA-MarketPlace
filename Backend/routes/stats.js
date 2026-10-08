@@ -10,7 +10,7 @@ const cacheMiddleware = require("../middlewares/cache");
 
 statsRouter.get("/", cacheMiddleware(300), publicController.getPublic);
 
-/*  ADMIN ONLY  */
+// ADMIN
 statsRouter.get("/admin",
     authUser,
     authAdmin,
@@ -23,13 +23,13 @@ statsRouter.get("/admin/timeseries",
     cacheMiddleware(60),
     adminController.getAdminTimeseries);
 
-/*  USER  */
+// USER 
 statsRouter.get("/me/timeseries",
     authUser,
     cacheMiddleware(60),
     userController.getUserTimeseries);
 
-/*Seller*/
+//Seller
 statsRouter.get("/seller",
     authUser,
     authSeller,

@@ -31,7 +31,7 @@ const verifyLimit = rateLimit({
 
 const refreshLimit = rateLimit({
     windowMs: 10 * 60 * 1000,
-    max: 30,
+    skip: (req) => !req.cookies?.refreshToken,
     message: {
         message: "Too many refresh attempts.",
     },
@@ -59,7 +59,6 @@ authRouter.get(
     userController.me
 );
 
-// No authUser: logout must work even when the access token has expired
 authRouter.post(
     "/logout",
     optionalAuth,

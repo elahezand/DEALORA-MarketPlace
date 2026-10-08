@@ -7,14 +7,15 @@ import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, EntityAvatar, Badge } from "../../shared/table/TableParts";
 import { Offer, OfferStatus, OffersResponse } from "@/types/Offer";
 import { getUrl } from "@/utils/helper";
-const STATUS_TONE: Record<OfferStatus, "success" | "warning" | "destructive"> = {
+import { ADMIN_FRESH } from "@/utils/hooks/adminQueryOptions";
+const STATUS_TONE: Partial<Record<OfferStatus, "success" | "warning" | "destructive">> = {
   pending: "warning",
   accepted: "success",
   rejected: "destructive",
 };
 
 export default function RecentOffers() {
-  const { data, isLoading, isError } = useGet<OffersResponse>("/offers", { limit: 5 });
+  const { data, isLoading, isError } = useGet<OffersResponse>("/offers", { limit: 5 }, ADMIN_FRESH);
   const offers: Offer[] = data?.data ?? [];
 
   return (

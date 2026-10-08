@@ -116,7 +116,7 @@ export default function SmartSearch({ onPostSelect, onSearchSubmit }: SmartSearc
                     onChange={(e) => setSearchQuery(e.target.value)}
                     disabled={isSearching}
                     className="h-44 w-full p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-400)] transition-all resize-none text-sm"
-                    placeholder="Describe what you are looking for (e.g. 'A 2-bedroom apartment near downtown with parking under $1500')..."
+                    placeholder="Describe what you are looking for.n..."
                   />
                 </div>
               </div>

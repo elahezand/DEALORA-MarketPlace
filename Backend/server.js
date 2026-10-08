@@ -1,12 +1,11 @@
+
+require("dotenv").config()
+
 const app = require("./app")
 const mongoose = require("mongoose")
-const dotenv = require("dotenv")
 const logger = require("./utils/logger")
 
 const isProductionMode = process.env.NODE_ENV === "production"
-if (!isProductionMode) {
-    dotenv.config();
-}
 async function connectToDB() {
     try {
         await mongoose.connect(process.env.MONGO_URI)

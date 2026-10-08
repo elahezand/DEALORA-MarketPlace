@@ -1,8 +1,8 @@
 "use client";
 
-import { useGetPublicStats } from "@/services/Stats/useGetStats";
-export default function HeroLiveBadge() {
-  const { stats, isLoading, isError } = useGetPublicStats();
+import { GetPublicStatsResponse, useGetPublicStats } from "@/services/Stats/useGetStats";
+export default function HeroLiveBadge({ initialStats }: { initialStats?: GetPublicStatsResponse | null }) {
+  const { stats, isLoading, isError } = useGetPublicStats(initialStats);
 
   const label =
     !isLoading && !isError && stats?.todayListings

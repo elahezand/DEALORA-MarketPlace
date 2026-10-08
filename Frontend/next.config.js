@@ -1,6 +1,4 @@
 /** @type {import('next').NextConfig} */
-
-// where the backend serves uploaded images from (http://localhost:4000 in dev)
 const apiUrl = new URL(process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api");
 const isLocalApi =
     ["localhost", "127.0.0.1", "::1"].includes(apiUrl.hostname) ||
@@ -20,6 +18,10 @@ const nextConfig = {
             },
         ],
         dangerouslyAllowLocalIP: isLocalApi,
+    },
+
+    experimental: {
+        optimizePackageImports: ["@heroui/react"],
     },
 };
 

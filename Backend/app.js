@@ -3,6 +3,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const path = require("path");
 const helmet = require("helmet");
+const { corsOptions } = require("./config/core");
 
 const errorHandler = require("./middlewares/errorHandler");
 const AppError = require("./utils/AppError");
@@ -32,35 +33,18 @@ const withdrawalRouter = require("./routes/withdrawal");
 const articleRouter = require("./routes/article");
 
 const app = express();
+if (process.env.TRUST_PROXY) app.set("trust proxy", Number(process.env.TRUST_PROXY) || 1);
 
-const allowedOrigins =
-  process.env.ALLOWED_ORIGINS?.split(",").map((origin) => origin.trim()) || [
-    "http://localhost:5173",
-    "http://localhost:3000",
-  ];
-
+app.use(cors(corsOptions));
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
   })
 );
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
-
 app.use(cookieParser());
-app.use(express.json({ limit: "20mb" }));
-app.use(express.urlencoded({ extended: false, limit: "20mb" }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 
 // Log all incoming requests
 app.use((req, res, next) => {

@@ -11,10 +11,10 @@ const {
   updateInfoSchema,
 } = require("../validators/info");
 
-/* PUBLIC */
+// PUBLIC
 router.get("/", publicController.get);
 
-/* ADMIN */
+//ADMIN
 router.post(
   "/",
   authUser,

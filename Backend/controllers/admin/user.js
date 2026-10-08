@@ -3,6 +3,7 @@ const Ban = require("../../models/ban");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 const Session = require("../../models/session");
+const Store = require("../../models/store");
 const adminUserService = require("../../services/admin/user");
 const { revokeAllUserSessions } = require("../../services/shared/session");
 
@@ -95,6 +96,10 @@ const toggleBan = async (req, res, next) => {
 const toggleRole = async (req, res, next) => {
   try {
     const targetUserId = req.params.id;
+    if (String(targetUserId) === String(req.user._id)) {
+      return next(new AppError(400, "You can't change your own admin role"));
+    }
+
     const user = await User.findById(targetUserId);
 
     if (!user) {
@@ -102,6 +107,10 @@ const toggleRole = async (req, res, next) => {
     }
 
     if (user.role.includes("ADMIN")) {
+      const adminCount = await User.countDocuments({ role: "ADMIN" });
+      if (adminCount <= 1) {
+        return next(new AppError(400, "The site needs at least one admin"));
+      }
       user.role = user.role.filter((r) => r !== "ADMIN");
     } else {
       user.role = [...user.role, "ADMIN"];
@@ -122,11 +131,32 @@ const toggleRole = async (req, res, next) => {
 const removeUser = async (req, res, next) => {
   try {
     const targetUserId = req.params.id;
-    const deletedUser = await User.findByIdAndDelete(targetUserId);
+    if (String(targetUserId) === String(req.user._id)) {
+      return next(new AppError(400, "You can't delete your own account from here"));
+    }
 
+    const target = await User.findById(targetUserId).select("role wallet").lean();
+    if (!target) {
+      return next(new AppError(404, "User not found"));
+    }
+    if (target.role?.includes("ADMIN")) {
+      return next(new AppError(400, "Remove the admin role before deleting this user"));
+    }
+
+    // a store with money in it can't lose its owner
+    const store = await Store.findOne({ owner: targetUserId }).select("wallet").lean();
+    if (store && ((store.wallet?.balance || 0) > 0 || (store.wallet?.pending || 0) > 0)) {
+      return next(new AppError(409, "This user's store still holds money — settle it first"));
+    }
+    if ((target.wallet?.balance || 0) > 0) {
+      return next(new AppError(409, "This user still has wallet balance — refund it first"));
+    }
+
+    const deletedUser = await User.findByIdAndDelete(targetUserId);
     if (!deletedUser) {
       return next(new AppError(404, "User not found"));
     }
+    if (store) await Store.deleteOne({ _id: store._id });
 
     await revokeAllUserSessions(deletedUser._id, "user_deleted");
     await Session.deleteMany({ user: deletedUser._id });

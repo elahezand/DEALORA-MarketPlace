@@ -14,10 +14,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /* ═══════════════════════════ CHECKOUT: Cart → Order ═══════════════════════════ */
 
-const payUrl = (authority) => `https://www.zarinpal.com/pg/StartPay/${authority}`;
+const START_PAY_URL = process.env.ZARINPAL_PAYMENT_BASE_URL || "https://payment.zarinpal.com/pg/StartPay/";
+const payUrl = (authority) => `${START_PAY_URL.replace(/\/?$/, "/")}${authority}`;
+const toRial = (toman) => Math.round(Number(toman || 0) * 10);
 
 const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey = null, useWallet = false) => {
-  // the client retried (lost response, double click, refresh) → give back the same order
   if (idempotencyKey) {
     const existing = await Order.findOne({ user: userId, idempotencyKey });
     if (existing) {
@@ -57,7 +58,10 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
     }
 
     // how much of this order the wallet could cover (charged after the order exists)
-    const buyer = useWallet ? await User.findById(userId).select("wallet").lean() : null;
+    // cash goes straight to the store, so the wallet can't pay part of a cash order
+    const buyer = useWallet && paymentMethod !== "cash"
+      ? await User.findById(userId).select("wallet").lean()
+      : null;
     const walletPlanned = buyer ? Math.min(buyer.wallet?.balance || 0, totals.pricing.total) : 0;
     const pricing = { ...totals.pricing, walletUsed: 0 };
 
@@ -145,8 +149,9 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
     // or the user selected ZarinPal directly
     if ((paymentMethod === "wallet" || paymentMethod === "zarinpal") && order.pricing.total > 0) {
       const payment = await createPayment(
-        order.pricing.total * 10,
-        `Order ${order._id}`
+        toRial(order.pricing.total),
+        `Order ${order._id}`,
+        shippingAddress?.phone || undefined
       );
 
       if (!payment?.data?.authority) {
@@ -238,6 +243,12 @@ const cancelOrder = async (orderId, userId) => {
     throw new AppError(400, "Order cannot be cancelled");
   }
 
+  // the order only becomes "shipped" once EVERY item left — but as soon as one item
+  // is on its way the buyer can't cancel anymore; they contact support and an admin decides
+  if (order.items?.some((item) => item.fulfillment?.status === "shipped")) {
+    throw new AppError(400, "Part of this order has already been shipped — contact support to cancel it");
+  }
+
   order.status = "cancelled";
   await order.save();
 
@@ -257,7 +268,19 @@ const confirmDelivery = async (orderId, userId) => {
     );
   }
 
-  // completed + cash marked paid + sellers' money released (same as admin / auto-complete)
+  if (order.buyerConfirmedAt) {
+    throw new AppError(409, "You already confirmed receipt of this order");
+  }
+  order.buyerConfirmedAt = new Date();
+
+  // cash: the buyer's word isn't proof of payment — only whoever received the cash confirms it.
+  // Otherwise a buyer who never paid could lock the order as paid/completed.
+  if (order.paymentMethod === "cash" && order.paymentStatus !== "paid") {
+    await order.save();
+    return order;
+  }
+
+  // completed + sellers' money released (same as auto-complete)
   await completeDeliveredOrder(order);
   return order;
 };

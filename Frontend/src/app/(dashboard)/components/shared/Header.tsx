@@ -96,7 +96,8 @@ export function AppHeader({
 
         {/* Right */}
         <div className="flex items-center gap-2">
-          {isAdmin && <NotificationsBell />}
+          {/* every signed-in user gets notifications (order shipped, delivery time, ...) — was admin-only */}
+          {user && <NotificationsBell />}
 
           {isAdmin && (
             <SendNotificationButton />

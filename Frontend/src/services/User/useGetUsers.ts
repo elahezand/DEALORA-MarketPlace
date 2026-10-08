@@ -1,4 +1,5 @@
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
+import { ADMIN_FRESH } from "@/utils/hooks/adminQueryOptions";
 import { IUser } from "@/types/User";
 
 interface PaginateResult<T> {
@@ -13,7 +14,9 @@ interface PaginateResult<T> {
 
 export const useGetUsers = (limit = 5) => {
   const { data, isLoading, isError } = useGet<PaginateResult<IUser>>(
-    `/users?limit=${limit}`
+    `/users?limit=${limit}`,
+    undefined,
+    ADMIN_FRESH
   );
 
   return {

@@ -40,6 +40,9 @@ const setAuthCookies = (res, { accessToken, refreshToken }) => {
 const OTP_TTL_SECONDS = 60;
 
 const getOtpKey = (phone) => `otp:${phone}`;
+const getOtpAttemptsKey = (phone) => `otp:attempts:${phone}`;
+// wrong codes allowed per sent OTP (the per-IP limiter alone can be bypassed with many IPs)
+const MAX_OTP_ATTEMPTS = 5;
 
 const formatRemainingTime = (totalSeconds) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -89,7 +92,7 @@ const send = async (req, res, next) => {
     
     try {
       await axios.post(
-        "http://ippanel.com/api/select",
+        "https://ippanel.com/api/select",
         {
           op: "pattern",
           user: process.env.SMS_USER,
@@ -124,6 +127,7 @@ const send = async (req, res, next) => {
       hashedOtp,
       { EX: OTP_TTL_SECONDS }
     );
+    await redisClient.del(getOtpAttemptsKey(phone));
 
     res.status(200).json({
       success: true,
@@ -145,18 +149,30 @@ const verify = async (req, res, next) => {
       return next(new AppError(410, "OTP expired"));
     }
 
-    const isValid = await compare(code, savedOtp);
+    const attempts = await redisClient.incr(getOtpAttemptsKey(phone));
+    if (attempts === 1) await redisClient.expire(getOtpAttemptsKey(phone), OTP_TTL_SECONDS);
+    if (attempts > MAX_OTP_ATTEMPTS) {
+      await redisClient.del(getOtpKey(phone));
+      return next(new AppError(429, "Too many wrong codes. Request a new code."));
+    }
+
+    const isValid = await compare(String(code), savedOtp);
     if (!isValid) {
       return next(new AppError(410, "Invalid OTP"));
     }
 
-    await redisClient.del(getOtpKey(phone));
+    // delete first: a second parallel request with the same code finds nothing
+    const deleted = await redisClient.del(getOtpKey(phone));
+    await redisClient.del(getOtpAttemptsKey(phone));
+    if (!deleted) {
+      return next(new AppError(410, "OTP expired"));
+    }
 
     let user = await User.findOne({ phone });
     if (!user) {
       user = await User.create({
         phone,
-        username: phone,
+        username: "DEALORA-USER",
         role: ["USER"],
       });
     }

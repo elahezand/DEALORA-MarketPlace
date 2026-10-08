@@ -7,12 +7,12 @@ const { authUser, authAdmin } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
 const { addToCartSchema, updateCartSchema } = require("../validators/cart");
 
-/* ─── ADMIN  */
+//ADMIN
 cartRouter.get("/admin",authUser, authAdmin, adminController.getAdmin);
 cartRouter.get("/admin/:id",authUser, authAdmin, validateObjectIdParam("id"), adminController.getByIdAdmin);
 cartRouter.delete("/admin/:id",authUser, authAdmin, validateObjectIdParam("id"), adminController.remove);
 
-/* ─── USER  */
+// USER
 cartRouter.get("/me", authUser, userController.getMyCart);
 
 cartRouter.post(

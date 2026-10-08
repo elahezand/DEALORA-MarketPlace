@@ -1,12 +1,7 @@
-import { MotionDiv } from "../../utils/providers/MotionWrapper";
 export default function AppDownloadBanner() {
   return (
-    <MotionDiv
-      initial={{ y: 15, opacity: 0 }}
-      whileInView={{ y: 0, opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-      className="
+    <div
+      className="fade-in-up 
         rounded-2xl border border-[var(--border)]
         bg-[var(--card-solid)]
         p-8 sm:p-10
@@ -39,6 +34,6 @@ export default function AppDownloadBanner() {
           </a>
         </div>
       </div>
-    </MotionDiv>
+    </div>
   );
 }

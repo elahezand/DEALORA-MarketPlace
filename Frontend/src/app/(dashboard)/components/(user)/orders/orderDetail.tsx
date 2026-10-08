@@ -8,7 +8,12 @@ import {
   HiOutlineShoppingBag,
   HiOutlineMapPin,
   HiOutlineCreditCard,
+  HiOutlineClock,
+  HiOutlineTruck,
+  HiOutlineCheckCircle,
+  HiOutlineXCircle,
 } from "react-icons/hi2";
+import { formatDateTime, formatDay, formatTime, getDeliveryInfo, getExpectedDelivery, getShippedAt } from "@/utils/orderDates";
 import { useCancelOrder } from "@/services/Order/useCancelOrder";
 import { useConfirmDelivery } from "@/services/Order/useConfirmDelivery";
 import { Badge } from "../../shared/table/TableParts";
@@ -73,7 +78,10 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
 
   const handleConfirmDelivery = () => {
     toast.warning("Confirm you've received this order?", {
-      description: "This closes the order and can't be undone.",
+      description:
+        order.paymentMethod === "cash" && order.paymentStatus !== "paid"
+          ? "The order completes once the seller confirms your cash payment. This can't be undone."
+          : "This closes the order and can't be undone.",
       action: {
         label: "Confirm",
         onClick: () =>
@@ -108,7 +116,10 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
     );
   }
 
-  const canCancel = !NON_CANCELLABLE.includes(order.status);
+  // once any item has left, the buyer can't cancel on their own (same rule as the backend) —
+  // the order stays "processing" until EVERY item is shipped, so the status alone isn't enough
+  const hasShippedItems = !!order.items?.some((item) => item.fulfillment?.status === "shipped");
+  const canCancel = !NON_CANCELLABLE.includes(order.status) && !hasShippedItems;
 
   const lastShippedAt = order.items
     ?.map((item) => item.fulfillment?.shippedAt)
@@ -116,8 +127,12 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
     .map((d) => new Date(d).getTime())
     .reduce((max, t) => Math.max(max, t), 0);
 
+  // the buyer already pressed "I received it" (a cash order then waits for the cash confirmation)
+  const buyerConfirmed = !!order.buyerConfirmedAt;
+  const canConfirmReceipt = order.status === "shipped" && !buyerConfirmed;
+
   const pastDeliveryWindow =
-    order.status === "shipped" &&
+    canConfirmReceipt &&
     !!lastShippedAt &&
     Date.now() - lastShippedAt >= DELIVERY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
@@ -154,6 +169,121 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
         </div>
       </div>
 
+      {/* Expected arrival — the day and time the shipper gave, as clear as possible */}
+      {(() => {
+        const expected = getExpectedDelivery(order);
+        const active = order.status === "shipped" || (order.status === "processing" && !!expected);
+        if (!expected || !active) return null;
+        const late = expected.getTime() < Date.now();
+        const weekday = expected.toLocaleDateString("en-US", { weekday: "long" });
+        return (
+          <div
+            className={`card rounded-2xl border p-5 flex items-center gap-4 ${late
+              ? "border-[var(--warning-500)]/40 bg-[var(--warning-bg)]"
+              : "border-[var(--primary-500)]/25 bg-[var(--primary-500)]/5"}`}
+          >
+            <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${late
+              ? "bg-[var(--warning-500)]/15 text-[var(--warning-500)]"
+              : "bg-[var(--primary-500)]/10 text-[var(--primary-500)]"}`}>
+              <HiOutlineTruck className="w-6 h-6" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-[var(--foreground-muted)]">
+                {late ? "Was expected" : order.status === "shipped" ? "Arriving" : "First items arriving"}
+              </p>
+              <p className="text-lg font-black text-[var(--foreground)] leading-tight">
+                {weekday}, {formatDay(expected)}
+                <span className="font-semibold text-[var(--foreground-muted)]"> · around </span>
+                <span className="font-mono">{formatTime(expected)}</span>
+              </p>
+              {late && (
+                <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
+                  It&apos;s running late. If it doesn&apos;t arrive soon,{" "}
+                  <Link href="/contact-us" className="font-bold text-[var(--primary-500)] hover:underline">contact support</Link>.
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Delivery timeline — placed → shipped → delivered, each with date and time */}
+      {(() => {
+        const delivery = getDeliveryInfo(order);
+        const shippedAt = getShippedAt(order);
+        const isCancelled = order.status === "cancelled";
+        const isDone = order.status === "completed";
+
+        const steps = [
+          { key: "placed", label: "Order placed", icon: HiOutlineClock, date: order.createdAt, done: true },
+          {
+            key: "shipped",
+            label: "Shipped",
+            icon: HiOutlineTruck,
+            date: shippedAt,
+            done: !!shippedAt && (order.status === "shipped" || isDone),
+            hint: !shippedAt && !isCancelled && delivery.date ? `${delivery.label} ${formatDay(delivery.date)}` : undefined,
+          },
+          isCancelled
+            ? { key: "cancelled", label: "Cancelled", icon: HiOutlineXCircle, date: null, done: true, cancelled: true }
+            : {
+                key: "delivered",
+                label: isDone ? delivery.label : "Delivered",
+                icon: HiOutlineCheckCircle,
+                date: isDone ? delivery.date : null,
+                done: isDone,
+                hint: isDone
+                  ? delivery.note
+                  : order.status === "shipped" && buyerConfirmed
+                    ? `You confirmed receipt ${formatDateTime(order.buyerConfirmedAt)}`
+                  : order.status === "shipped"
+                    ? getExpectedDelivery(order)
+                      ? `Expected ${formatDateTime(getExpectedDelivery(order))}`
+                      : "Waiting for your confirmation"
+                    : undefined,
+              },
+        ];
+
+        return (
+          <div className="card rounded-2xl border border-[var(--border)] p-5">
+            <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {steps.map((step) => {
+                const Icon = step.icon;
+                const tone = "cancelled" in step && step.cancelled
+                  ? "text-[var(--destructive)] bg-[var(--destructive-bg)]"
+                  : step.done
+                    ? "text-[var(--success-500)] bg-[var(--success-bg)]"
+                    : "text-[var(--foreground-subtle)] bg-[var(--background-soft)]";
+                return (
+                  <li key={step.key} className="flex items-start gap-3">
+                    <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${tone}`}>
+                      <Icon className="w-5 h-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className={`text-sm font-bold ${step.done ? "text-[var(--foreground)]" : "text-[var(--foreground-muted)]"}`}>
+                        {step.label}
+                      </p>
+                      {step.date && step.done ? (
+                        <p className="text-xs text-[var(--foreground-muted)]">
+                          {formatDay(step.date)}
+                          <span className="mx-1 opacity-50">·</span>
+                          <span className="font-mono">{formatTime(step.date)}</span>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[var(--foreground-subtle)]">{"hint" in step && step.hint ? step.hint : "—"}</p>
+                      )}
+                      {step.done && "hint" in step && step.hint && step.date && (
+                        <p className="text-[11px] text-[var(--foreground-subtle)] mt-0.5">{step.hint}</p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        );
+      })()}
+
       {/* Confirm-receipt reminder — only once it's plausibly had time to arrive */}
       {pastDeliveryWindow && (
         <div className="card rounded-2xl border border-[var(--info-500)]/30 bg-[var(--info-500)]/5 p-5 flex items-center justify-between gap-4 flex-wrap">
@@ -172,6 +302,15 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
           >
             {isConfirming ? "Confirming..." : "I've Received This Order"}
           </button>
+        </div>
+      )}
+
+      {order.status === "shipped" && buyerConfirmed && order.paymentMethod === "cash" && order.paymentStatus !== "paid" && (
+        <div className="card rounded-2xl border border-[var(--success-500)]/30 bg-[var(--success-bg)] p-5">
+          <p className="font-bold text-sm text-[var(--foreground)]">Thanks, you confirmed receipt</p>
+          <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
+            The seller still has to confirm they received your cash payment, then the order is completed.
+          </p>
         </div>
       )}
 
@@ -217,6 +356,20 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
                     {isShipped && item.fulfillment?.trackingCode && (
                       <span className="text-[11px] text-[var(--foreground-muted)] font-mono">
                         · Tracking: {item.fulfillment.trackingCode}
+                      </span>
+                    )}
+                    {isShipped && item.fulfillment?.estimatedDeliveryAt && order.status !== "completed" && (
+                      <span className="text-[11px] font-semibold text-[var(--primary-500)]">
+                        · Arrives {formatDateTime(item.fulfillment.estimatedDeliveryAt)}
+                      </span>
+                    )}
+                    {order.paymentMethod === "cash" && order.status !== "cancelled" && (
+                      <span className={`text-[11px] font-semibold ${item.cashCollectedAt || order.status === "completed"
+                        ? "text-[var(--success-500)]"
+                        : "text-[var(--warning-500)]"}`}>
+                        · 💵 {item.cashCollectedAt || order.status === "completed"
+                          ? "Paid"
+                          : `Pay ${item.storeSnapshot?.name || "the courier"} in cash on delivery`}
                       </span>
                     )}
                     {!isShipped && item.estimatedShipBy && (
@@ -296,7 +449,7 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
 
       {/* Actions */}
       <div className="flex justify-end gap-3">
-        {order.status === "shipped" && !pastDeliveryWindow && (
+        {canConfirmReceipt && !pastDeliveryWindow && (
           <button
             onClick={handleConfirmDelivery}
             disabled={isConfirming}
@@ -315,6 +468,14 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
           </button>
         )}
       </div>
+      {(order.status === "shipped" || (hasShippedItems && order.status === "processing")) && (
+        <p className="text-xs text-[var(--foreground-muted)] text-right">
+          Already shipped, so it can&apos;t be cancelled here. Didn&apos;t arrive or something&apos;s wrong?{" "}
+          <Link href="/contact-us" className="font-bold text-[var(--primary-500)] hover:underline">
+            Contact support
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

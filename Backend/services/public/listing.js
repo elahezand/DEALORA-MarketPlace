@@ -38,8 +38,7 @@ async function getListingById(id) {
   if (!listingData || !isPublicListing(listingData)) {
     throw new AppError(404, "Listing not found");
   }
-  await Listing.updateOne({ _id: id }, { $inc: { "metrics.views": 1 } });
-  listingData.metrics = { ...listingData.metrics, views: (listingData.metrics?.views || 0) + 1 };
+  // the view itself is counted by the countView middleware in routes/listing.js
 
   return buildListingDetail(listingData);
 }

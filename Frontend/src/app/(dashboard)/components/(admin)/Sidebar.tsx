@@ -90,16 +90,21 @@ export function AdminSidebar({ isOpen }: AdminSidebarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
+    let frame = 0;
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        setIsScrolled(window.scrollY > 20); // React skips the render when the value didn't change
+      });
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (
@@ -107,7 +112,7 @@ export function AdminSidebar({ isOpen }: AdminSidebarProps) {
       className={clsx(
         "fixed top-0 left-0 h-screen z-50 lg:z-30 p-4 flex flex-col justify-between",
         "bg-[var(--card)] border-r border-[var(--border-strong)]",
-        "transition-all duration-300 ease-out shadow-sm",
+        "transition-[transform,width] duration-300 ease-out shadow-sm",
         isScrolled ? "pt-4" : "pt-16",
         "dash-sidebar",
         isOpen ? "w-72 translate-x-0" : "w-72 -translate-x-full lg:translate-x-0 lg:w-20"

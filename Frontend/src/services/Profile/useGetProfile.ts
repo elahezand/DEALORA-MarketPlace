@@ -6,7 +6,13 @@ export const useGetProfile = () => {
   const { data, error, isError, isLoading } = useGet<UserType>(
     "/auth/me",
     undefined,
-    { axiosConfig: { silentAuth: true }, silentError: true }
+    {
+      axiosConfig: { silentAuth: true },
+      silentError: true,
+      // a guest gets 401 — retrying (3x by default) fired ~8 requests per page and
+      // kept dashboards on a spinner for seconds before redirecting
+      retry: false,
+    }
   );
 
   return {

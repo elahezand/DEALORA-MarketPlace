@@ -7,6 +7,8 @@ export interface AdminShipItemPayload {
   orderId: string;
   itemId: string;
   trackingCode?: string;
+  /** ISO string — when the buyer should receive it */
+  estimatedDeliveryAt?: string;
 }
 
 export const useAdminShipItem = (onSuccessCallback?: () => void) => {

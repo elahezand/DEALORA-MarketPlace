@@ -21,7 +21,7 @@ const checkoutSchema = z.object({
 // ADMIN: full control over an order's lifecycle/payment state.
 const updateOrderAdminSchema = z.object({
     paymentStatus: z.enum(["pending", "paid", "failed", "refunded"]).optional(),
-    status: z.enum(["created", "processing", "completed", "cancelled"]).optional(),
+    status: z.enum(["created", "processing", "shipped", "completed", "cancelled"]).optional(),
     isDelivered: z.boolean().optional(),
     deliveredAt: z.string().datetime().optional(),
 });
@@ -36,8 +36,24 @@ const cancelOrderSchema = z.object({
 
 // SELLER: mark (their part of) an order as shipped, with an optional
 // tracking code.
+// expected arrival: not in the past (5 min slack for clock drift), at most 60 days ahead
+const DAY_MS = 24 * 60 * 60 * 1000;
+const deliveryDate = z.coerce
+    .date({ message: "Invalid delivery date" })
+    .refine((d) => d.getTime() >= Date.now() - 5 * 60 * 1000, "Delivery time can't be in the past")
+    .refine((d) => d.getTime() <= Date.now() + 60 * DAY_MS, "Delivery time must be within 60 days");
+
 const shipOrderSchema = z.object({
     trackingCode: z.string().trim().max(100).optional(),
+    estimatedDeliveryAt: deliveryDate.optional(),
+});
+
+const cashNotReceivedSchema = z.object({
+    note: z.string().trim().max(500).optional(),
+});
+
+const deliveryEstimateSchema = z.object({
+    estimatedDeliveryAt: deliveryDate,
 });
 
 module.exports = {
@@ -46,4 +62,6 @@ module.exports = {
     updateOrderOwnerSchema,
     cancelOrderSchema,
     shipOrderSchema,
+    deliveryEstimateSchema,
+    cashNotReceivedSchema,
 };

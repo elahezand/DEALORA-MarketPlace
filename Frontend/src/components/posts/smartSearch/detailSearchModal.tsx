@@ -13,6 +13,7 @@ import { getListingPrice } from "@/utils/price";
 import "swiper/css";
 import "swiper/css/effect-fade";
 import "swiper/css/pagination";
+import { getUrl } from "@/utils/helper";
 
 interface DetailSearchModalProps {
   isOpen: boolean;
@@ -92,7 +93,9 @@ export default function DetailSearchModal({
               pagination={{ clickable: true }}
             >
               {postImages.map((photo: string, index: number) => {
-                const src = photo;
+                const src = getUrl(photo);
+                console.log(photo);
+                
                 if (!src) return null;
 
                 return (

@@ -26,7 +26,7 @@ const {
   addressSchema,
 } = require("../validators/user");
 
-// --- Admin Operations ---
+//ADMIN
 const { getMyWallet } = require("../controllers/user/wallet");
 
 userRouter.get("/me/wallet", authUser, getMyWallet);
@@ -38,7 +38,7 @@ userRouter.patch("/:id/role", authUser, authAdmin, validateObjectIdParam("id"), 
 userRouter.post("/:id/ban", authUser, authAdmin, validateObjectIdParam("id"), toggleBan);
 userRouter.delete("/:id", authUser, authAdmin, validateObjectIdParam("id"), removeUser);
 
-// --- Current Authenticated User Operations ---
+//USER
 userRouter.put(
   "/me/profile",
   authUser,
@@ -48,7 +48,7 @@ userRouter.put(
   putUser
 );
 
-// Address Management
+/*Address Management*/
 userRouter.post("/me/addresses", authUser, validate(addressSchema), createAddress);
 
 userRouter.patch(
@@ -58,7 +58,6 @@ userRouter.patch(
   validate(addressSchema),
   updatedAddress
 );
-
 userRouter.delete(
   "/me/addresses/:addressId",
   authUser,

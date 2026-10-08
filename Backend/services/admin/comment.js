@@ -16,8 +16,6 @@ const getAdmin = async (query = {}) => {
   // type=review → top-level reviews, type=reply → answers to a review
   if (query.type === "review") filters.parentId = null;
   if (query.type === "reply") filters.parentId = { $ne: null };
-  // answered=true / false → reviews that do / don't have a reply yet (filtered in the DB,
-  // so every page is full). Only meaningful for reviews — ignored for replies.
   if (query.type !== "reply" && (query.answered === "true" || query.answered === "false")) {
     const answeredIds = await Comment.distinct("parentId", { parentId: { $ne: null }, deletedAt: null });
     filters.parentId = null;

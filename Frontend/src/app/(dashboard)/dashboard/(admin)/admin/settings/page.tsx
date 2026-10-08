@@ -3,11 +3,9 @@ import AdminSettingsClient from "@/app/(dashboard)/components/(admin)/settings/A
 import { SiteInfo } from "@/services/Settings/useUpdateSiteInfo";
 
 export default async function AdminSettingsPage() {
-  const { data: initialSiteInfo } = await useServerData<{ data: SiteInfo | null }>(
-    "/infos",
-    "site-info",
-    60 * 60
-  );
+  // no server cache here: after saving, the admin must see what they just saved
+  // (it was cached for 1 hour, so a reload showed the old values)
+  const res = await useServerData<{ data: SiteInfo | null }>("/infos");
 
-  return <AdminSettingsClient initialSiteInfo={initialSiteInfo ?? null} />;
+  return <AdminSettingsClient initialSiteInfo={res?.data ?? null} />;
 }

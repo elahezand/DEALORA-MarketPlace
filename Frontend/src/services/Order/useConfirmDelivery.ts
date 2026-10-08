@@ -1,13 +1,19 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { usePatch } from "../../utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
 import { IOrder } from "../../types/Order";
 
 export const useConfirmDelivery = () => {
+  const queryClient = useQueryClient();
+
   return usePatch<{ success: boolean; message: string; data: IOrder }, { id: string }>(
     (data) => `/orders/${data.id}/confirm-delivery`,
     {
-      onSuccess: () => {
-        toast.success("Thanks! Order marked as received.");
+      onSuccess: (res) => {
+        // the server says whether it completed, or (cash) waits for the cash confirmation
+        toast.success(res?.message || "Thanks! Order marked as received.");
+        // the orders list shows the delivery date/time — refresh it too
+        queryClient.invalidateQueries({ queryKey: ["/orders/my"] });
       },
       errorFallback: "Failed to confirm delivery.",
     }

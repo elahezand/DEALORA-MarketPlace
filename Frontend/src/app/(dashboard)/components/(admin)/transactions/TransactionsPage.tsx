@@ -11,7 +11,6 @@ import TableCard from "../../shared/table/TableCard";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import { Th, ViewAction, Badge } from "../../shared/table/TableParts";
 import { useAdminAutoComplete } from "@/services/Order/useAdminAutoComplete";
-import { useAdminMarkDelivered } from "@/services/Order/useAdminMarkDelivered";
 import TableFilters, { TableFilterValue, emptyFilters, filtersKey, filtersToParams } from "../../shared/table/TableFilters";
 
 const STATUS_TABS: { value: OrderStatus | "all"; label: string }[] = [
@@ -84,12 +83,11 @@ export default function TransactionsClient({
   );
 
 
-  const allOrders: (IOrder & { hasPendingAdminItems?: boolean; isCashOverdue?: boolean })[] = (
+  const allOrders: (IOrder & { hasPendingAdminItems?: boolean; isCashOverdue?: boolean; isCashDisputed?: boolean })[] = (
     data?.pages?.flatMap((page: AdminOrdersResponse) => page?.data ?? []) || []
   ).filter(Boolean);
 
   const { mutate: runAutoComplete, isPending: isRunningAutoComplete } = useAdminAutoComplete();
-  const { mutate: markDelivered, isPending: isMarking, variables: markingId } = useAdminMarkDelivered();
 
 
   return (
@@ -153,7 +151,7 @@ export default function TransactionsClient({
                 : "border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)]"
               }`}
           >
-            Overdue cash
+            Cash to check
           </button>
         </div>
       </div>
@@ -203,9 +201,17 @@ export default function TransactionsClient({
                   <p className="font-bold text-sm text-[var(--foreground)] font-mono">
                     #{order._id.slice(-8).toUpperCase()}
                   </p>
-                  {order.isCashOverdue && (
+                  {order.isCashDisputed && (
                     <span
-                      title="Cash not confirmed — mark delivered or cancel"
+                      title="Whoever should have received the cash says they didn't — needs your decision"
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--destructive-bg)] text-[var(--destructive)] whitespace-nowrap"
+                    >
+                      Cash dispute
+                    </span>
+                  )}
+                  {order.isCashOverdue && !order.isCashDisputed && (
+                    <span
+                      title="Nobody confirmed the cash for 14 days after delivery — follow up, or cancel"
                       className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--destructive-bg)] text-[var(--destructive)] whitespace-nowrap"
                     >
                       Cash overdue
@@ -239,17 +245,8 @@ export default function TransactionsClient({
               </td>
               <td className="px-6 py-4">
                 <div className="flex items-center justify-end gap-2">
-                  {order.status === "shipped" && (
-                    <button
-                      type="button"
-                      disabled={isMarking && markingId === order._id}
-                      onClick={() => markDelivered(order._id)}
-                      title="Buyer received it — complete the order and release the seller's money"
-                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--success-500)]/40 text-[var(--success-500)] hover:bg-[var(--success-bg)] disabled:opacity-50 whitespace-nowrap"
-                    >
-                      {isMarking && markingId === order._id ? "Saving..." : "Mark delivered"}
-                    </button>
-                  )}
+                  {/* no "Mark delivered" here: orders are completed by the buyer, by the system
+                      (online, after the waiting period) or when the cash is confirmed (cash) */}
                   <ViewAction href={`/dashboard/admin/transactions/${order._id}`} />
                 </div>
               </td>

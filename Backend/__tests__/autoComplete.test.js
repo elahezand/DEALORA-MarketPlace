@@ -30,6 +30,8 @@ const stubs = {
   [path.resolve(__dirname, "../models/coupon.js")]: { updateOne: async () => ({}) },
   [path.resolve(__dirname, "../utils/helper.js")]: { escapeRegex: (x) => x, paginate: async () => ({}) },
   [path.resolve(__dirname, "../utils/logger.js")]: { warn() {}, error() {}, info() {} },
+  [path.resolve(__dirname, "../utils/notify.js")]: async () => {},
+  [path.resolve(__dirname, "../services/shared/zarinpal.js")]: { verifyPayment: async () => ({}) },
 };
 const origLoad = Module._load;
 Module._load = function (request, parent, isMain) {
@@ -40,7 +42,7 @@ Module._load = function (request, parent, isMain) {
   } catch (_) {}
   return origLoad.apply(this, arguments);
 };
-const { autoCompleteShippedOrders } = require("../services/shared/order");
+const { autoCompleteShippedOrders } = require("../services/shared/orderSweeper");
 
 test("only shipped orders older than the deadline are picked", async () => {
   found = [];

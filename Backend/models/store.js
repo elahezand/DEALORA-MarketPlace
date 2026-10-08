@@ -61,8 +61,10 @@ storeSchema.pre("save", function () {
       .toString()
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9\-]/g, "");
+      .replace(/[\u200c\s_]+/g, "-")
+      .replace(/[^a-z0-9\u0600-\u06FF-]/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || `store-${this._id}`;
   }
 });
 const Store = mongoose.models.Store || mongoose.model("Store", storeSchema);

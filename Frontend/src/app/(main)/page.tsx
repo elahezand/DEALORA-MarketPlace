@@ -1,4 +1,3 @@
-import { MotionDiv } from "../../utils/providers/MotionWrapper";
 import { Suspense } from "react";
 import { useServerData } from "@/utils/hooks/useServerData";
 import Link from "next/link";
@@ -16,18 +15,29 @@ import SectionHeader from "@/components/index/sectionHeader";
 import HeroLiveBadge from "@/components/index/heroLiveBadge";
 import VerifiedStores from "@/components/index/verifiedStores";
 import { PublicListingsResponse } from "@/types/Listings";
+import { CategoriesTypeResponse } from "@/types/Category";
+import { GetPublicStatsResponse } from "@/services/Stats/useGetStats";
+import { GetVerifiedStoresResponse } from "@/services/Store/useVerifyStore";
 
 export default async function Page() {
-  const data = await useServerData<PublicListingsResponse>(
-    "/listings?limit=20",
-    "all-listings",
-    60
-  );
+  /*
+   * Everything the page shows is fetched here, in parallel, on the server.
+   * Before, categories / stats / verified stores were fetched by the browser after
+   * hydration (HTML → JS → API chain, content popping in → layout shift).
+   * The API returns at most 10 listings without a listingType, so the two kinds are
+   * requested separately (the old "?limit=20" silently got 10 for both together).
+   */
+  const [storeData, adsData, categories, stats, verifiedStores] = await Promise.all([
+    useServerData<PublicListingsResponse>("/listings?listingType=store_product&limit=12", "home-store-products", 60),
+    useServerData<PublicListingsResponse>("/listings?listingType=user_ad&limit=12", "home-user-ads", 60),
+    useServerData<CategoriesTypeResponse>("/categories", "categories", 60 * 60),
+    useServerData<GetPublicStatsResponse>("/stats", "public-stats", 300),
+    useServerData<GetVerifiedStoresResponse>("/stores/verified", "verified-stores-home", 300),
+  ]);
 
-  const allListings = data?.data || [];
-
-  const storeProducts = allListings.filter((item) => item.listingType === "store_product");
-  const userAds = allListings.filter((item) => item.listingType === "user_ad");
+  const storeProducts = storeData?.data || [];
+  const userAds = adsData?.data || [];
+  const allListings = [...storeProducts, ...userAds];
 
 
   return (
@@ -38,22 +48,16 @@ export default async function Page() {
       >
         {/* AMBIENT BACKGROUND GLOW — single, restrained, primary-only */}
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-primary-500/[0.07] dark:bg-primary-500/[0.10] blur-[100px]" />
+          {/* radial-gradient instead of a 700px element with blur(100px): same look, a fraction of the paint cost */}
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-[radial-gradient(circle,rgb(37_99_235/0.08)_0%,transparent_65%)] dark:bg-[radial-gradient(circle,rgb(37_99_235/0.12)_0%,transparent_65%)]" />
         </div>
 
         <div className="w-full max-w-4xl mx-auto">
 
-          <MotionDiv
-            initial={{ y: -15, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{
-              duration: 0.6,
-              ease: "easeOut",
-            }}
-            className="flex flex-col items-center gap-6"
-          >
+          {/* was <MotionDiv initial={{ y: -15, opacity: 0 }} ...> — now pure CSS */}
+          <div className="fade-in-down flex flex-col items-center gap-6">
             {/* HERO BADGE — live from /stats */}
-            <HeroLiveBadge />
+            <HeroLiveBadge initialStats={stats} />
 
             {/* HERO TITLE */}
             <h1
@@ -94,23 +98,17 @@ export default async function Page() {
               in your neighborhood.
             </p>
 
-          </MotionDiv>
+          </div>
 
 
-          {/* SEARCH */}
-          <MotionDiv
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{
-              duration: 0.6,
-              delay: 0.1,
-            }}
+          {/* SEARCH — was <MotionDiv ... delay: 0.1> */}
+          <div
             className="
+              fade-in-up
               relative z-30
               w-full
               p-2
               bg-[var(--card-solid)]
-              backdrop-blur-xl
               border
               border-[var(--border)]
               rounded-[calc(var(--radius)+8px)]
@@ -122,14 +120,14 @@ export default async function Page() {
             "
           >
             <LocationSearch />
-          </MotionDiv>
+          </div>
           <PopularState />
         </div>
       </section>
       {/* ── DISCOVERY BAND: Stats + Categories ── */}
       <div className="bg-[var(--background-soft)] border-y border-[var(--border)]">
         <Section tone="soft" maxWidth="5xl">
-          <StatsBar />
+          <StatsBar initialStats={stats} />
         </Section>
 
         <Section tone="soft" maxWidth="5xl">
@@ -141,7 +139,7 @@ export default async function Page() {
             linkLabel="See all Categories"
           />
           <Suspense fallback={<CategoriesSkeleton />}>
-            <CategoriesSection />
+            <CategoriesSection initialData={categories} />
           </Suspense>
         </Section>
       </div>
@@ -158,12 +156,12 @@ export default async function Page() {
           itemCount={storeProducts.length}
         />
         <Suspense fallback={<CarouselSkeleton />}>
-          <ListingsCarousel listings={storeProducts} />
+          <ListingsCarousel listings={storeProducts} priorityCount={2} />
         </Suspense>
 
         {/* VERIFIED STORES — compact clickable entry point to /stores */}
         <div className="mt-6">
-          <VerifiedStores />
+          <VerifiedStores initialStores={verifiedStores} />
         </div>
       </Section>
 

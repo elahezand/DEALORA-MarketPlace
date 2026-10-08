@@ -33,6 +33,7 @@ const getSellerStats = async (userId) => {
     OfferSeller.countDocuments({ store: store._id, status: "pending" }),
     OfferSeller.countDocuments({ store: store._id, status: "accepted" }),
   ]);
+  
 
   return {
     totalRevenue: revenueAgg[0]?.revenue || 0,

@@ -1,6 +1,8 @@
 const express = require("express");
 const listingRouter = express.Router();
 
+const Listing = require("../models/listing");
+
 const publicController = require("../controllers/public/listing");
 const userController = require("../controllers/user/listing");
 const adminController = require("../controllers/admin/listing");
@@ -20,10 +22,20 @@ const {
 
 
 listingRouter.get("/", cacheMiddleware(120), publicController.getAll);
-listingRouter.post("/smart-search", publicController.handleSmartSearch);
+const rateLimit = require("express-rate-limit");
+
+const smartSearchLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many AI searches, try again in a few minutes." },
+});
+
+listingRouter.post("/smart-search", smartSearchLimit, publicController.handleSmartSearch);
 listingRouter.get("/my", authUser, userController.getMyListings);
 
-/* ADMIN — must come before "/:id" */
+//ADMIN 
 listingRouter.get(
   "/admin",
   authUser,
@@ -70,22 +82,17 @@ listingRouter.delete(
   adminController.deleteListing
 );
 
-// Owner preview of any status — never cached (it's per user)
-listingRouter.get(
-  "/:id/preview",
+listingRouter.patch(
+  "/:id/status",
   authUser,
+  authAdmin,
   validateObjectIdParam("id"),
-  userController.getPreview
+  validate(updateStatusSchema),
+  adminController.changeStatus
 );
 
-// Public: only accepted ads / active store products
-listingRouter.get(
-  "/:id",
-  validateObjectIdParam("id"),
-  cacheMiddleware(300),
-  publicController.getOne
-);
 
+// USER
 listingRouter.post(
   "/",
   authUser,
@@ -93,6 +100,13 @@ listingRouter.post(
   upload.verifyUploadedImages,
   validate(createListingSchema),
   userController.createListing
+);
+
+listingRouter.get(
+  "/:id/preview",
+  authUser,
+  validateObjectIdParam("id"),
+  userController.getPreview
 );
 
 listingRouter.put(
@@ -112,13 +126,29 @@ listingRouter.delete(
   userController.deleteListing
 );
 
-listingRouter.patch(
-  "/:id/status",
-  authUser,
-  authAdmin,
+
+// Public: only accepted ads / active store products
+/*count views before cache*/
+const countView = (req, res, next) => {
+  Listing.updateOne(
+    {
+      _id: req.params.id,
+      $or: [
+        { listingType: "user_ad", status: "accepted" },
+        { listingType: "store_product", status: "active" },
+      ],
+    },
+    { $inc: { "metrics.views": 1 } }
+  ).catch(() => { });
+  next();
+};
+
+listingRouter.get(
+  "/:id",
   validateObjectIdParam("id"),
-  validate(updateStatusSchema),
-  adminController.changeStatus
+  countView,
+  cacheMiddleware(300),
+  publicController.getOne
 );
 
 module.exports = listingRouter;

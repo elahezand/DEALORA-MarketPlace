@@ -92,7 +92,9 @@ const confirmDelivery = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Order marked as received",
+      message: order.status === "completed"
+        ? "Order marked as received"
+        : "Thanks! Receipt confirmed — waiting for the seller to confirm your cash payment",
       data: order,
     });
   } catch (err) {

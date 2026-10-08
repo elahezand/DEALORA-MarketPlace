@@ -10,11 +10,11 @@ const {
   processWithdrawalSchema,
 } = require("../validators/withdrawal");
 
-/* SELLER */
+//SELLER
 router.post("/", authUser, authSeller, validate(createWithdrawalSchema), sellerController.create);
 router.get("/mine", authUser, authSeller, sellerController.getMine);
 
-/* ADMIN */
+//ADMIN
 router.get("/admin",authUser, authAdmin, adminController.getAll);
 router.patch(
   "/admin/:id/process",

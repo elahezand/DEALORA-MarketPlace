@@ -9,6 +9,7 @@ import { OrdersResponse, OrderStatus } from "@/types/Order";
 import { InfiniteData } from "@tanstack/react-query";
 import TableCard from "../../shared/table/TableCard";
 import { Th, Badge } from "../../shared/table/TableParts";
+import { formatDay, formatTime, getDeliveryInfo } from "@/utils/orderDates";
 import { WidgetHeader } from "../../shared/table/WidgeHeader";
 import {
   HiOutlineChatBubbleLeftRight
@@ -139,7 +140,7 @@ export default function OrdersPage({
             <Th>Total</Th>
             <Th>Status</Th>
             <Th>Payment</Th>
-            <Th>Date</Th>
+            <Th>Delivery</Th>
             <Th align="right">Actions</Th>
           </tr>
         </thead>
@@ -198,9 +199,25 @@ export default function OrdersPage({
                   <Badge tone={paymentTone} label={order.paymentStatus || "Pending"} />
                 </td>
 
-                {/* Date */}
-                <td className="px-6 py-4 text-sm text-[var(--foreground-muted)]">
-                  {order.createdAt ? formatDate(order.createdAt) : "N/A"}
+                {/* Delivery: when it arrived (or shipped / should ship), date + time */}
+                <td className="px-6 py-4">
+                  {(() => {
+                    const delivery = getDeliveryInfo(order);
+                    return (
+                      <div className="flex flex-col gap-0.5 min-w-[130px]">
+                        <span className="text-xs font-bold text-[var(--foreground)]">{delivery.label}</span>
+                        {delivery.date ? (
+                          <span className="text-xs text-[var(--foreground-muted)] whitespace-nowrap">
+                            {formatDay(delivery.date)}
+                            <span className="mx-1 opacity-50">·</span>
+                            <span className="font-mono">{formatTime(delivery.date)}</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-[var(--foreground-subtle)]">—</span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </td>
 
                 {/* Actions */}

@@ -21,11 +21,12 @@ const stubs = {
   [path.resolve(__dirname, "../services/shared/order.js")]: {
     finalizeOrder: async (o) => { calls.finalize++; o.items.forEach((i) => { i.stockReserved = true; i.walletCredited = true; }); },
     revertOrder: async () => { calls.revert++; },
-    autoCompleteShippedOrders: async () => 0,
+    completeDeliveredOrder: async () => {},
   },
   [path.resolve(__dirname, "../utils/logger.js")]: { warn() {}, error() {}, info() {} },
   [path.resolve(__dirname, "../models/user.js")]: { find: () => ({ select: () => ({ lean: async () => [{ _id: "admin1" }, { _id: "admin2" }] }) }) },
   [path.resolve(__dirname, "../utils/notify.js")]: async (userId, msg, opts) => { notifications.push({ userId, msg, opts }); },
+  [path.resolve(__dirname, "../models/store.js")]: { find: () => ({ select: () => ({ lean: async () => [{ _id: "s1", owner: "seller1" }] }) }) },
 };
 const origLoad = Module._load;
 Module._load = function (request, parent, isMain) {
@@ -125,17 +126,71 @@ test("mixed payment (wallet part + unpaid gateway part) is cancelled, not marked
   walletCharged = 0; zarinpalSays = { success: true, refId: "9" };
 });
 
-test("overdue cash orders remind every admin once and are stamped", async () => {
+const DAY = 86400000;
+
+test("cash: nothing is asked before the delivery time has passed", async () => {
   notifications.length = 0;
-  const order = halfDone({ status: "shipped", shippedAt: new Date(Date.now() - 10 * 86400000), cashOverdueNotifiedAt: null });
+  const order = halfDone({ status: "shipped", shippedAt: new Date(Date.now() - 2 * DAY), expectedDeliveryAt: new Date(Date.now() + DAY) });
   found = [order];
-  const count = await flagOverdueCashOrders();
-  assert.equal(count, 1);
-  assert.equal(notifications.length, 2);                 // two admins
-  assert.equal(notifications[0].opts.type, "cod_overdue");
-  assert.ok(order.cashOverdueNotifiedAt);
-  assert.equal(order.paymentStatus, "pending");          // money is never assumed
-  assert.equal(order.status, "shipped");
+  assert.equal(await flagOverdueCashOrders(), 0);
+  assert.equal(notifications.length, 0);
+});
+
+test("cash: 1 day after the delivery time, only the store that got the cash is asked", async () => {
+  notifications.length = 0;
+  const order = halfDone({
+    status: "shipped", shippedAt: new Date(Date.now() - 4 * DAY),
+    expectedDeliveryAt: new Date(Date.now() - 2 * DAY), cashCheckAskedAt: null, cashOverdueNotifiedAt: null,
+  });
+  found = [order];
+  assert.equal(await flagOverdueCashOrders(), 1);
+  assert.equal(notifications.length, 1);                  // the store's item → the store, no admins
+  assert.equal(notifications[0].userId, "seller1");
+  assert.match(notifications[0].msg, /did you receive the cash/);
+  assert.equal(notifications[0].opts.type, "cod_check");
+  assert.ok(order.cashCheckAskedAt);
+  assert.equal(order.cashOverdueNotifiedAt, null);        // not escalated yet
+  assert.equal(order.paymentStatus, "pending");           // silence never means paid
+  assert.equal(order.status, "shipped");                  // ...or cancelled
   assert.equal(lastQuery.paymentMethod, "cash");
   assert.equal(lastQuery.paymentStatus, "pending");
+  assert.equal(lastQuery["cashDispute.reportedAt"], null); // disputes are the admin's already
+});
+
+test("cash: no delivery time → asked 7 days after shipping; not re-asked within 3 days", async () => {
+  notifications.length = 0;
+  const fresh = halfDone({ status: "shipped", shippedAt: new Date(Date.now() - 6 * DAY), expectedDeliveryAt: null });
+  const askedYesterday = halfDone({
+    status: "shipped", shippedAt: new Date(Date.now() - 9 * DAY), expectedDeliveryAt: null,
+    cashCheckAskedAt: new Date(Date.now() - DAY),
+  });
+  found = [fresh, askedYesterday];
+  assert.equal(await flagOverdueCashOrders(), 0);
+  assert.equal(notifications.length, 0);
+});
+
+test("cash: the site's own items are asked to the admins", async () => {
+  notifications.length = 0;
+  const order = halfDone({
+    status: "shipped", shippedAt: new Date(Date.now() - 10 * DAY), expectedDeliveryAt: null,
+    items: [{ store: null, stockReserved: true }],
+  });
+  found = [order];
+  await flagOverdueCashOrders();
+  assert.equal(notifications.length, 2);                   // two admins
+  assert.ok(notifications.every((n) => n.opts.type === "cod_check"));
+});
+
+test("cash: still no answer 14 days after it was due → escalated to admins, never auto-cancelled", async () => {
+  notifications.length = 0;
+  const order = halfDone({
+    status: "shipped", shippedAt: new Date(Date.now() - 25 * DAY), expectedDeliveryAt: null,
+    cashCheckAskedAt: new Date(Date.now() - DAY),
+  });
+  found = [order];
+  assert.equal(await flagOverdueCashOrders(), 1);
+  assert.equal(notifications.length, 2);                   // two admins
+  assert.equal(notifications[0].opts.type, "cod_overdue");
+  assert.ok(order.cashOverdueNotifiedAt);
+  assert.equal(order.status, "shipped");
 });

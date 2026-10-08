@@ -9,7 +9,10 @@ const STALE_CLAIM_MS = 2 * 60 * 1000;
 const isFinished = (order) =>
   order.items.every((i) => i.stockReserved && (!i.store || i.walletCredited));
 
+const toRial = (toman) => Math.round(Number(toman || 0) * 10);
+
 const verify = async (authority) => {
+  if (!authority) throw new AppError(400, "Missing payment authority");
   const order = await Order.findOne({ "payment.authority": authority });
   if (!order) throw new AppError(404, "Order not found");
 
@@ -27,6 +30,8 @@ const verify = async (authority) => {
     {
       "payment.authority": authority,
       paymentStatus: { $ne: "paid" },
+      // the buyer (or the sweeper) cancelled it meanwhile — never charge-and-finalize a cancelled order
+      status: { $ne: "cancelled" },
       $or: [{ finalizedAt: null }, { finalizedAt: { $lt: staleBefore } }],
     },
     { $set: { finalizedAt: new Date() } },
@@ -34,7 +39,14 @@ const verify = async (authority) => {
   );
   if (!claimed) return order;
 
-  const result = await verifyPayment(authority, claimed.pricing.total * 10);
+  const result = await verifyPayment(authority, toRial(claimed.pricing.total));
+
+  if (!result.success && result.unreachable) {
+    // gateway down: leave it pending, the sweeper asks again later
+    claimed.finalizedAt = null;
+    await claimed.save();
+    return claimed;
+  }
 
   if (!result.success) {
     claimed.finalizedAt = null; 

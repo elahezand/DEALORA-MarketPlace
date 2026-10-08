@@ -1,5 +1,6 @@
 const adminCommentService = require("../../services/admin/comment");
 const invalidateCache = require("../../utils/cache");
+const AppError = require("../../utils/AppError")
 
 const getAdmin = async (req, res, next) => {
   try {
@@ -39,9 +40,8 @@ const moderate = async (req, res, next) => {
       req.parsed.data
     );
 
-    if (updated) {
-      await invalidateCache(`/api/comments/listing/${updated.listing}*`);
-    }
+    if (!updated) return next(new AppError(404, "Comment not found"));
+    await invalidateCache(`/api/comments/listing/${updated.listing}*`);
 
     res.status(200).json({
       success: true,
@@ -61,9 +61,8 @@ const remove = async (req, res, next) => {
       req.user._id
     );
 
-    if (deleted) {
-      await invalidateCache(`/api/comments/listing/${deleted.listing}*`);
-    }
+    if (!deleted) return next(new AppError(404, "Comment not found"));
+    await invalidateCache(`/api/comments/listing/${deleted.listing}*`);
 
     res.status(200).json({
       success: true,

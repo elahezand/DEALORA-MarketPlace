@@ -131,6 +131,7 @@ export default function WithdrawalsPage({ initialData }: WithdrawalsPageProps) {
           type="button"
           onClick={() => setIsRequestOpen(true)}
           disabled={isStatsLoading || balance < MIN_WITHDRAWAL}
+          title={balance < MIN_WITHDRAWAL ? `You need at least $${MIN_WITHDRAWAL.toLocaleString()} to withdraw` : undefined}
           className="btn-primary !w-auto px-5 h-10 text-sm gap-2 flex items-center disabled:opacity-40"
         >
           <HiOutlinePlus className="w-4 h-4" />

@@ -1,7 +1,6 @@
 "use client";
 
-import { MotionDiv } from "../../utils/providers/MotionWrapper";
-import { useGetPublicStats } from "@/services/Stats/useGetStats";
+import { GetPublicStatsResponse, useGetPublicStats } from "@/services/Stats/useGetStats";
 const LABELS = [
   { key: "activeListings", label: "Active Listings" },
   { key: "activeUsers", label: "Active Users" },
@@ -13,15 +12,13 @@ function formatStat(value: number) {
   return `${new Intl.NumberFormat("en-US").format(value)}+`;
 }
 
-export default function StatsBar() {
-  const { stats, isLoading, isError } = useGetPublicStats();  
+// framer-motion was loaded on the home page only for this fade — a CSS class does the same
+export default function StatsBar({ initialStats }: { initialStats?: GetPublicStatsResponse | null }) {
+  const { stats, isLoading, isError } = useGetPublicStats(initialStats);
   return (
-    <MotionDiv
-      initial={{ y: 15, opacity: 0 }}
-      whileInView={{ y: 0, opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
+    <div
       className="
+        fade-in-up
         grid grid-cols-2 sm:grid-cols-4
         gap-4 sm:gap-6
         rounded-[calc(var(--radius)+8px)]
@@ -56,6 +53,6 @@ export default function StatsBar() {
           </div>
         );
       })}
-    </MotionDiv>
+    </div>
   );
 }

@@ -17,7 +17,7 @@ const contactLimit = rateLimit({
   message: { message: "Too many messages, try later." },
 });
 
-// PUBLIC (send message)
+// PUBLIC
 contactRouter.post(
   "/",
   contactLimit,
@@ -25,7 +25,7 @@ contactRouter.post(
   publicController.post
 );
 
-// ADMIN (get all)
+// ADMIN 
 contactRouter.get(
   "/",
   authUser,
@@ -33,7 +33,6 @@ contactRouter.get(
   adminController.get
 );
 
-// ADMIN (get one)
 contactRouter.get(
   "/:id",
   authUser,
@@ -42,7 +41,6 @@ contactRouter.get(
   adminController.getOne
 );
 
-// ADMIN (delete)
 contactRouter.delete(
   "/:id",
   authUser,
@@ -51,7 +49,6 @@ contactRouter.delete(
   adminController.remove
 );
 
-// ADMIN (answer)
 contactRouter.patch(
   "/:id/answer",
   authUser,

@@ -1,4 +1,3 @@
-import { MotionDiv } from "../../utils/providers/MotionWrapper";
 import SectionHeader from "./sectionHeader";
 const STEPS = [
   {
@@ -29,13 +28,11 @@ export default function HowItWorks() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {STEPS.map((step, i) => (
-          <MotionDiv
+          <div
             key={i}
-            initial={{ y: 20, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: i * 0.1 }}
+            style={{ animationDelay: `${i * 0.1}s` }}
             className="
+              fade-in-up
               relative flex flex-col items-center text-center gap-3
               p-6 rounded-[var(--radius)]
               border border-[var(--border)]
@@ -50,7 +47,7 @@ export default function HowItWorks() {
             </div>
             <h3 className="font-bold text-[var(--foreground)]">{step.title}</h3>
             <p className="text-xs sm:text-sm text-[var(--foreground-muted)] leading-relaxed">{step.desc}</p>
-          </MotionDiv>
+          </div>
         ))}
       </div>
     </div>

@@ -12,15 +12,17 @@ interface VerifiedStore {
   meta?: { ratings?: number; reviewsCount?: number };
 }
 
-interface GetVerifiedStoresResponse {
+export interface GetVerifiedStoresResponse {
   success: boolean;
   data: VerifiedStore[];
 }
 
 /* PUBLIC — list of verified stores (e.g. homepage) */
-export const useGetVerifiedStores = () => {
+export const useGetVerifiedStores = (initialData?: GetVerifiedStoresResponse | null) => {
   const { data, isLoading, isError } = useGet<GetVerifiedStoresResponse>(
-    "/stores/verified"
+    "/stores/verified",
+    undefined,
+    initialData ? { initialData } : undefined
   );
 
   return {

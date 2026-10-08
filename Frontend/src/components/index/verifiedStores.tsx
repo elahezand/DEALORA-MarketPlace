@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useGetVerifiedStores } from "@/services/Store/useVerifyStore";
-export default function VerifiedStores() {
-  const { stores, isLoading, isError } = useGetVerifiedStores();
+import { GetVerifiedStoresResponse, useGetVerifiedStores } from "@/services/Store/useVerifyStore";
+export default function VerifiedStores({ initialStores }: { initialStores?: GetVerifiedStoresResponse | null }) {
+  const { stores, isLoading, isError } = useGetVerifiedStores(initialStores);
 
   if (!isLoading && (!stores || stores.length === 0)) return null;
   if (isError) return null;

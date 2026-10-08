@@ -5,7 +5,7 @@ import { toast } from "sonner";
 export const useDeleteComment = () => {
   const queryClient = useQueryClient();
 
-  return useDelete<any, { id: string }>((d) => `/comments/${d.id}`, {
+  return useDelete<any, { id: string }>((d) => `/comments/admin/${d.id}`, {
     onSuccess: () => {
       toast.success("Comment deleted");
       queryClient.invalidateQueries({ queryKey: ["/comments/admin"] });

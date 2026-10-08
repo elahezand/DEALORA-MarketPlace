@@ -5,7 +5,8 @@ const adminShipItem = async (req, res, next) => {
     const order = await adminOrderService.adminShipItem(
       req.params.id,
       req.params.itemId,
-      req.parsed.data.trackingCode
+      req.parsed.data.trackingCode,
+      req.parsed.data.estimatedDeliveryAt || null
     );
 
     res.status(200).json({
@@ -40,7 +41,6 @@ const getByIdAdmin = async (req, res, next) => {
   }
 };
 
-/* Patch Order (Admin) */
 const patchAdmin = async (req, res, next) => {
   try {
     const order = await adminOrderService.updateOrder(
@@ -57,24 +57,6 @@ const patchAdmin = async (req, res, next) => {
   }
 };
 
-const getStuckOrders = async (req, res, next) => {
-  try {
-    const result = await adminOrderService.getStuckOrders();
-    res.status(200).json({ success: true, ...result });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const repairOrder = async (req, res, next) => {
-  try {
-    const order = await adminOrderService.repairOrder(req.params.id);
-    res.status(200).json({ success: true, message: "Order finalized", data: order });
-  } catch (err) {
-    next(err);
-  }
-};
-
 const runAutoComplete = async (req, res, next) => {
   try {
     const result = await adminOrderService.runAutoComplete();
@@ -84,20 +66,63 @@ const runAutoComplete = async (req, res, next) => {
   }
 };
 
-const markDelivered = async (req, res, next) => {
+const adminConfirmCash = async (req, res, next) => {
   try {
-    const order = await adminOrderService.markDelivered(req.params.id);
-    res.status(200).json({ success: true, message: "Order marked as delivered", data: order });
+    const { order, paid, completed } = await adminOrderService.adminConfirmCash(
+      req.params.id,
+      req.params.itemId,
+      req.user._id
+    );
+    res.status(200).json({
+      success: true,
+      message: completed
+        ? "Cash confirmed — order completed"
+        : paid
+          ? "Cash confirmed — the order is paid"
+          : "Cash confirmed for this item",
+      data: order,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const adminReportCashMissing = async (req, res, next) => {
+  try {
+    const { order, outcome } = await adminOrderService.adminReportCashMissing(
+      req.params.id,
+      req.params.itemId,
+      req.user._id,
+      req.parsed.data.note
+    );
+    res.status(200).json({
+      success: true,
+      message: outcome === "cancelled" ? "Order cancelled — the stock was returned" : "Marked as a cash dispute",
+      data: order,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const adminSetDeliveryEstimate = async (req, res, next) => {
+  try {
+    const order = await adminOrderService.adminSetDeliveryEstimate(
+      req.params.id,
+      req.params.itemId,
+      req.parsed.data.estimatedDeliveryAt
+    );
+    res.status(200).json({ success: true, message: "Delivery time updated", data: order });
   } catch (err) {
     next(err);
   }
 };
 
 module.exports = {
-  markDelivered,
+  adminSetDeliveryEstimate,
+  adminConfirmCash,
+  adminReportCashMissing,
   runAutoComplete,
-  getStuckOrders,
-  repairOrder,
   getAdmin,
   getByIdAdmin,
   patchAdmin,

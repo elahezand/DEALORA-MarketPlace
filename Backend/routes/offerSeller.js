@@ -2,7 +2,6 @@ const express = require("express");
 const offerSellerRouter = express.Router();
 
 const validate = require("../middlewares/validate");
-const cacheMiddleware = require("../middlewares/cache");
 const validateObjectIdParam = require("../middlewares/objectId");
 
 const {
@@ -30,50 +29,13 @@ const {
   approveOfferSchema,
 } = require("../validators/sellerOffer");
 
-// PRODUCTS THE SELLER CAN OFFER ON (SELLER) — only its store's category
-offerSellerRouter.get(
-  "/products",
-  authUser,
-  authSeller,
-  getOfferableProducts
-);
-
-// CREATE OFFER (SELLER)
-offerSellerRouter.post(
-  "/me",
-  authUser,
-  authSeller,
-  validate(createOfferSchema),
-  createOffer
-);
-
-// GET ALL OFFERS (ADMIN)
+// (ADMIN)
 offerSellerRouter.get(
   "/",
   authUser,
   authAdmin,
   getAllOffers
 );
-
-// GET MY OFFERS (SELLER)
-offerSellerRouter.get(
-  "/me",
-  authUser,
-  authSeller,
-  getMyOffers
-);
-
-// UPDATE OFFER (SELLER OWNER)
-offerSellerRouter.patch(
-  "/me/:offerId",
-  authUser,
-  authSeller,
-  validateObjectIdParam("offerId"),
-  validate(updateOfferSchema),
-  updateOffer
-);
-
-// APPROVE OFFER (ADMIN)
 offerSellerRouter.patch(
   "/:offerId/approve",
   authUser,
@@ -82,8 +44,45 @@ offerSellerRouter.patch(
   validate(approveOfferSchema),
   approveOffer
 );
+offerSellerRouter.delete(
+  "/admin/:offerId",
+  authUser,
+  authAdmin,
+  validateObjectIdParam("offerId"),
+  adminDeleteOffer
+);
 
-// DELETE OFFER (SELLER — own pending offer)
+// (SELLER)
+offerSellerRouter.get(
+  "/me",
+  authUser,
+  authSeller,
+  getMyOffers
+);
+offerSellerRouter.post(
+  "/me",
+  authUser,
+  authSeller,
+  validate(createOfferSchema),
+  createOffer
+);
+
+offerSellerRouter.patch(
+  "/me/:offerId",
+  authUser,
+  authSeller,
+  validateObjectIdParam("offerId"),
+  validate(updateOfferSchema),
+  updateOffer
+);
+/*PRODUCTS THE SELLER CAN OFFER ON (SELLER) — only its store's category*/
+offerSellerRouter.get(
+  "/products",
+  authUser,
+  authSeller,
+  getOfferableProducts
+);
+
 offerSellerRouter.delete(
   "/me/:offerId",
   authUser,
@@ -92,13 +91,5 @@ offerSellerRouter.delete(
   deleteOffer
 );
 
-// DELETE OFFER (ADMIN — any offer)
-offerSellerRouter.delete(
-  "/admin/:offerId",
-  authUser,
-  authAdmin,
-  validateObjectIdParam("offerId"),
-  adminDeleteOffer
-);
 
 module.exports = offerSellerRouter;

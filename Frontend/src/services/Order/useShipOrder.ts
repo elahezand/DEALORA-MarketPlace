@@ -6,6 +6,8 @@ import { ISellerOrder } from "@/types/Order";
 export interface ShipOrderPayload {
   order: ISellerOrder;
   trackingCode?: string;
+  /** ISO string — when the buyer should receive it */
+  estimatedDeliveryAt?: string;
 }
 
 /* Ships every item of this seller in the order that isn't shipped yet
@@ -14,10 +16,13 @@ export const useShipOrder = (onSuccessCallback?: () => void) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ order, trackingCode }: ShipOrderPayload) => {
+    mutationFn: async ({ order, trackingCode, estimatedDeliveryAt }: ShipOrderPayload) => {
       const pending = order.items.filter((item) => item.fulfillment?.status !== "shipped");
       for (const item of pending) {
-        await api.patch(`/orders/seller/${order._id}/items/${item._id}/ship`, { trackingCode });
+        await api.patch(`/orders/seller/${order._id}/items/${item._id}/ship`, {
+          trackingCode,
+          estimatedDeliveryAt,
+        });
       }
     },
     onSuccess: () => {

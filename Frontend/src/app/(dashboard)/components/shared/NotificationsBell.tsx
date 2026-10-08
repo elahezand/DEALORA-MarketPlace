@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   HiOutlineBellAlert,
   HiOutlineCheckCircle,
@@ -16,12 +17,19 @@ interface AdminNotification {
   msg: string;
   see: number;
   createdAt: string;
+  /** where the notification points to, e.g. /dashboard/orders/:id */
+  link?: string | null;
 }
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const { data: response } = useGet<{ success: boolean; data: AdminNotification[] }>("/notifications");
+  const { data: response } = useGet<{ success: boolean; data: AdminNotification[] }>(
+      "/notifications",
+      undefined,
+      // shipping / delivery-time messages should show up without a page reload
+      { staleTime: 30 * 1000, refetchInterval: 60 * 1000, refetchOnWindowFocus: true }
+    );
   const data = response?.data;
 
   const notifications = (data ?? []).slice(0, 6);
@@ -103,15 +111,32 @@ export default function NotificationsBell() {
                     />
 
                     <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-xs leading-snug ${
-                          seen
-                            ? "text-[var(--foreground-muted)]"
-                            : "text-[var(--foreground)] font-semibold"
-                        }`}
-                      >
-                        {n.msg}
-                      </p>
+                      {n.link ? (
+                        <Link
+                          href={n.link}
+                          onClick={() => {
+                            if (!seen) markSeen({ id: n._id });
+                            setOpen(false);
+                          }}
+                          className={`block text-xs leading-snug hover:underline ${
+                            seen
+                              ? "text-[var(--foreground-muted)]"
+                              : "text-[var(--foreground)] font-semibold"
+                          }`}
+                        >
+                          {n.msg}
+                        </Link>
+                      ) : (
+                        <p
+                          className={`text-xs leading-snug ${
+                            seen
+                              ? "text-[var(--foreground-muted)]"
+                              : "text-[var(--foreground)] font-semibold"
+                          }`}
+                        >
+                          {n.msg}
+                        </p>
+                      )}
 
                       <p className="text-[10px] text-[var(--foreground-subtle)] mt-0.5">
                         {new Date(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
@@ -23,11 +23,13 @@ export function AuthGuard({
   
   const userRoles = user?.role ?? [];
   
-  const allowedRoles: Role[] | null = requireRole
-    ? Array.isArray(requireRole)
-      ? requireRole
-      : [requireRole]
-    : null;
+  // memoized: a new array every render re-ran the effect below on every render
+  const roleKey = Array.isArray(requireRole) ? requireRole.join(",") : requireRole ?? "";
+  const allowedRoles: Role[] | null = useMemo(
+    () => (roleKey ? (roleKey.split(",") as Role[]) : null),
+    [roleKey]
+  );
+  const toastShown = useRef(false);
 
   const isAuthorized = allowedRoles
     ? allowedRoles.some((role) => userRoles.includes(role))
@@ -36,7 +38,10 @@ export function AuthGuard({
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      toast.error("Please log in to access this page");
+      if (!toastShown.current) {
+        toastShown.current = true;
+        toast.error("Please log in to access this page");
+      }
       router.replace("/");
       return;
     }

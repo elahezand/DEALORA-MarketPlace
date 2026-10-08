@@ -30,7 +30,8 @@ const ItemsList = ({ data }: { data: ListingProps[] }) => {
 
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-1">
-      < ListingsSection listings={data ? data : []} />
+      {/* first row is above the fold → load those images eagerly for LCP */}
+      <ListingsSection listings={data ? data : []} priorityCount={3} />
     </div>
   );
 };

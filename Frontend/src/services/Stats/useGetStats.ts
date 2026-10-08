@@ -1,4 +1,5 @@
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
+import { ADMIN_FRESH } from "@/utils/hooks/adminQueryOptions";
 
 interface PublicStats {
   activeListings: number;
@@ -8,14 +9,17 @@ interface PublicStats {
   todayListings: number;
 }
 
-interface GetPublicStatsResponse {
+export interface GetPublicStatsResponse {
   success: boolean;
   data: PublicStats;
 }
 
-export const useGetPublicStats = () => {
+export const useGetPublicStats = (initialData?: GetPublicStatsResponse | null) => {
   const { data, isLoading, isError } = useGet<GetPublicStatsResponse>(
-    "/stats"
+    "/stats",
+    undefined,
+    // server-rendered data → no client request, no text jumping after hydration
+    initialData ? { initialData } : undefined
   );
 
   return {
@@ -38,7 +42,9 @@ interface GetAdminStatsResponse {
  
 export const useGetAdminStats = () => {
   const { data, isLoading, isError } = useGet<GetAdminStatsResponse>(
-    "/stats/admin"
+    "/stats/admin",
+    undefined,
+    ADMIN_FRESH
   );
  
   return {
@@ -63,7 +69,8 @@ interface GetTimeseriesResponse {
 export const useGetAdminStatsTimeseries = (days = 14) => {
   const { data, isLoading, isError } = useGet<GetTimeseriesResponse>(
     "/stats/admin/timeseries",
-    { days }
+    { days },
+    ADMIN_FRESH
   );
 
   return {

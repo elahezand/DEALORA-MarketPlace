@@ -16,10 +16,14 @@ const ICON_COLOR_CLASSES = [
   "cat-icon-sand",
 ] as const;
 
-export default function CategoriesSection() {
+export default function CategoriesSection({ initialData }: { initialData?: CategoriesTypeResponse | null }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const { data, isLoading } = useGet<CategoriesTypeResponse>("/categories");
+  const { data, isLoading } = useGet<CategoriesTypeResponse>(
+    "/categories",
+    undefined,
+    initialData ? { initialData } : undefined
+  );
 
   const handleClick = (categorySlug: string) => {
     startTransition(() => {
@@ -54,8 +58,8 @@ export default function CategoriesSection() {
                      hover:bg-gradient-to-br hover:from-primary-50 
                      hover:to-secondary-50
                      dark:hover:from-primary-900/30 dark:hover:to-secondary-900/30
-                     transition-all duration-300 ease-out
-                     hover:shadow-xl hover:-translate-y-1
+                     transition-[transform,border-color,background-color] duration-300 ease-out
+                     hover:-translate-y-1
                      disabled:opacity-60 disabled:cursor-not-allowed active:scale-95"
         >
           {/* Background gradient effect */}

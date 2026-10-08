@@ -10,7 +10,7 @@ const cacheMiddleware = require("../middlewares/cache");
 
 const { createArticleSchema, updateArticleSchema } = require("../validators/article");
 
-/* ─── ADMIN — must come before "/:id" ─────────────────────────────────── */
+//ADMIN
 articleRouter.get("/admin", authUser, authAdmin, adminController.getAllAdmin);
 articleRouter.get(
   "/admin/:id",
@@ -45,7 +45,7 @@ articleRouter.delete(
   adminController.remove
 );
 
-/* ─── PUBLIC ──────────────────────────────────────────────────────────── */
+// PUBLIC
 articleRouter.get("/", cacheMiddleware(120), publicController.getAll);
 articleRouter.get("/:id", validateObjectIdParam("id"), cacheMiddleware(120), publicController.getOne);
 

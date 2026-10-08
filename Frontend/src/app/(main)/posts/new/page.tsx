@@ -12,7 +12,7 @@ export default async function Page() {
     return (
             <div className="w-full max-w-5xl mx-auto p-4 relative z-10 animate-in fade-in zoom-in-95 duration-500">
             <NewPost
-                data={categories}
+                data={categories ?? undefined}
                 isLoading={false} />
         </div>
     );

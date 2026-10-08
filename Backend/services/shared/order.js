@@ -9,6 +9,12 @@ const { escapeRegex } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 const logger = require("../../utils/logger");
 const { round2 } = require("../../utils/pricing");
+// when an item should have arrived (no delivery time → 3 days after shipping)
+const deliveryDueAt = (item) => {
+  if (item.fulfillment?.estimatedDeliveryAt) return new Date(item.fulfillment.estimatedDeliveryAt);
+  const shippedAt = item.fulfillment?.shippedAt;
+  return shippedAt ? new Date(new Date(shippedAt).getTime() + 3 * 24 * 60 * 60 * 1000) : null;
+};
 
 const buildOrderIdSearchExpr = (q) => {
   if (!q || !String(q).trim()) return null;
@@ -22,7 +28,6 @@ const buildOrderIdSearchExpr = (q) => {
 };
 
 const finalizeOrder = async (order) => {
-  // 1) coupon usage — once per order
   if (order.coupon?.couponId && !order.couponCounted) {
     await Coupon.updateOne({ _id: order.coupon.couponId }, { $inc: { usedCount: 1 } });
     order.couponCounted = true;
@@ -66,21 +71,25 @@ const finalizeOrder = async (order) => {
     }
     // 3) hold the seller's money — once per item (released after delivery)
     if (item.store && !item.walletCredited) {
-      await Store.updateOne(
-        { _id: item.store },
-        { $inc: { "wallet.pending": item.finalPrice * item.quantity } }
-      );
-      item.walletCredited = true;
+      if (order.paymentMethod === "cash") {
+
+        item.paidDirectToStore = true;
+        item.walletCredited = true;
+        item.walletReleased = true;
+      } else {
+        await Store.updateOne(
+          { _id: item.store },
+          { $inc: { "wallet.pending": item.finalPrice * item.quantity } }
+        );
+        item.walletCredited = true;
+      }
       await order.save();
     }
   }
   order.status = "processing";
 };
 
-/*
- * Buyer received the order → the held money becomes withdrawable.
- * Each item is released once, so calling this again changes nothing.
- */
+/*Buyer received the order → the held money becomes withdrawable */
 const releaseOrderFunds = async (order) => {
   for (const item of order.items) {
     if (!item.store || !item.walletCredited || item.walletReleased) continue;
@@ -100,15 +109,12 @@ const releaseOrderFunds = async (order) => {
   }
 };
 
-/*
- * Order cancelled before delivery → give the stock back, drop the held money
- * and give the coupon use back. Runs once (revertedAt).
- */
+/* Order cancelled before delivery → give the stock back, drop the held money
+ * and give the coupon use back. Runs once (revertedAt)*/
 const revertOrder = async (order) => {
   if (order.revertedAt) return;
 
   for (const item of order.items) {
-    // money is only reverted while it is still held
     if (item.store && item.walletCredited && !item.walletReleased) {
       await Store.updateOne(
         { _id: item.store },
@@ -156,41 +162,98 @@ const revertOrder = async (order) => {
   await order.save();
 };
 
-/*
- * Buyers often never press "I received it". A shipped order is completed
- * automatically after AUTO_COMPLETE_DAYS so sellers still get paid.
- */
-const AUTO_COMPLETE_DAYS = Number(process.env.ORDER_AUTO_COMPLETE_DAYS || 7);
+/* paid order delivered → completed, seller's money released */
 const completeDeliveredOrder = async (order, { auto = false } = {}) => {
+  if (order.paymentStatus !== "paid") {
+    throw new AppError(400, "This order isn't paid yet");
+  }
+
   order.status = "completed";
   order.isDelivered = true;
   order.deliveredAt = order.deliveredAt || new Date();
   if (auto) order.autoCompletedAt = new Date();
-  if (order.paymentMethod === "cash") order.paymentStatus = "paid";
   await order.save();
 
   await releaseOrderFunds(order);
 };
 
-/* shipped orders the buyer never confirmed → completed after AUTO_COMPLETE_DAYS */
-const autoCompleteShippedOrders = async () => {
-  const deadline = new Date(Date.now() - AUTO_COMPLETE_DAYS * 24 * 60 * 60 * 1000);
+/* store (or admin for site items) confirms the cash → paid, completes if buyer already confirmed */
+const markCashCollected = async (order, items, userId) => {
 
-  const orders = await Order.find({
-    status: "shipped",
-    paymentStatus: "paid",
-    shippedAt: { $lte: deadline },
-    autoCompletedAt: null,
-  }).limit(200);
-
-  for (const order of orders) {
-    await completeDeliveredOrder(order, { auto: true });
-    logger.info(`[order ${order._id}] auto-completed after ${AUTO_COMPLETE_DAYS} days, seller funds released`);
+  if (order.paymentMethod !== "cash") {
+    throw new AppError(400, "This order wasn't paid in cash");
   }
 
-  return orders.length;
+  if (!["processing", "shipped"].includes(order.status)) {
+    throw new AppError(400, `Cash can't be confirmed on a ${order.status} order`);
+  }
+  const open = items.filter((item) => !item.cashCollectedAt);
+  if (!open.length) throw new AppError(409, "The cash for these items is already confirmed");
+
+  if (open.some((item) => item.fulfillment?.status !== "shipped")) {
+    throw new AppError(400, "Ship the items first — cash is paid on delivery");
+  }
+
+  const now = new Date();
+  for (const item of open) {
+    item.cashCollectedAt = now;
+    item.cashCollectedBy = userId;
+  }
+  order.markModified("items");
+
+  // all items confirmed → paid
+  const allCollected = order.items.every((item) => !!item.cashCollectedAt);
+  if (allCollected) order.paymentStatus = "paid";
+
+  // buyer already confirmed → complete now, otherwise auto-complete later
+  if (allCollected && order.buyerConfirmedAt) {
+    await completeDeliveredOrder(order);
+    return { order, paid: true, completed: true };
+  }
+
+  await order.save();
+  return { order, paid: allCollected, completed: false };
 };
 
+/* store (or admin for site items) says the cash never arrived → cancel, or dispute for admin */
+const reportCashNotReceived = async (order, items, userId, note = null) => {
+
+  if (order.paymentMethod !== "cash") {
+    throw new AppError(400, "This order wasn't paid in cash");
+  }
+
+  if (!["processing", "shipped"].includes(order.status)) {
+    throw new AppError(400, `Cash can't be reported on a ${order.status} order`);
+  }
+
+  if (order.cashDispute?.reportedAt) {
+    throw new AppError(409, "Missing cash was already reported for this order — an admin is reviewing it");
+  }
+
+  const open = items.filter((item) => !item.cashCollectedAt);
+  if (!open.length) throw new AppError(409, "You already confirmed the cash for these items");
+  if (open.some((item) => item.fulfillment?.status !== "shipped")) {
+    throw new AppError(400, "Ship the items first — cash is paid on delivery");
+  }
+  // too early → the parcel may still be on its way
+  if (open.some((item) => deliveryDueAt(item) && Date.now() < deliveryDueAt(item))) {
+    throw new AppError(400, "You can report missing cash only after the delivery time");
+  }
+
+  order.cashDispute = { reportedAt: new Date(), reportedBy: userId, note: note || null };
+
+  // buyer never confirmed and no cash came in → parcel was refused, cancel and return stock
+  const anyCashConfirmed = order.items.some((item) => !!item.cashCollectedAt);
+  if (!order.buyerConfirmedAt && !anyCashConfirmed) {
+    order.status = "cancelled";
+    await order.save();
+    await revertOrder(order);
+    return { order, outcome: "cancelled" };
+  }
+
+  await order.save();
+  return { order, outcome: "disputed" };
+};
 
 const maybeMarkOrderShipped = (order) => {
   if (["shipped", "completed", "cancelled"].includes(order.status)) return;
@@ -201,12 +264,35 @@ const maybeMarkOrderShipped = (order) => {
   }
 };
 
-const markItemShipped = (item, trackingCode) => {
+const markItemShipped = (item, trackingCode, estimatedDeliveryAt = null) => {
   item.fulfillment = {
     status: "shipped",
     trackingCode: trackingCode || item.fulfillment?.trackingCode || null,
     shippedAt: new Date(),
+    estimatedDeliveryAt: estimatedDeliveryAt || null,
   };
+};
+
+/** order.expectedDeliveryAt = the latest arrival time among the items that have one */
+const refreshExpectedDelivery = (order) => {
+  const times = (order.items || [])
+    .map((item) => item.fulfillment?.estimatedDeliveryAt)
+    .filter(Boolean)
+    .map((d) => new Date(d).getTime());
+  order.expectedDeliveryAt = times.length ? new Date(Math.max(...times)) : null;
+};
+
+/** changes the expected arrival of an item that already shipped */
+const setItemDeliveryEstimate = (order, item, estimatedDeliveryAt) => {
+  if (["completed", "cancelled"].includes(order.status)) {
+    throw new AppError(400, `The delivery time of a ${order.status} order can't be changed`);
+  }
+  if (item.fulfillment?.status !== "shipped") {
+    throw new AppError(400, "Ship the item first, then set its delivery time");
+  }
+  item.fulfillment.estimatedDeliveryAt = estimatedDeliveryAt;
+  order.markModified("items");
+  refreshExpectedDelivery(order);
 };
 
 const assertShippable = (order) => {
@@ -217,12 +303,15 @@ const assertShippable = (order) => {
 
 module.exports = {
   completeDeliveredOrder,
-  autoCompleteShippedOrders,
   releaseOrderFunds,
   revertOrder,
   buildOrderIdSearchExpr,
   finalizeOrder,
   maybeMarkOrderShipped,
   markItemShipped,
+  refreshExpectedDelivery,
+  setItemDeliveryEstimate,
+  markCashCollected,
+  reportCashNotReceived,
   assertShippable,
 };

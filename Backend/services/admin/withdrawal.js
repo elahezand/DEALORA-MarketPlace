@@ -21,31 +21,32 @@ const getAllWithdrawals = async (query = {}) => {
 };
 
 const processWithdrawal = async (id, adminId, data) => {
-  const withdrawal = await Withdrawal.findById(id);
-  if (!withdrawal) throw new AppError(404, "Withdrawal not found");
+  const set = {
+    status: data.status,
+    processedBy: adminId,
+    processedAt: new Date(),
+  };
+  if (data.status === "rejected") set.rejectReason = data.rejectReason;
+  if (data.status === "completed") set.trackingCode = data.trackingCode || null;
 
-  if (withdrawal.status === "completed" || withdrawal.status === "rejected") {
-    throw new AppError(400, "This withdrawal has already been finalized");
+  // claim + change in ONE atomic step: two clicks / two admins can't both reject it
+  // (which used to give the money back twice)
+  const withdrawal = await Withdrawal.findOneAndUpdate(
+    { _id: id, status: { $in: ["pending", "processing"] } },
+    { $set: set },
+    { returnDocument: "after" }
+  );
+
+  if (!withdrawal) {
+    const exists = await Withdrawal.exists({ _id: id });
+    if (!exists) throw new AppError(404, "Withdrawal not found");
+    throw new AppError(409, "This withdrawal has already been finalized");
   }
 
   if (data.status === "rejected") {
-    const store = await Store.findById(withdrawal.store);
-    if (store) {
-      store.wallet.balance = (store.wallet?.balance || 0) + withdrawal.amount;
-      await store.save();
-    }
-    withdrawal.rejectReason = data.rejectReason;
+    await Store.updateOne({ _id: withdrawal.store }, { $inc: { "wallet.balance": withdrawal.amount } });
   }
 
-  if (data.status === "completed") {
-    withdrawal.trackingCode = data.trackingCode || null;
-  }
-
-  withdrawal.status = data.status;
-  withdrawal.processedBy = adminId;
-  withdrawal.processedAt = new Date();
-
-  await withdrawal.save();
   return withdrawal;
 };
 

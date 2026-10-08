@@ -14,9 +14,10 @@ const {
     UpdateCategorySchema,
 } = require("../validators/category");
 
-/*  PUBLIC  */
+//PUBLIC 
 categoryRouter.get(
     "/",
+    cacheMiddleware(300),
     publicController.get
 );
 
@@ -29,11 +30,11 @@ categoryRouter.get(
 categoryRouter.get(
     "/:id",
     validateObjectIdParam("id"),
+    cacheMiddleware(300),
     publicController.getOne
 );
 
-/*  ADMIN  */
-
+//ADMIN
 categoryRouter.post(
     "/",
     authUser,

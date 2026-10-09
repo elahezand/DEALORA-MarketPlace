@@ -48,6 +48,13 @@ const shipOrderSchema = z.object({
     estimatedDeliveryAt: deliveryDate.optional(),
 });
 
+// which store's part the buyer received (store id, or "site"); empty = everything shipped
+const confirmDeliverySchema = z
+    .object({
+        group: z.string().regex(/^([a-f0-9]{24}|site)$/, "Invalid group").optional(),
+    })
+    .optional();
+
 const cashNotReceivedSchema = z.object({
     note: z.string().trim().max(500).optional(),
 });
@@ -64,4 +71,5 @@ module.exports = {
     shipOrderSchema,
     deliveryEstimateSchema,
     cashNotReceivedSchema,
+    confirmDeliverySchema,
 };

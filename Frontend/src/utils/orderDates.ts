@@ -99,6 +99,12 @@ export const getDeliveryInfo = (order: IOrder): DeliveryInfo => {
     return { label: "Shipped", date: getShippedAt(order), tone: "info", note: "On its way" };
   }
 
+  // some stores shipped, others not yet
+  const active = (order.items ?? []).filter((item) => !item.cancelledAt);
+  if (active.some((item) => item.fulfillment?.status === "shipped")) {
+    return { label: "Partially shipped", date: getExpectedDelivery(order), tone: "info", note: "Some packages are on their way" };
+  }
+
   const expected = getExpectedShipBy(order);
   if (expected) {
     const late = expected.getTime() < Date.now();
@@ -110,4 +116,51 @@ export const getDeliveryInfo = (order: IOrder): DeliveryInfo => {
   }
 
   return { label: "Not shipped yet", date: null, tone: "neutral" };
+};
+
+/* ---------- parts of an order: each store's items (or the site's) ---------- */
+
+type DateLikeField = string | Date | null | undefined;
+
+/** the fields the part helpers need — works for buyer, seller and admin item types */
+interface PartItem {
+  store?: unknown;
+  cancelledAt?: DateLikeField;
+  deliveredAt?: DateLikeField;
+  fulfillment?: { status?: string; shippedAt?: DateLikeField; estimatedDeliveryAt?: DateLikeField };
+}
+
+export const groupKeyOf = (item: PartItem): string => {
+  const store = item.store as string | { _id?: string } | null | undefined;
+  if (!store) return "site";
+  return typeof store === "string" ? store : String(store._id ?? "site");
+};
+
+/** items grouped by store, in the order they appear */
+export const groupOrderItems = <T extends PartItem>(items: T[]) => {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const key = groupKeyOf(item);
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  }
+  return [...groups.entries()].map(([key, groupItems]) => ({ key, items: groupItems }));
+};
+
+export type PartStatus = "preparing" | "shipped" | "delivered" | "cancelled";
+
+/** where one store's part is: preparing → shipped → delivered (or cancelled) */
+export const partStatus = (items: PartItem[]): PartStatus => {
+  const active = items.filter((item) => !item.cancelledAt);
+  if (!active.length) return "cancelled";
+  if (active.every((item) => item.deliveredAt)) return "delivered";
+  if (active.every((item) => item.fulfillment?.status === "shipped")) return "shipped";
+  return "preparing";
+};
+
+/** when an item should have arrived (no delivery time → 3 days after shipping), as ms */
+export const itemDueTime = (item: PartItem): number => {
+  const eta = item.fulfillment?.estimatedDeliveryAt;
+  const shipped = item.fulfillment?.shippedAt;
+  if (eta) return new Date(eta).getTime();
+  return shipped ? new Date(shipped).getTime() + 3 * 24 * 60 * 60 * 1000 : 0;
 };

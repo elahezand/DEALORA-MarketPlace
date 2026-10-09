@@ -5,30 +5,34 @@ const notifyUser = require("../../utils/notify");
 const logger = require("../../utils/logger");
 const { verifyPayment } = require("./zarinpal");
 const { walletSpentOn } = require("./wallet");
-const { finalizeOrder, revertOrder, completeDeliveredOrder } = require("./order");
+const {
+  finalizeOrder, revertOrder, completeItems, groupKeys, groupItems, deliveryDueAt,
+} = require("./order");
 
 // an order that never reached the payment step is dropped after this
 const ABANDON_AFTER_MS = Number(process.env.ORDER_ABANDON_MINUTES || 30) * 60 * 1000;
 const BATCH = 100;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-// a shipped order the buyer never confirmed is completed after this many days
+// a shipped part the buyer never confirmed is completed this many days after its delivery time
 const AUTO_COMPLETE_DAYS = Number(process.env.ORDER_AUTO_COMPLETE_DAYS || 7);
-// cash on delivery — when to ask "did you receive the cash?":
-//   1 day after the promised delivery time, or (no delivery time) N days after shipping
-const COD_ASK_AFTER_SHIP_DAYS = Number(process.env.ORDER_AUTO_COMPLETE_DAYS || 7);
+// cash on delivery — ask "did you receive the cash?" this many days after the delivery time
 const COD_ASK_AFTER_ETA_DAYS = Number(process.env.ORDER_COD_ASK_AFTER_ETA_DAYS || 1);
 // ask again every N days while there's no answer
 const COD_REMIND_EVERY_DAYS = Number(process.env.ORDER_COD_REMIND_DAYS || 3);
-// no answer this many days after the first question → an admin takes over
+// no answer this many days after it was due → an admin takes over
 const COD_ESCALATE_DAYS = Number(process.env.ORDER_COD_ESCALATE_DAYS || 14);
 
-/** when the cash should have been handed over */
-const cashDueAt = (order) => {
-  if (order.expectedDeliveryAt) {
-    return new Date(new Date(order.expectedDeliveryAt).getTime() + COD_ASK_AFTER_ETA_DAYS * DAY_MS);
-  }
-  return new Date(new Date(order.shippedAt).getTime() + COD_ASK_AFTER_SHIP_DAYS * DAY_MS);
+/** latest delivery time among some items */
+const latestDue = (items) => {
+  const times = items.map(deliveryDueAt).filter(Boolean).map((d) => d.getTime());
+  return times.length ? Math.max(...times) : null;
+};
+
+/** when the cash for these items should have been handed over */
+const cashDueAt = (items) => {
+  const due = latestDue(items);
+  return due ? new Date(due + COD_ASK_AFTER_ETA_DAYS * DAY_MS) : null;
 };
 
 /** cash orders an admin must look at: escalated (no answer) or disputed (shared with the admin filter) */
@@ -40,7 +44,9 @@ const overdueCashQuery = () => ({
 });
 
 const isIncomplete = (order) =>
-  !order.items.every((i) => i.stockReserved && (!i.store || i.walletCredited));
+  !order.items
+    .filter((i) => !i.cancelledAt)
+    .every((i) => i.stockReserved && (!i.store || i.walletCredited));
 
 /* 1) money already taken, finalize never finished → continue it */
 const completeHalfFinishedOrders = async () => {
@@ -48,8 +54,8 @@ const completeHalfFinishedOrders = async () => {
     finalizedAt: { $ne: null },
     status: { $nin: ["cancelled"] },
     $or: [
-      { "items.stockReserved": false },
-      { items: { $elemMatch: { store: { $ne: null }, walletCredited: false } } },
+      { items: { $elemMatch: { cancelledAt: null, stockReserved: false } } },
+      { items: { $elemMatch: { cancelledAt: null, store: { $ne: null }, walletCredited: false } } },
     ],
   }).limit(BATCH);
 
@@ -57,7 +63,6 @@ const completeHalfFinishedOrders = async () => {
   for (const order of orders) {
     if (order.paymentMethod !== "cash" && order.paymentStatus !== "paid") continue;
     await finalizeOrder(order);
-    
     await order.save();
     fixed++;
     logger.info(`[sweeper] finished order ${order._id}`);
@@ -115,49 +120,65 @@ const resolvePendingPayments = async () => {
   return { paid, cancelled };
 };
 
-/* 3) shipped orders the buyer never confirmed → completed after AUTO_COMPLETE_DAYS */
+/* 3) each store's part: delivered + AUTO_COMPLETE_DAYS and buyer didn't confirm → completed, seller paid */
 const autoCompleteShippedOrders = async () => {
-  const deadline = new Date(Date.now() - AUTO_COMPLETE_DAYS * DAY_MS);
+  const now = Date.now();
 
   const orders = await Order.find({
-    status: "shipped",
-    paymentStatus: "paid",
-    shippedAt: { $lte: deadline },
-    $or: [{ expectedDeliveryAt: null }, { expectedDeliveryAt: { $lte: deadline } }],
-    autoCompletedAt: null,
+    status: { $in: ["processing", "shipped"] },
+    $or: [{ paymentStatus: "paid" }, { paymentMethod: "cash" }],
+    items: {
+      $elemMatch: {
+        cancelledAt: null,
+        deliveredAt: null,
+        "fulfillment.status": "shipped",
+        "fulfillment.shippedAt": { $lte: new Date(now - AUTO_COMPLETE_DAYS * DAY_MS) },
+      },
+    },
   }).limit(BATCH);
 
+  let completed = 0;
   for (const order of orders) {
-    await completeDeliveredOrder(order, { auto: true });
-    logger.info(`[sweeper] order ${order._id} auto-completed`);
+    for (const key of groupKeys(order)) {
+      const items = groupItems(order, key).filter((item) => !item.deliveredAt);
+      if (!items.length || items.some((item) => item.fulfillment?.status !== "shipped")) continue;
+      if (now < latestDue(items) + AUTO_COMPLETE_DAYS * DAY_MS) continue;
+      // cash: never on silence — only once the cash was confirmed
+      if (order.paymentMethod === "cash" && items.some((item) => !item.cashCollectedAt)) continue;
+
+      await completeItems(order, items, { auto: true });
+      completed++;
+      logger.info(`[sweeper] order ${order._id} part ${key} auto-completed`);
+    }
   }
-  return orders.length;
+  return completed;
 };
 
 const notifyAdmins = async (admins, msg, opts) => {
   for (const admin of admins) await notifyUser(admin._id, msg, opts);
 };
 
-const notifyStoreOwners = async (storeIds, msg, opts) => {
-  if (!storeIds.length) return;
-  const stores = await Store.find({ _id: { $in: storeIds } }).select("owner").lean();
-  for (const store of stores) await notifyUser(store.owner, msg, opts);
-};
-
 /*
- * 4) cash orders after delivery time → ask who got the cash, every few days.
+ * 4) cash orders after delivery time → ask who got the cash (each store for its part), every few days.
  * No answer for COD_ESCALATE_DAYS → admins take over. Never cancelled or paid on silence.
  */
 const flagOverdueCashOrders = async () => {
   const now = Date.now();
 
   const orders = await Order.find({
-    status: "shipped",
+    status: { $in: ["processing", "shipped"] },
     paymentMethod: "cash",
     paymentStatus: "pending",
     cashOverdueNotifiedAt: null,
     "cashDispute.reportedAt": null,
-    shippedAt: { $lte: new Date(now - DAY_MS) },
+    items: {
+      $elemMatch: {
+        cancelledAt: null,
+        cashCollectedAt: null,
+        "fulfillment.status": "shipped",
+        "fulfillment.shippedAt": { $lte: new Date(now - DAY_MS) },
+      },
+    },
   }).limit(BATCH);
 
   if (!orders.length) return 0;
@@ -166,56 +187,67 @@ const flagOverdueCashOrders = async () => {
   let handled = 0;
 
   for (const order of orders) {
-    const due = cashDueAt(order).getTime();
-    if (now < due) continue;
-
     const id = String(order._id).slice(-6).toUpperCase();
     const adminLink = `/dashboard/admin/transactions/${order._id}`;
+    let changed = false;
 
-    // no answer for too long → admins
-    if (now >= due + COD_ESCALATE_DAYS * DAY_MS) {
-      await notifyAdmins(
-        admins,
-        `Cash order #${id}: no cash confirmed ${COD_ESCALATE_DAYS} days after delivery — follow up or cancel it`,
-        { type: "cod_overdue", link: adminLink }
-      );
-      order.cashOverdueNotifiedAt = new Date();
+    for (const key of groupKeys(order)) {
+      const items = groupItems(order, key).filter((item) => !item.cashCollectedAt);
+      if (!items.length || items.some((item) => item.fulfillment?.status !== "shipped")) continue;
+
+      const due = cashDueAt(items);
+      if (!due || now < due.getTime()) continue;
+
+      // no answer for too long → admins
+      if (now >= due.getTime() + COD_ESCALATE_DAYS * DAY_MS) {
+        await notifyAdmins(
+          admins,
+          `Cash order #${id}: no cash confirmed ${COD_ESCALATE_DAYS} days after delivery — follow up or cancel it`,
+          { type: "cod_overdue", link: adminLink }
+        );
+        order.cashOverdueNotifiedAt = new Date();
+        changed = true;
+        break;
+      }
+
+      // already asked recently
+      const lastAsked = Math.max(0, ...items.map((item) => (item.cashCheckAskedAt ? new Date(item.cashCheckAskedAt).getTime() : 0)));
+      if (now - lastAsked < COD_REMIND_EVERY_DAYS * DAY_MS) continue;
+
+      const buyerNote = items.some((item) => item.buyerConfirmedAt) ? " The buyer confirmed receipt." : "";
+
+      if (key === "site") {
+        await notifyAdmins(
+          admins,
+          `Cash order #${id} should have been delivered — did the site receive the cash?${buyerNote}`,
+          { type: "cod_check", link: adminLink }
+        );
+      } else {
+        const store = await Store.findById(key).select("owner").lean();
+        if (store) {
+          await notifyUser(
+            store.owner,
+            `Order #${id} should have been delivered — did you receive the cash?${buyerNote}`,
+            { type: "cod_check", link: "/dashboard/seller/orders" }
+          );
+        }
+      }
+
+      const askedAt = new Date();
+      for (const item of items) item.cashCheckAskedAt = askedAt;
+      order.markModified("items");
+      changed = true;
+    }
+
+    if (changed) {
       await order.save();
       handled++;
-      continue;
     }
-
-    // already asked recently
-    const lastAsked = order.cashCheckAskedAt ? new Date(order.cashCheckAskedAt).getTime() : 0;
-    if (now - lastAsked < COD_REMIND_EVERY_DAYS * DAY_MS) continue;
-
-    const open = order.items.filter((item) => !item.cashCollectedAt);
-    const storeIds = [...new Set(open.filter((i) => i.store).map((i) => String(i.store)))];
-    const buyerNote = order.buyerConfirmedAt ? " The buyer confirmed receipt." : "";
-
-    // store items → store owner
-    await notifyStoreOwners(
-      storeIds,
-      `Order #${id} should have been delivered — did you receive the cash?${buyerNote}`,
-      { type: "cod_check", link: "/dashboard/seller/orders" }
-    );
-
-    // site items → admins
-    if (open.some((i) => !i.store)) {
-      await notifyAdmins(
-        admins,
-        `Cash order #${id} should have been delivered — did the site receive the cash?${buyerNote}`,
-        { type: "cod_check", link: adminLink }
-      );
-    }
-
-    order.cashCheckAskedAt = new Date();
-    await order.save();
-    handled++;
   }
 
   return handled;
 };
+
 const runOrderSweeps = async () => {
   const finished = await completeHalfFinishedOrders();
   const payments = await resolvePendingPayments();

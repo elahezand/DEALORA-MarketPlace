@@ -41,6 +41,7 @@ const getByIdAdmin = async (req, res, next) => {
   }
 };
 
+/* Patch Order (Admin) */
 const patchAdmin = async (req, res, next) => {
   try {
     const order = await adminOrderService.updateOrder(
@@ -105,6 +106,24 @@ const adminReportCashMissing = async (req, res, next) => {
   }
 };
 
+const adminCancelGroup = async (req, res, next) => {
+  try {
+    const order = await adminOrderService.adminCancelGroup(req.params.id, req.params.group);
+    res.status(200).json({ success: true, message: "This part of the order was cancelled", data: order });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const adminCancelItem = async (req, res, next) => {
+  try {
+    const order = await adminOrderService.adminCancelItem(req.params.id, req.params.itemId);
+    res.status(200).json({ success: true, message: "Item cancelled", data: order });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const adminSetDeliveryEstimate = async (req, res, next) => {
   try {
     const order = await adminOrderService.adminSetDeliveryEstimate(
@@ -119,6 +138,8 @@ const adminSetDeliveryEstimate = async (req, res, next) => {
 };
 
 module.exports = {
+  adminCancelGroup,
+  adminCancelItem,
   adminSetDeliveryEstimate,
   adminConfirmCash,
   adminReportCashMissing,

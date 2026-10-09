@@ -9,12 +9,12 @@ const storeIncs = [];
 
 const stubs = {
   mongoose: { Types: { ObjectId: class { constructor(v) { this.v = v; } } } },
-  [r("models/order.js")]: {},
+  [r("models/order.js")]: { updateOne: async () => ({ modifiedCount: 1 }) },
   [r("models/listing.js")]: { updateOne: async () => ({ modifiedCount: 1 }) },
   [r("models/offerSeller.js")]: { updateOne: async () => ({ modifiedCount: 1 }) },
   [r("models/coupon.js")]: { updateOne: async () => ({}) },
   [r("models/store.js")]: { updateOne: async (f, u) => { storeIncs.push(u.$inc); return {}; } },
-  [r("services/shared/wallet.js")]: { refundToWallet: async () => 0 },
+  [r("services/shared/wallet.js")]: { refundToWallet: async () => 0, refundPartToWallet: async () => 0 },
   [r("utils/helper.js")]: { escapeRegex: (s) => s },
   [r("utils/logger.js")]: { warn() {}, error() {}, info() {} },
 };
@@ -30,8 +30,9 @@ Module._load = function (request, parent, isMain) {
 
 const shared = require("../services/shared/order");
 
+let n = 0;
 const item = (extra = {}) => ({
-  productId: "p", variantId: null, offer: "of1", quantity: 2, finalPrice: 50,
+  _id: `i${++n}`, productId: "p", variantId: null, offer: "of1", quantity: 2, finalPrice: 50,
   stockReserved: true, walletCredited: false, walletReleased: false,
   fulfillment: { status: "shipped" }, ...extra,
 });
@@ -61,7 +62,7 @@ test("an ONLINE order still holds the store's money in its wallet", async () => 
 
 test("completing a cash order releases nothing to the store", async () => {
   storeIncs.length = 0;
-  const o = order({ items: [item({ store: "s1", walletCredited: true, walletReleased: true, paidDirectToStore: true })] });
+  const o = order({ paymentStatus: "paid", items: [item({ store: "s1", walletCredited: true, walletReleased: true, paidDirectToStore: true, cashCollectedAt: new Date() })] });
   await shared.completeDeliveredOrder(o);
   assert.equal(o.status, "completed");
   assert.equal(o.paymentStatus, "paid");
@@ -94,8 +95,8 @@ test("confirming all the cash makes the order PAID; it then completes like an on
 });
 
 test("cash confirmed after the buyer already confirmed receipt → completed right away", async () => {
-  const mine = item({ store: "s1" });
-  const o = order({ items: [mine], buyerConfirmedAt: new Date() });
+  const mine = item({ store: "s1", buyerConfirmedAt: new Date() });
+  const o = order({ items: [mine] });
   const res = await shared.markCashCollected(o, [mine], "seller1");
   assert.equal(res.completed, true);
   assert.equal(o.status, "completed");
@@ -107,14 +108,14 @@ test("'not received' when the buyer never confirmed and no cash was confirmed �
   const o = order({ items: [mine] });
   const res = await shared.reportCashNotReceived(o, [mine], "seller1", "refused at the door");
   assert.equal(res.outcome, "cancelled");
-  assert.equal(o.status, "cancelled");
-  assert.equal(o.cashDispute.note, "refused at the door");
+  assert.equal(o.status, "cancelled");               // it was the only part → whole order
+  assert.equal(mine.cancelReason, "cash not received");
   assert.equal(mine.stockReserved, false);           // stock went back
 });
 
 test("'not received' but the buyer says they got it → a dispute for the admins, nothing cancelled", async () => {
-  const mine = item({ store: "s1" });
-  const o = order({ items: [mine], buyerConfirmedAt: new Date() });
+  const mine = item({ store: "s1", buyerConfirmedAt: new Date() });
+  const o = order({ items: [mine] });
   const res = await shared.reportCashNotReceived(o, [mine], "seller1");
   assert.equal(res.outcome, "disputed");
   assert.equal(o.status, "shipped");
@@ -122,12 +123,22 @@ test("'not received' but the buyer says they got it → a dispute for the admins
   await assert.rejects(() => shared.reportCashNotReceived(o, [mine], "seller1"), /already reported/);
 });
 
-test("'not received' when part of the cash was already confirmed → dispute (no partial cancel)", async () => {
+test("'not received' for one store cancels only that store's part", async () => {
   const mine = item({ store: "s1" });
   const site = item({ store: null, cashCollectedAt: new Date() });
   const o = order({ items: [mine, site] });
   const res = await shared.reportCashNotReceived(o, [mine], "seller1");
-  assert.equal(res.outcome, "disputed");
+  assert.equal(res.outcome, "cancelled");
+  assert.ok(mine.cancelledAt);                       // store's part cancelled
+  assert.equal(site.cancelledAt, undefined);         // the site's part stays
+  assert.equal(o.status, "shipped");
+  assert.equal(o.paymentStatus, "paid");             // what's left was already paid
+});
+
+test("'not received' can't be reported before the delivery time", async () => {
+  const early = item({ store: "s1", fulfillment: { status: "shipped", estimatedDeliveryAt: new Date(Date.now() + 86400000) } });
+  const o = order({ items: [early] });
+  await assert.rejects(() => shared.reportCashNotReceived(o, [early], "seller1"), /only after the delivery time/);
   assert.equal(o.status, "shipped");
 });
 

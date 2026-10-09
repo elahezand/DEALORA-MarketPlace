@@ -23,6 +23,7 @@ export interface IOrderVariantSnapshot {
 }
 
 export interface IOrderItem {
+  _id?: string;
   productId: string;
   variantId: string | null;
   offer?: string | null;
@@ -41,6 +42,12 @@ export interface IOrderItem {
   paidDirectToStore?: boolean;
   /** cash on delivery: when whoever received the money (store or site) confirmed it */
   cashCollectedAt?: string | Date | null;
+  /** each store's part of the order is delivered / cancelled on its own */
+  buyerConfirmedAt?: string | Date | null;
+  deliveredAt?: string | Date | null;
+  autoCompletedAt?: string | Date | null;
+  cancelledAt?: string | Date | null;
+  cancelReason?: string | null;
 }
 
 export interface ICoupon {
@@ -96,7 +103,9 @@ export interface IOrder {
   /** when the buyer pressed "I received it" (for cash this isn't proof of payment) */
   buyerConfirmedAt?: string | Date | null;
   /** cash on delivery: whoever should have received the cash reported they didn't */
-  cashDispute?: { reportedAt?: string | Date | null; note?: string | null } | null;
+  cashDispute?: { reportedAt?: string | Date | null; note?: string | null; group?: string | null } | null;
+  /** what was refunded to the buyer's wallet (cancelled items / order) */
+  refundAmount?: number;
   /** admin list only */
   isCashOverdue?: boolean;
   isCashDisputed?: boolean;
@@ -164,6 +173,12 @@ export interface ISellerOrderItem {
   paidDirectToStore?: boolean;
   /** cash on delivery: when whoever received the money (store or site) confirmed it */
   cashCollectedAt?: string | Date | null;
+  /** each store's part of the order is delivered / cancelled on its own */
+  buyerConfirmedAt?: string | Date | null;
+  deliveredAt?: string | Date | null;
+  autoCompletedAt?: string | Date | null;
+  cancelledAt?: string | Date | null;
+  cancelReason?: string | null;
 }
 
 export interface ISellerOrder extends Omit<IOrder, "items" | "user"> {
@@ -171,6 +186,8 @@ export interface ISellerOrder extends Omit<IOrder, "items" | "user"> {
   user: { _id: string; username?: string; phone?: string } | string;
   mySubtotal: number;
   myFulfillmentStatus: "pending" | "partial" | "shipped";
+  /** this store's own part: processing → shipped → completed, or cancelled */
+  myStatus?: "processing" | "shipped" | "completed" | "cancelled";
 }
 
 export interface SellerOrdersResponse {

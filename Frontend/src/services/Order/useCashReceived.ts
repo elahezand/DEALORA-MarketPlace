@@ -76,17 +76,15 @@ export const useAdminCashNotReceived = (onSuccessCallback?: () => void) => {
  * Asks before reporting missing cash and explains what will happen.
  * Returns the optional note, or null when the user backed out.
  */
-export const askCashNotReceived = (order: {
+export const askCashNotReceived = (items: {
   buyerConfirmedAt?: string | Date | null;
-  items: { cashCollectedAt?: string | Date | null }[];
-}): string | null => {
-  // same rule as the backend (reportCashNotReceived)
-  const willCancel = !order.buyerConfirmedAt && !order.items.some((item) => !!item.cashCollectedAt);
+  cancelledAt?: string | Date | null;
+}[]): string | null => {
+  // same rule as the backend (reportCashNotReceived): only these items count
+  const willCancel = !items.some((item) => !item.cancelledAt && !!item.buyerConfirmedAt);
   const consequence = willCancel
-    ? "The order will be CANCELLED and the stock returned (the buyer most likely refused the parcel)."
-    : order.buyerConfirmedAt
-      ? "The buyer says they received the order, so an admin will review it."
-      : "Part of this order's cash was already confirmed, so an admin will review it.";
+    ? "These items will be CANCELLED and their stock returned (the buyer most likely refused the parcel)."
+    : "The buyer says they received it, so an admin will review it.";
   if (!window.confirm(`Report that you did NOT receive the cash?\n\n${consequence}`)) return null;
   return window.prompt("What happened? (optional)", "")?.trim() ?? "";
 };

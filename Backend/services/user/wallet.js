@@ -9,11 +9,8 @@ const getMyWallet = async (userId, query = {}) => {
   const user = await User.findById(userId).select("wallet").lean();
   if (!user) throw new AppError(404, "User not found");
 
-  const filters = buildListQuery(query, {
-    base: { user: userId },
-    statuses: ["spend", "refund"],
-    statusField: "type",
-  });
+  const filters = buildListQuery(query, { base: { user: userId } });
+  if (["spend", "refund"].includes(query.type)) filters.type = query.type;
 
   const result = await paginate(WalletTransaction, {
     limit: listLimit(query, 20),

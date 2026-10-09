@@ -46,22 +46,17 @@ const dateRangeFilter = (query = {}, field = "createdAt") => {
 };
 
 /** Case-insensitive "contains" search across the given fields */
-const searchFilter = (query = {}, fields = []) => {
+const searchFilter = (query = {}, serachFields = []) => {
   const term = String(query.q || "").trim();
-  if (!term || !fields.length) return {};
+  if (!term || !serachFields.length) return {};
 
   const regex = new RegExp(escapeRegex(term.slice(0, 100)), "i");
-  return fields.length === 1
-    ? { [fields[0]]: regex }
-    : { $or: fields.map((field) => ({ [field]: regex })) };
+  return serachFields.length === 1
+    ? { [serachFields[0]]: regex }
+    : { $or: serachFields.map((field) => ({ [field]: regex })) };
 };
 
 /** ?status=... , ignored when it isn't one of the allowed values or is "all" */
-const statusFilter = (query = {}, allowed = [], field = "status") => {
-  const value = query[field];
-  if (!value || value === "all") return {};
-  return allowed.length && !allowed.includes(value) ? {} : { [field]: value };
-};
 
 /** ?<field>=<objectId> (category, store, user, ...) */
 const idFilter = (query = {}, param, field = param) => {
@@ -69,23 +64,11 @@ const idFilter = (query = {}, param, field = param) => {
   return value && isValidId(value) ? { [field]: new mongoose.Types.ObjectId(value) } : {};
 };
 
-/**
- * One entry point for every table in the dashboards.
- *
- *   buildListQuery(req.query, {
- *     dateField: "createdAt",
- *     statuses: ["pending", "approved"],
- *     search: ["title", "slug"],
- *     ids: { categoryId: "categoryPath", storeId: "store" },
- *     base: { user: userId },
- *   })
- */
 const buildListQuery = (query = {}, options = {}) => {
   const {
     dateField = "createdAt",
     statuses = [],
-    statusField = "status",
-    search = [],
+    search:serachFields = [],
     ids = {},
     base = {},
   } = options;
@@ -98,8 +81,8 @@ const buildListQuery = (query = {}, options = {}) => {
   return {
     ...base,
     ...dateRangeFilter(query, dateField),
-    ...statusFilter(query, statuses, statusField),
-    ...searchFilter(query, search),
+    ...statusFilter(query, statuses),
+    ...searchFilter(query, serachFields),
     ...idFilters,
   };
 };

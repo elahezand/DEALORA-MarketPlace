@@ -9,19 +9,24 @@ const adminController = require("../controllers/admin/order");
 const validateObjectIdParam = require("../middlewares/objectId");
 const { authUser, authAdmin, authSeller } = require("../middlewares/authMiddleware");
 const validate = require("../middlewares/validate");
+const AppError = require("../utils/AppError");
 
 const {
     checkoutSchema,
     updateOrderAdminSchema,
-    updateOrderOwnerSchema,
     cancelOrderSchema,
     shipOrderSchema,
     deliveryEstimateSchema,
     cashNotReceivedSchema,
+    confirmDeliverySchema,
 } = require("../validators/order");
 
+// a store id, or "site" for the site's own items
+const validateGroupParam = (req, res, next) =>
+    /^([a-f0-9]{24}|site)$/.test(req.params.group) ? next() : next(new AppError(400, "Invalid group"));
 
-// ADMIN  
+
+// ADMIN ROUTES 
 orderRouter.get("/admin",
     authUser,
     authAdmin,
@@ -34,7 +39,7 @@ orderRouter.post(
     adminController.runAutoComplete
 );
 
-/*cash received (site items)*/
+// cash received (site items)
 orderRouter.patch(
     "/admin/:id/items/:itemId/cash-received",
     authUser,
@@ -44,7 +49,7 @@ orderRouter.patch(
     adminController.adminConfirmCash
 );
 
-/*cash not received (site items)*/
+// cash not received (site items)
 orderRouter.patch(
     "/admin/:id/items/:itemId/cash-not-received",
     authUser,
@@ -53,6 +58,26 @@ orderRouter.patch(
     validateObjectIdParam("itemId"),
     validate(cashNotReceivedSchema),
     adminController.adminReportCashMissing
+);
+
+// cancel one store's part of the order
+orderRouter.patch(
+    "/admin/:id/groups/:group/cancel",
+    authUser,
+    authAdmin,
+    validateObjectIdParam("id"),
+    validateGroupParam,
+    adminController.adminCancelGroup
+);
+
+// cancel one item of the order
+orderRouter.patch(
+    "/admin/:id/items/:itemId/cancel",
+    authUser,
+    authAdmin,
+    validateObjectIdParam("id"),
+    validateObjectIdParam("itemId"),
+    adminController.adminCancelItem
 );
 
 orderRouter.get(
@@ -82,7 +107,7 @@ orderRouter.patch(
     adminController.adminShipItem
 );
 
-/*change delivery time(site)*/
+// change delivery time
 orderRouter.patch(
     "/admin/:id/items/:itemId/delivery-estimate",
     authUser,
@@ -93,8 +118,6 @@ orderRouter.patch(
     adminController.adminSetDeliveryEstimate
 );
 
-
-
 // USER  
 orderRouter.post(
     "/checkout",
@@ -102,48 +125,14 @@ orderRouter.post(
     validate(checkoutSchema),
     userController.checkout
 );
-
 orderRouter.get(
     "/verify",
     publicController.verify
 );
+
 orderRouter.get("/my"
     , authUser,
     userController.getMyOrders);
-
-/* buyer confirms delivery*/
-orderRouter.patch(
-    "/:id/confirm-delivery",
-    authUser,
-    validateObjectIdParam("id"),
-    userController.confirmDelivery
-);
-
-orderRouter.get(
-    "/:id",
-    authUser,
-    validateObjectIdParam("id"),
-    userController.getMyOrderById
-);
-
-/*update address*/
-orderRouter.patch(
-    "/:id",
-    authUser,
-    validateObjectIdParam("id"),
-    validate(updateOrderOwnerSchema),
-    userController.patch
-);
-
-orderRouter.delete(
-    "/:id",
-    authUser,
-    validateObjectIdParam("id"),
-    validate(cancelOrderSchema),
-    userController.cancel
-);
-
-
 
 // SELLER
 orderRouter.get("/seller",
@@ -159,14 +148,14 @@ orderRouter.patch("/seller/:id/items/:itemId/ship",
     validate(shipOrderSchema),
     sellerController.sellerShipItem);
 
-/* cash received*/
+// cash received
 orderRouter.patch("/seller/:id/cash-received",
     authUser,
     authSeller,
     validateObjectIdParam("id"),
     sellerController.sellerConfirmCash);
 
-/*cash not received*/
+// cash not received
 orderRouter.patch("/seller/:id/cash-not-received",
     authUser,
     authSeller,
@@ -174,7 +163,6 @@ orderRouter.patch("/seller/:id/cash-not-received",
     validate(cashNotReceivedSchema),
     sellerController.sellerReportCashMissing);
 
-/* change delivery time*/
 orderRouter.patch("/seller/:id/items/:itemId/delivery-estimate",
     authUser,
     authSeller,
@@ -183,7 +171,36 @@ orderRouter.patch("/seller/:id/items/:itemId/delivery-estimate",
     validate(deliveryEstimateSchema),
     sellerController.sellerSetDeliveryEstimate);
 
+// buyer confirms delivery (one store's part, or everything shipped)
+orderRouter.patch(
+    "/:id/confirm-delivery",
+    authUser,
+    validateObjectIdParam("id"),
+    validate(confirmDeliverySchema),
+    userController.confirmDelivery
+);
 
+// buyer cancels one item that hasn't been shipped yet
+orderRouter.patch(
+    "/:id/items/:itemId/cancel",
+    authUser,
+    validateObjectIdParam("id"),
+    validateObjectIdParam("itemId"),
+    userController.cancelItem
+);
 
+orderRouter.get(
+    "/:id",
+    authUser,
+    validateObjectIdParam("id"),
+    userController.getMyOrderById
+);
+orderRouter.delete(
+    "/:id",
+    authUser,
+    validateObjectIdParam("id"),
+    validate(cancelOrderSchema),
+    userController.cancel
+);
 
 module.exports = orderRouter;

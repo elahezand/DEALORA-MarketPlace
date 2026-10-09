@@ -6,6 +6,7 @@ const path = require("node:path");
 
 const r = (p) => path.resolve(__dirname, "..", p);
 const state = {
+  completed: [],
   order: null,
   withdrawalUpdate: null,
   storeInc: null,
@@ -65,7 +66,13 @@ const stubs = {
     maybeMarkOrderShipped: () => {}, markItemShipped: () => {}, assertShippable: () => {},
     refreshExpectedDelivery: () => {}, setItemDeliveryEstimate: () => {},
     markCashCollected: async () => ({}), reportCashNotReceived: async () => ({}),
+    reserveStock: async () => {}, cancelItems: async () => 0,
+    completeItems: async (o, items) => { state.completed.push(items); },
+    activeItems: (o) => (o.items || []).filter((i) => !i.cancelledAt),
+    groupItems: (o, k) => o.items.filter((i) => !i.cancelledAt && (i.store ? String(i.store) : "site") === k),
   },
+  [r("utils/notify.js")]: async () => {},
+  [r("services/shared/orderSweeper.js")]: { overdueCashQuery: () => ({}), runOrderSweeps: async () => ({}) },
   [r("services/shared/deliveryNotice.js")]: { notifyItemShipped: async () => {}, notifyDeliveryUpdated: async () => {} },
   [r("services/shared/cashNotice.js")]: { notifyCashNotReceived: async () => {}, notifyAdmins: async () => {} },
   [r("services/shared/listing.js")]: {
@@ -121,6 +128,22 @@ test("sending the current status back (shipped → shipped) is accepted", async 
   state.order = makeOrder({ status: "shipped", paymentMethod: "zarinpal", paymentStatus: "pending" });
   const o = await adminOrder.updateOrder("o1", { status: "shipped", paymentStatus: "failed" });
   assert.equal(o.paymentStatus, "failed");
+});
+
+test("admin cancels one item of an open order", async () => {
+  const items = [{ _id: "i1", store: null, productSnapshot: { title: "Phone" } }, { _id: "i2", store: null, productSnapshot: { title: "Case" } }];
+  items.id = (id) => items.find((i) => i._id === id);
+  state.order = makeOrder({ status: "processing", user: "u1", items });
+  const o = await adminOrder.adminCancelItem("o1", "i2");
+  assert.equal(o._id, "o1");
+});
+
+test("admin can't drop one item of an unpaid online order (the gateway amount is fixed)", async () => {
+  const items = [{ _id: "i1", store: null, productSnapshot: { title: "Phone" } }];
+  items.id = (id) => items.find((i) => i._id === id);
+  state.order = makeOrder({ status: "created", paymentStatus: "pending", items });
+  await assert.rejects(() => adminOrder.adminCancelItem("o1", "i1"), /cancel the whole order instead/);
+  await assert.rejects(() => adminOrder.adminCancelGroup("o1", "site"), /cancel the whole order instead/);
 });
 
 test("rejecting a withdrawal twice refunds the store only once", async () => {
@@ -207,21 +230,46 @@ test("the buyer can't cancel once any item of the order has shipped", async () =
   }
 });
 
-test("buyer 'I received it' on an unpaid CASH order records receipt but never marks it paid", async () => {
+const shippedItem = (store, extra = {}) => ({ store, fulfillment: { status: "shipped" }, ...extra });
+
+test("buyer 'I received it' on an unpaid CASH order records receipt but never completes it", async () => {
   const Order = require("../models/order.js");
   const userOrder = require("../services/user/order");
   const order = {
-    _id: "o3", user: "u1", status: "shipped", paymentMethod: "cash", paymentStatus: "pending", items: [],
+    _id: "o3", user: "u1", status: "shipped", paymentMethod: "cash", paymentStatus: "pending",
+    items: [shippedItem("s1")], markModified() {},
     save: async function () { return this; },
   };
   const orig = Order.findOne;
   Order.findOne = async () => order;
+  state.completed = [];
   try {
     await userOrder.confirmDelivery("o3", "u1");
-    assert.ok(order.buyerConfirmedAt);
-    assert.equal(order.paymentStatus, "pending");   // only whoever got the cash confirms it
-    assert.equal(order.status, "shipped");
+    assert.ok(order.items[0].buyerConfirmedAt);
+    assert.equal(state.completed.length, 0);        // cash not confirmed → nothing completes
     await assert.rejects(() => userOrder.confirmDelivery("o3", "u1"), /already confirmed/);
+  } finally {
+    Order.findOne = orig;
+  }
+});
+
+test("buyer confirms one store's part while the other store hasn't shipped", async () => {
+  const Order = require("../models/order.js");
+  const userOrder = require("../services/user/order");
+  const a = shippedItem("storeA");
+  const b = { store: "storeB", fulfillment: { status: "pending" } };
+  const order = {
+    _id: "o4", user: "u1", status: "processing", paymentMethod: "zarinpal", paymentStatus: "paid",
+    items: [a, b], markModified() {}, save: async function () { return this; },
+  };
+  const orig = Order.findOne;
+  Order.findOne = async () => order;
+  state.completed = [];
+  try {
+    await userOrder.confirmDelivery("o4", "u1", "storeA");
+    assert.deepEqual(state.completed, [[a]]);       // only A's part completes
+    assert.equal(b.buyerConfirmedAt, undefined);
+    await assert.rejects(() => userOrder.confirmDelivery("o4", "u1", "storeB"), /Nothing shipped/);
   } finally {
     Order.findOne = orig;
   }

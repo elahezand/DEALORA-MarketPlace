@@ -9,6 +9,8 @@ let created = null;
 let finalizeCalls = 0;
 let paymentCalls = 0;
 let cartStatus = [];
+let outOfStock = false;
+let revertCalls = 0;
 
 const chain = (v) => ({ select() { return this; }, populate: async () => v, lean: async () => v, then: (r) => r(v) });
 
@@ -28,6 +30,8 @@ const stubs = {
     findOne: async () => null,
     create: async (d) => (created = { ...d, save: async () => created }),
   },
+  [path.resolve(__dirname, "../models/store.js")]: {},
+  [path.resolve(__dirname, "../utils/notify.js")]: async () => {},
   [path.resolve(__dirname, "../models/user.js")]: {
     findById: () => chain({ wallet: { balance: userBalance } }),
     findOneAndUpdate: async (f, u) => {
@@ -54,8 +58,11 @@ const stubs = {
   [path.resolve(__dirname, "../services/shared/order.js")]: {
     buildOrderIdSearchExpr: () => null,
     finalizeOrder: async () => { finalizeCalls++; },
-    releaseOrderFunds: async () => {},
-    revertOrder: async () => {},
+    reserveStock: async () => { if (outOfStock) { const e = new Error("out of stock"); e.status = 409; throw e; } },
+    revertOrder: async () => { revertCalls++; },
+    completeItems: async () => {},
+    activeItems: (o) => o.items,
+    groupItems: () => [],
   },
   [path.resolve(__dirname, "../utils/logger.js")]: { warn() {}, error() {}, info() {} },
 };
@@ -101,4 +108,14 @@ test("without useWallet the balance is untouched", async () => {
   assert.equal(order.pricing.walletUsed, 0);
   assert.equal(order.pricing.total, 100);
   assert.equal(userBalance, 500);
+});
+
+test("out of stock at checkout → no payment, cart unlocked, order reverted", async () => {
+  userBalance = 0; paymentCalls = 0; revertCalls = 0; cartStatus = []; outOfStock = true;
+  await assert.rejects(() => checkout("u1", address, "zarinpal", null, false), /out of stock/);
+  assert.equal(paymentCalls, 0);           // never sent to the gateway
+  assert.deepEqual(cartStatus, ["active"]); // cart can be used again
+  assert.equal(revertCalls, 1);
+  assert.equal(created.status, "cancelled");
+  outOfStock = false;
 });

@@ -87,14 +87,33 @@ const confirmDelivery = async (req, res, next) => {
   try {
     const order = await userOrderService.confirmDelivery(
       req.params.id,
-      req.user._id
+      req.user._id,
+      req.parsed?.data?.group || null
     );
 
     res.status(200).json({
       success: true,
       message: order.status === "completed"
         ? "Order marked as received"
-        : "Thanks! Receipt confirmed — waiting for the seller to confirm your cash payment",
+        : "Thanks! Receipt confirmed",
+      data: order,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const cancelItem = async (req, res, next) => {
+  try {
+    const { order, refund } = await userOrderService.cancelMyItem(
+      req.params.id,
+      req.user._id,
+      req.params.itemId
+    );
+
+    res.status(200).json({
+      success: true,
+      message: refund > 0 ? `Item cancelled — ${refund} was refunded to your wallet` : "Item cancelled",
       data: order,
     });
   } catch (err) {
@@ -109,4 +128,5 @@ module.exports = {
   patch,
   cancel,
   confirmDelivery,
+  cancelItem,
 };

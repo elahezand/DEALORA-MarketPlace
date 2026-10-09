@@ -17,7 +17,7 @@ import DeliveryTimeFields, {
     deliveryTimeError,
     deliveryTimeToIso,
 } from "../../shared/DeliveryTimeFields";
-import { formatDateTime } from "@/utils/orderDates";
+import { formatDateTime, itemDueTime } from "@/utils/orderDates";
 import { OrderStatus, ISellerOrder, SellerOrdersResponse } from "@/types/Order";
 import { QueryParams } from "@/types/api/ErrorTypes";
 import { getUrl } from "@/utils/helper";
@@ -34,23 +34,22 @@ const getSellerEta = (order: ISellerOrder): Date | null => {
 };
 
 /** cash-on-delivery order where this store delivered its items but hasn't confirmed the cash yet */
+// this store's own part (other stores in the same order don't matter)
+const myStatusOf = (order: ISellerOrder): OrderStatus => order.myStatus ?? order.status;
+const myActiveItems = (order: ISellerOrder) => order.items.filter((item) => !item.cancelledAt);
+
+/** cash order: this store delivered its items but hasn't confirmed the cash yet */
 const awaitingMyCash = (order: ISellerOrder) =>
     order.paymentMethod === "cash" &&
-    ["processing", "shipped"].includes(order.status) &&
-    order.items.length > 0 &&
-    order.items.every((item) => item.fulfillment?.status === "shipped") &&
-    order.items.some((item) => !item.cashCollectedAt) &&
-    !order.cashDispute?.reportedAt;
-// "Not received" only after every item's delivery time
-const pastDeliveryTime = (order: ISellerOrder) =>
-    order.items.every((item) => {
-        const eta = item.fulfillment?.estimatedDeliveryAt;
-        const shipped = item.fulfillment?.shippedAt;
-        const due = eta
-            ? new Date(eta).getTime()
-            : shipped ? new Date(shipped).getTime() + 3 * 24 * 60 * 60 * 1000 : 0;
-        return Date.now() >= due;
-    });
+    myStatusOf(order) === "shipped" &&
+    myActiveItems(order).some((item) => !item.cashCollectedAt);
+
+/** "Not received" only after the delivery time, and not while an admin reviews a dispute */
+const canReportMissingCash = (order: ISellerOrder) =>
+    awaitingMyCash(order) &&
+    !order.cashDispute?.reportedAt &&
+    myActiveItems(order).every((item) => Date.now() >= itemDueTime(item));
+
 const getTrackingCode = (order: ISellerOrder) =>
     order.items.find((item) => item.fulfillment?.trackingCode)?.fulfillment?.trackingCode ?? "";
 
@@ -77,7 +76,7 @@ interface MyOrdersPageProps {
 const ENDPOINT = "/orders/seller"
 
 export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
-    const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
+  const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
     const [status, setStatus] = useState<OrderStatus | "all">("processing");
     const [searchQuery, setSearchQuery] = useState("");
     const [viewTarget, setViewTarget] = useState<ISellerOrder | null>(null);
@@ -107,7 +106,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
         data?.pages?.flatMap((page: SellerOrdersResponse) => page?.data ?? []) || []
     ).filter(Boolean);
 
-
+  
     const filteredOrders = orders.filter((order) => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.trim().toLowerCase();
@@ -169,7 +168,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
     const { mutate: reportMissing, isPending: isReporting, variables: reportVars } = useSellerCashNotReceived();
 
     function handleCashNotReceived(order: ISellerOrder) {
-        const note = askCashNotReceived(order);
+        const note = askCashNotReceived(order.items);
         if (note === null) return;
         reportMissing({ orderId: order._id, note: note || undefined });
     }
@@ -230,8 +229,8 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                             type="button"
                             onClick={() => setStatus(tab.value)}
                             className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors ${status === tab.value
-                                ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
-                                : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
+                                    ? "bg-[var(--primary-500)] text-white border-[var(--primary-500)]"
+                                    : "border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)]"
                                 }`}
                         >
                             {tab.label}
@@ -316,27 +315,27 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                                     ${order.mySubtotal?.toLocaleString() ?? 0}
                                 </td>
                                 <td className="px-6 py-4">
-                                    <Badge tone={STATUS_TONE[order.status] ?? "neutral"} label={order.status} />
-                                    {order.paymentMethod === "cash" && (
-                                        <p className={`text-[11px] font-semibold mt-1 whitespace-nowrap ${order.items.every((i) => i.cashCollectedAt)
+                                    <Badge tone={STATUS_TONE[myStatusOf(order)] ?? "neutral"} label={myStatusOf(order)} />
+                                    {order.paymentMethod === "cash" && myStatusOf(order) !== "cancelled" && (
+                                        <p className={`text-[11px] font-semibold mt-1 whitespace-nowrap ${myActiveItems(order).every((i) => i.cashCollectedAt)
                                             ? "text-[var(--success-500)]"
                                             : "text-[var(--warning-500)]"}`}>
-                                            {order.items.every((i) => i.cashCollectedAt)
+                                            {myActiveItems(order).every((i) => i.cashCollectedAt)
                                                 ? "💵 Cash received"
                                                 : "💵 Cash on delivery — paid to you"}
                                         </p>
                                     )}
-                                    {order.cashDispute?.reportedAt && order.status !== "cancelled" && (
+                                    {order.cashDispute?.reportedAt && myStatusOf(order) !== "cancelled" && (
                                         <p className="text-[11px] font-semibold mt-1 whitespace-nowrap text-[var(--destructive)]">
                                             ⚠ Cash reported missing — admin reviewing
                                         </p>
                                     )}
-                                    {order.paymentMethod === "cash" && order.buyerConfirmedAt && order.paymentStatus !== "paid" && !order.cashDispute?.reportedAt && (
+                                    {awaitingMyCash(order) && myActiveItems(order).some((i) => i.buyerConfirmedAt) && !order.cashDispute?.reportedAt && (
                                         <p className="text-[11px] mt-1 whitespace-nowrap text-[var(--foreground-muted)]">
                                             Buyer confirmed receipt
                                         </p>
                                     )}
-                                    {getSellerEta(order) && order.status !== "completed" && order.status !== "cancelled" && (
+                                    {getSellerEta(order) && ["processing", "shipped"].includes(myStatusOf(order)) && (
                                         <p className="text-[11px] text-[var(--foreground-muted)] mt-1 whitespace-nowrap">
                                             Arrives {formatDateTime(getSellerEta(order))}
                                         </p>
@@ -356,7 +355,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                                         >
                                             <HiOutlineEye className="w-4 h-4" />
                                         </button>
-                                        {order.status === "processing" && order.myFulfillmentStatus !== "shipped" && (
+                                        {order.status === "processing" && myStatusOf(order) === "processing" && order.myFulfillmentStatus !== "shipped" && (
                                             <button
                                                 type="button"
                                                 onClick={() => openShip(order)}
@@ -377,17 +376,17 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                                                 {isConfirmingCash && cashOrderId === order._id ? "Saving..." : "Cash received"}
                                             </button>
                                         )}
-                                        {awaitingMyCash(order) && pastDeliveryTime(order) && 
-                                        (<button
-                                            type="button"
-                                            onClick={() => handleCashNotReceived(order)}
-                                            disabled={isReporting && reportVars?.orderId === order._id}
-                                            className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-50 whitespace-nowrap"
-                                        >
-                                            {isReporting && reportVars?.orderId === order._id ? "Saving..." : "Not received"}
-                                        </button>
+                                        {canReportMissingCash(order) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCashNotReceived(order)}
+                                                disabled={isReporting && reportVars?.orderId === order._id}
+                                                className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-50 whitespace-nowrap"
+                                            >
+                                                {isReporting && reportVars?.orderId === order._id ? "Saving..." : "Not received"}
+                                            </button>
                                         )}
-                                        {order.myFulfillmentStatus !== "pending" && ["processing", "shipped"].includes(order.status) && (
+                                        {order.myFulfillmentStatus !== "pending" && ["processing", "shipped"].includes(myStatusOf(order)) && (
                                             <button
                                                 type="button"
                                                 onClick={() => openEta(order)}
@@ -431,7 +430,7 @@ export default function MyOrdersPage({ initialData }: MyOrdersPageProps) {
                 {viewTarget && (
                     <div className="flex flex-col gap-5">
                         <div className="flex items-center justify-between flex-wrap gap-2">
-                            <Badge tone={STATUS_TONE[viewTarget.status] ?? "neutral"} label={viewTarget.status} />
+                            <Badge tone={STATUS_TONE[myStatusOf(viewTarget)] ?? "neutral"} label={myStatusOf(viewTarget)} />
                             <p className="text-xs text-[var(--foreground-muted)]">
                                 Placed {new Date(viewTarget.createdAt).toLocaleString()}
                             </p>

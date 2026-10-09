@@ -45,6 +45,14 @@ const orderItemSchema = new Schema({
   },
   estimatedShipBy: { type: Date, default: null },
   needsAdminShipment: { type: Boolean, default: false },
+
+  // each store's part of the order is delivered / cancelled on its own
+  buyerConfirmedAt: { type: Date, default: null },
+  deliveredAt: { type: Date, default: null },
+  autoCompletedAt: { type: Date, default: null },
+  cashCheckAskedAt: { type: Date, default: null },
+  cancelledAt: { type: Date, default: null },
+  cancelReason: { type: String, default: null },
 });
 
 const orderCouponSchema = new Schema(
@@ -127,6 +135,7 @@ const orderSchema = new Schema(
       reportedAt: { type: Date, default: null },
       reportedBy: { type: Types.ObjectId, ref: "User", default: null },
       note: { type: String, trim: true, maxlength: 500, default: null },
+      group: { type: String, default: null }, // store id, or "site"
     },
     refundedAt: { type: Date, default: null },
     refundAmount: { type: Number, default: 0, min: 0 },

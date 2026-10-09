@@ -6,7 +6,6 @@ import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import { CategoriesTypeResponse } from "@/types/Category";
 
 export interface TableFilterValue {
-  /** today | 7d | 30d | 90d | all | custom */
   preset: string;
   from?: string;
   to?: string;
@@ -16,7 +15,6 @@ export interface TableFilterValue {
 
 export const emptyFilters: TableFilterValue = { preset: "all" };
 
-/** What the hooks send to the API (empty values are dropped) */
 export const filtersToParams = (filters: TableFilterValue) => {
   const params: Record<string, string> = {};
   if (filters.preset && filters.preset !== "all" && filters.preset !== "custom") {
@@ -31,7 +29,6 @@ export const filtersToParams = (filters: TableFilterValue) => {
   return params;
 };
 
-/** Key part for react-query, so changing a filter refetches */
 export const filtersKey = (filters: TableFilterValue) => JSON.stringify(filtersToParams(filters));
 
 const DATE_PRESETS = [
@@ -56,12 +53,9 @@ const inputClass =
 interface TableFiltersProps {
   value: TableFilterValue;
   onChange: (value: TableFilterValue) => void;
-  /** show the category dropdown (listings / products tables) */
   withCategory?: boolean;
-  /** show the search box */
   withSearch?: boolean;
   searchPlaceholder?: string;
-  /** extra controls of the page (status tabs and so on) */
   children?: React.ReactNode;
 }
 

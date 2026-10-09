@@ -13,9 +13,13 @@ import {
   HiOutlineCheckCircle,
   HiOutlineXCircle,
 } from "react-icons/hi2";
-import { formatDateTime, formatDay, formatTime, getDeliveryInfo, getExpectedDelivery, getShippedAt } from "@/utils/orderDates";
-import { useCancelOrder } from "@/services/Order/useCancelOrder";
+import {
+  formatDateTime, formatDay, formatTime, getDeliveryInfo, getExpectedDelivery, getShippedAt,
+  groupOrderItems, partStatus, PartStatus,
+} from "@/utils/orderDates";
 import { useConfirmDelivery } from "@/services/Order/useConfirmDelivery";
+import { useCancelOrder } from "@/services/Order/useCancelOrder";
+import { useCancelOrderItem } from "@/services/Order/useCancelOrderItem";
 import { Badge } from "../../shared/table/TableParts";
 import { IOrder, OrderStatus, PaymentStatus } from "@/types/Order";
 import { toast } from "sonner";
@@ -38,8 +42,12 @@ const PAYMENT_TONE: Record<PaymentStatus, "success" | "warning" | "destructive" 
 
 const NON_CANCELLABLE: OrderStatus[] = ["shipped", "completed", "cancelled"];
 
-/** How many days after the last item ships before we assume the order */
-const DELIVERY_WINDOW_DAYS = 3;
+const PART_BADGE: Record<PartStatus, { tone: "success" | "warning" | "destructive" | "info"; label: string }> = {
+  preparing: { tone: "warning", label: "Preparing" },
+  shipped: { tone: "info", label: "On its way" },
+  delivered: { tone: "success", label: "Delivered" },
+  cancelled: { tone: "destructive", label: "Cancelled" },
+};
 
 interface OrderDetailProps {
   initialOrder: IOrder | null;
@@ -52,6 +60,7 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
 
   const { mutate: cancelOrder, isPending: isCancelling } = useCancelOrder();
   const { mutate: confirmDelivery, isPending: isConfirming } = useConfirmDelivery();
+  const { mutate: cancelItem, isPending: isCancellingItem } = useCancelOrderItem();
 
   const handleCancel = () => {
       toast.warning("Are you sure you want to delete this Order?", {
@@ -76,17 +85,42 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
 
   };
 
-  const handleConfirmDelivery = () => {
-    toast.warning("Confirm you've received this order?", {
+  const handleCancelItem = (itemId: string, title: string) => {
+    toast.warning(`Cancel "${title}"?`, {
+      description: "The rest of your order goes on. This can't be undone.",
+      action: {
+        label: "Cancel item",
+        onClick: () =>
+          cancelItem(
+            { id: orderId, itemId },
+            {
+              onSuccess: (res) => {
+                if (res?.data) setOrder(res.data);
+                router.refresh();
+              },
+            }
+          ),
+      },
+      cancel: {
+        label: "Keep it",
+        onClick: () => {},
+      },
+    });
+  };
+
+  // group = one store's package (store id, or "site")
+  const handleConfirmDelivery = (group: string) => {
+    if (!order) return;
+    toast.warning("Confirm you've received this package?", {
       description:
-        order.paymentMethod === "cash" && order.paymentStatus !== "paid"
-          ? "The order completes once the seller confirms your cash payment. This can't be undone."
-          : "This closes the order and can't be undone.",
+        order.paymentMethod === "cash"
+          ? "It's completed once the seller confirms your cash payment. This can't be undone."
+          : "This can't be undone.",
       action: {
         label: "Confirm",
         onClick: () =>
           confirmDelivery(
-            { id: orderId },
+            { id: orderId, group },
             {
               onSuccess: (res) => {
                 if (res?.data) setOrder(res.data);
@@ -121,20 +155,11 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
   const hasShippedItems = !!order.items?.some((item) => item.fulfillment?.status === "shipped");
   const canCancel = !NON_CANCELLABLE.includes(order.status) && !hasShippedItems;
 
-  const lastShippedAt = order.items
-    ?.map((item) => item.fulfillment?.shippedAt)
-    .filter((d): d is string | Date => !!d)
-    .map((d) => new Date(d).getTime())
-    .reduce((max, t) => Math.max(max, t), 0);
-
-  // the buyer already pressed "I received it" (a cash order then waits for the cash confirmation)
+  // the buyer already confirmed every package
   const buyerConfirmed = !!order.buyerConfirmedAt;
-  const canConfirmReceipt = order.status === "shipped" && !buyerConfirmed;
 
-  const pastDeliveryWindow =
-    canConfirmReceipt &&
-    !!lastShippedAt &&
-    Date.now() - lastShippedAt >= DELIVERY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  // one box per store — each is shipped, received and paid out on its own
+  const parts = groupOrderItems(order.items ?? []);
 
   const formatDate = (date: string | Date) =>
     new Date(date).toLocaleDateString("en-US", {
@@ -284,109 +309,135 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
         );
       })()}
 
-      {/* Confirm-receipt reminder — only once it's plausibly had time to arrive */}
-      {pastDeliveryWindow && (
-        <div className="card rounded-2xl border border-[var(--info-500)]/30 bg-[var(--info-500)]/5 p-5 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <p className="font-bold text-sm text-[var(--foreground)]">
-              Has your order arrived?
-            </p>
-            <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
-              It's been {DELIVERY_WINDOW_DAYS}+ days since it shipped. Let us know if you've received it.
-            </p>
-          </div>
-          <button
-            onClick={handleConfirmDelivery}
-            disabled={isConfirming}
-            className="btn-primary !w-auto px-5 h-10 text-sm disabled:opacity-50 flex-shrink-0"
-          >
-            {isConfirming ? "Confirming..." : "I've Received This Order"}
-          </button>
-        </div>
-      )}
+      {/* Items — one package per store */}
+      {parts.map(({ key, items }) => {
+        const status = partStatus(items);
+        const badge = PART_BADGE[status];
+        const active = items.filter((item) => !item.cancelledAt);
+        const storeName = items[0]?.storeSnapshot?.name || "Dealora";
+        const confirmed = active.length > 0 && active.every((item) => item.buyerConfirmedAt);
+        const canConfirm = status === "shipped" && !confirmed;
+        const waitingForCash =
+          status === "shipped" && confirmed && order.paymentMethod === "cash" && active.some((item) => !item.cashCollectedAt);
+        const deliveredAt = active.find((item) => item.deliveredAt)?.deliveredAt;
 
-      {order.status === "shipped" && buyerConfirmed && order.paymentMethod === "cash" && order.paymentStatus !== "paid" && (
-        <div className="card rounded-2xl border border-[var(--success-500)]/30 bg-[var(--success-bg)] p-5">
-          <p className="font-bold text-sm text-[var(--foreground)]">Thanks, you confirmed receipt</p>
-          <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
-            The seller still has to confirm they received your cash payment, then the order is completed.
-          </p>
-        </div>
-      )}
-
-      {/* Items */}
-      <div className="card rounded-2xl border border-[var(--border)] overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--border)]">
-          <HiOutlineShoppingBag className="w-5 h-5 text-[var(--foreground-muted)]" />
-          <span className="font-bold text-[var(--foreground)] text-sm">
-            Items ({order.items?.length ?? 0})
-          </span>
-        </div>
-        <div className="divide-y divide-[var(--border)]">
-          {order.items?.map((item, idx) => {
-            const isShipped = item.fulfillment?.status === "shipped";
-            const isDelayed =
-              !isShipped &&
-              !!item.estimatedShipBy &&
-              new Date(item.estimatedShipBy) < new Date();
-            return (
-              <div key={idx} className="flex items-center justify-between px-5 py-4 gap-3">
-                <div className="min-w-0">
-                  <Link
-                    href={`/posts/${item.productId}`}
-                    className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors"
-                  >
-                    {item.productSnapshot.title}
-                  </Link>
-                  <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
-                    Qty: {item.quantity}
-                    {getOrderItemVariantLabel(item) && ` · ${getOrderItemVariantLabel(item)}`}
-                    {item.storeSnapshot.name && ` · ${item.storeSnapshot.name}`}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <Badge
-                      tone={isShipped ? "success" : isDelayed ? "destructive" : "warning"}
-                      label={isShipped ? "Shipped" : isDelayed ? "Delayed" : "Preparing"}
-                    />
-                    {isShipped && item.fulfillment?.shippedAt && (
-                      <span className="text-[11px] text-[var(--foreground-muted)]">
-                        on {formatDate(item.fulfillment.shippedAt)}
-                      </span>
-                    )}
-                    {isShipped && item.fulfillment?.trackingCode && (
-                      <span className="text-[11px] text-[var(--foreground-muted)] font-mono">
-                        · Tracking: {item.fulfillment.trackingCode}
-                      </span>
-                    )}
-                    {isShipped && item.fulfillment?.estimatedDeliveryAt && order.status !== "completed" && (
-                      <span className="text-[11px] font-semibold text-[var(--primary-500)]">
-                        · Arrives {formatDateTime(item.fulfillment.estimatedDeliveryAt)}
-                      </span>
-                    )}
-                    {order.paymentMethod === "cash" && order.status !== "cancelled" && (
-                      <span className={`text-[11px] font-semibold ${item.cashCollectedAt || order.status === "completed"
-                        ? "text-[var(--success-500)]"
-                        : "text-[var(--warning-500)]"}`}>
-                        · 💵 {item.cashCollectedAt || order.status === "completed"
-                          ? "Paid"
-                          : `Pay ${item.storeSnapshot?.name || "the courier"} in cash on delivery`}
-                      </span>
-                    )}
-                    {!isShipped && item.estimatedShipBy && (
-                      <span className="text-[11px] text-[var(--foreground-muted)]">
-                        {isDelayed ? "Was expected by" : "Estimated ship by"} {formatDate(item.estimatedShipBy)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <p className="text-sm font-black text-[var(--foreground)] flex-shrink-0">
-                  ${(item.finalPrice * item.quantity).toLocaleString()}
-                </p>
+        return (
+          <div key={key} className="card rounded-2xl border border-[var(--border)] overflow-hidden">
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[var(--border)] flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <HiOutlineShoppingBag className="w-5 h-5 text-[var(--foreground-muted)] shrink-0" />
+                <span className="font-bold text-[var(--foreground)] text-sm truncate">
+                  {parts.length > 1 ? `Package from ${storeName}` : `Items (${items.length})`}
+                </span>
+                <Badge tone={badge.tone} label={badge.label} />
+                {status === "delivered" && deliveredAt && (
+                  <span className="text-[11px] text-[var(--foreground-muted)]">{formatDateTime(deliveredAt)}</span>
+                )}
               </div>
-            );
-          })}
-        </div>
-      </div>
+              {canConfirm && (
+                <button
+                  onClick={() => handleConfirmDelivery(key)}
+                  disabled={isConfirming}
+                  className="btn-primary !w-auto px-4 h-9 text-xs disabled:opacity-50"
+                >
+                  {isConfirming ? "Confirming..." : "I've received it"}
+                </button>
+              )}
+              {waitingForCash && (
+                <span className="text-[11px] text-[var(--foreground-muted)]">
+                  Received — waiting for the seller to confirm your cash payment
+                </span>
+              )}
+            </div>
+            <div className="divide-y divide-[var(--border)]">
+              {items.map((item, idx) => {
+                const isShipped = item.fulfillment?.status === "shipped";
+                const isCancelled = !!item.cancelledAt;
+                const isDelayed =
+                  !isShipped && !isCancelled &&
+                  !!item.estimatedShipBy &&
+                  new Date(item.estimatedShipBy) < new Date();
+                return (
+                  <div key={idx} className={`flex items-center justify-between px-5 py-4 gap-3 ${isCancelled ? "opacity-60" : ""}`}>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/posts/${item.productId}`}
+                        className="text-sm font-bold text-[var(--foreground)] hover:text-[var(--primary-500)] transition-colors"
+                      >
+                        {item.productSnapshot.title}
+                      </Link>
+                      <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
+                        Qty: {item.quantity}
+                        {getOrderItemVariantLabel(item) && ` · ${getOrderItemVariantLabel(item)}`}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {isCancelled ? (
+                          <Badge tone="destructive" label="Cancelled" />
+                        ) : (
+                          <Badge
+                            tone={item.deliveredAt ? "success" : isShipped ? "info" : isDelayed ? "destructive" : "warning"}
+                            label={item.deliveredAt ? "Delivered" : isShipped ? "Shipped" : isDelayed ? "Delayed" : "Preparing"}
+                          />
+                        )}
+                        {isShipped && !isCancelled && item.fulfillment?.shippedAt && (
+                          <span className="text-[11px] text-[var(--foreground-muted)]">
+                            on {formatDate(item.fulfillment.shippedAt)}
+                          </span>
+                        )}
+                        {isShipped && item.fulfillment?.trackingCode && (
+                          <span className="text-[11px] text-[var(--foreground-muted)] font-mono">
+                            · Tracking: {item.fulfillment.trackingCode}
+                          </span>
+                        )}
+                        {isShipped && !item.deliveredAt && !isCancelled && item.fulfillment?.estimatedDeliveryAt && (
+                          <span className="text-[11px] font-semibold text-[var(--primary-500)]">
+                            · Arrives {formatDateTime(item.fulfillment.estimatedDeliveryAt)}
+                          </span>
+                        )}
+                        {order.paymentMethod === "cash" && !isCancelled && (
+                          <span className={`text-[11px] font-semibold ${item.cashCollectedAt
+                            ? "text-[var(--success-500)]"
+                            : "text-[var(--warning-500)]"}`}>
+                            · 💵 {item.cashCollectedAt
+                              ? "Paid"
+                              : `Pay ${item.storeSnapshot?.name || "the courier"} in cash on delivery`}
+                          </span>
+                        )}
+                        {!isShipped && !isCancelled && item.estimatedShipBy && (
+                          <span className="text-[11px] text-[var(--foreground-muted)]">
+                            {isDelayed ? "Was expected by" : "Estimated ship by"} {formatDate(item.estimatedShipBy)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <p className={`text-sm font-black text-[var(--foreground)] ${isCancelled ? "line-through" : ""}`}>
+                        ${(item.finalPrice * item.quantity).toLocaleString()}
+                      </p>
+                      {/* not shipped yet → the buyer can drop just this item */}
+                      {order.status === "processing" && !isShipped && !isCancelled && item._id && (
+                        <button
+                          onClick={() => handleCancelItem(item._id!, item.productSnapshot.title)}
+                          disabled={isCancellingItem}
+                          className="text-[11px] font-semibold text-[var(--destructive)] hover:underline disabled:opacity-50"
+                        >
+                          Cancel item
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {(order.refundAmount ?? 0) > 0 && order.status !== "cancelled" && (
+        <p className="text-xs text-[var(--foreground-muted)]">
+          ${order.refundAmount?.toLocaleString()} was refunded to your wallet for the cancelled items.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Pricing */}
@@ -449,15 +500,6 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
 
       {/* Actions */}
       <div className="flex justify-end gap-3">
-        {canConfirmReceipt && !pastDeliveryWindow && (
-          <button
-            onClick={handleConfirmDelivery}
-            disabled={isConfirming}
-            className="btn-primary !w-auto px-5 h-10 text-sm disabled:opacity-50"
-          >
-            {isConfirming ? "Confirming..." : "I've Received This Order"}
-          </button>
-        )}
         {canCancel && (
           <button
             onClick={handleCancel}

@@ -13,9 +13,10 @@ const notifyAdmins = async (msg, opts) => {
 const notifyCashNotReceived = async (order, outcome) => {
   const id = shortId(order);
   if (outcome === "cancelled") {
+    const what = order.status === "cancelled" ? `Order #${id} was` : `Part of your order #${id} was`;
     await notifyUser(
       order.user,
-      `Order #${id} was cancelled because the payment wasn't received on delivery. If you did pay, contact support.`,
+      `${what} cancelled because the payment wasn't received on delivery. If you did pay, contact support.`,
       { type: "order_status", link: `/dashboard/orders/${order._id}` }
     );
     await notifyAdmins(`Cash order #${id} was cancelled: the cash was reported as not received.`, {

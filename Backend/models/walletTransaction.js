@@ -8,6 +8,9 @@ const walletTransactionSchema = new Schema(
     amount: { type: Number, required: true, min: 0 },
     type: { type: String, enum: ["spend", "refund"], required: true },
     note: { type: String, trim: true, default: "" },
+    // partial refunds (one store's part cancelled) — their own key, so an order can have several
+    orderRef: { type: Types.ObjectId, ref: "Order", default: null },
+    key: { type: String, default: null },
   },
   { timestamps: true, versionKey: false }
 );
@@ -15,6 +18,11 @@ const walletTransactionSchema = new Schema(
 walletTransactionSchema.index(
   { order: 1, type: 1 },
   { unique: true, partialFilterExpression: { order: { $type: "objectId" } } }
+);
+
+walletTransactionSchema.index(
+  { key: 1 },
+  { unique: true, partialFilterExpression: { key: { $type: "string" } } }
 );
 
 module.exports =

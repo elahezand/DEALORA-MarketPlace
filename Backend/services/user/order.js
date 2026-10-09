@@ -1,13 +1,18 @@
 const Cart = require("../../models/cart");
 const Order = require("../../models/order");
 const User = require("../../models/user");
-const { spendFromWallet, refundToWallet } = require("../shared/wallet");
+const Store = require("../../models/store");
+const notifyUser = require("../../utils/notify");
+const { spendFromWallet } = require("../shared/wallet");
 const { paginate, calculateCartTotals, getCouponProblem } = require("../../utils/helper");
 const { round2 } = require("../../utils/pricing");
 const AppError = require("../../utils/AppError");
 const logger = require("../../utils/logger");
 const { createPayment } = require("../shared/zarinpal");
-const { buildOrderIdSearchExpr, finalizeOrder, revertOrder, completeDeliveredOrder } = require("../shared/order");
+const {
+  buildOrderIdSearchExpr, finalizeOrder, revertOrder, reserveStock, completeItems,
+  activeItems, groupItems, cancelItems,
+} = require("../shared/order");
 const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -16,9 +21,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const START_PAY_URL = process.env.ZARINPAL_PAYMENT_BASE_URL || "https://payment.zarinpal.com/pg/StartPay/";
 const payUrl = (authority) => `${START_PAY_URL.replace(/\/?$/, "/")}${authority}`;
+// Toman → Rial; the gateway only accepts whole numbers (percent coupons can leave decimals)
 const toRial = (toman) => Math.round(Number(toman || 0) * 10);
 
 const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey = null, useWallet = false) => {
+  // the client retried (lost response, double click, refresh) → give back the same order
   if (idempotencyKey) {
     const existing = await Order.findOne({ user: userId, idempotencyKey });
     if (existing) {
@@ -39,7 +46,6 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
     throw new AppError(400, "Cart is empty or is already being checked out");
   }
 
-  let walletSpent = 0;
   let createdOrder = null;
 
   const unlockCart = () =>
@@ -108,6 +114,10 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
       status: "created",
       idempotencyKey,
     });
+
+    // hold the stock before any money moves — two buyers can't both pay for the last one
+    await reserveStock(order);
+
     // 5) Payment — the order exists now, so money can be moved safely
     let paymentUrl = null;
 
@@ -122,7 +132,6 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
       );
 
       if (charged > 0) {
-        walletSpent = charged;
         order.pricing.walletUsed = charged;
         order.pricing.total = round2(order.pricing.total - charged);
         await order.save();
@@ -184,8 +193,13 @@ const checkout = async (userId, shippingAddress, paymentMethod, idempotencyKey =
   }
   catch (err) {
     await unlockCart();
-    if (walletSpent > 0 && createdOrder) {
-      await refundToWallet(userId, createdOrder._id, walletSpent, "checkout failed");
+    if (createdOrder) {
+      // stock back + wallet part refunded
+      createdOrder.status = "cancelled";
+      await createdOrder.save().catch(() => {});
+      await revertOrder(createdOrder).catch((e) =>
+        logger.error(`[checkout] could not revert order ${createdOrder._id}:`, e)
+      );
     }
     throw err;
   }
@@ -257,32 +271,68 @@ const cancelOrder = async (orderId, userId) => {
   return order;
 };
 
-const confirmDelivery = async (orderId, userId) => {
+/* buyer received one store's part (group), or everything that was shipped */
+const confirmDelivery = async (orderId, userId, group = null) => {
   const order = await Order.findOne({ _id: orderId, user: userId });
   if (!order) throw new AppError(404, "Order not found");
 
-  if (order.status !== "shipped") {
-    throw new AppError(
-      409,
-      `Order can only be confirmed as received from "shipped" status (currently "${order.status}")`
-    );
+  if (!["processing", "shipped"].includes(order.status)) {
+    throw new AppError(409, `This order can't be confirmed (it is "${order.status}")`);
   }
 
-  if (order.buyerConfirmedAt) {
-    throw new AppError(409, "You already confirmed receipt of this order");
-  }
-  order.buyerConfirmedAt = new Date();
-
-  // cash: the buyer's word isn't proof of payment — only whoever received the cash confirms it.
-  // Otherwise a buyer who never paid could lock the order as paid/completed.
-  if (order.paymentMethod === "cash" && order.paymentStatus !== "paid") {
-    await order.save();
-    return order;
+  const items = (group ? groupItems(order, group) : activeItems(order)).filter(
+    (item) => !item.deliveredAt && item.fulfillment?.status === "shipped"
+  );
+  if (!items.length) throw new AppError(409, "Nothing shipped is waiting for your confirmation");
+  if (items.every((item) => item.buyerConfirmedAt)) {
+    throw new AppError(409, "You already confirmed receipt of these items");
   }
 
-  // completed + sellers' money released (same as auto-complete)
-  await completeDeliveredOrder(order);
+  const now = new Date();
+  for (const item of items) item.buyerConfirmedAt = item.buyerConfirmedAt || now;
+  if (activeItems(order).every((item) => item.buyerConfirmedAt)) order.buyerConfirmedAt = now;
+  order.markModified("items");
+  await order.save();
+
+  // cash: the buyer's word isn't proof of payment — only the part whose cash was confirmed completes
+  const ready = order.paymentMethod === "cash" ? items.filter((item) => item.cashCollectedAt) : items;
+  if (ready.length) await completeItems(order, ready);
+
   return order;
+};
+
+/* buyer drops one item that hasn't been shipped yet — the rest of the order goes on */
+const cancelMyItem = async (orderId, userId, itemId) => {
+  const order = await Order.findOne({ _id: orderId, user: userId });
+  if (!order) throw new AppError(404, "Order not found");
+
+  // unpaid online order: the gateway amount is fixed, cancel the whole order instead
+  if (order.status !== "processing") {
+    throw new AppError(400, "Items of this order can't be cancelled one by one");
+  }
+
+  const item = order.items.id(itemId);
+  if (!item || item.cancelledAt) throw new AppError(404, "Item not found or already cancelled");
+  if (item.fulfillment?.status === "shipped") {
+    throw new AppError(400, "This item has already been shipped — contact support to cancel it");
+  }
+
+  const refund = await cancelItems(order, [item], "cancelled by buyer");
+
+  // let the store know so it doesn't ship it
+  if (item.store) {
+    const store = await Store.findById(item.store).select("owner").lean();
+    if (store?.owner) {
+      const id = String(order._id).slice(-6).toUpperCase();
+      await notifyUser(
+        store.owner,
+        `The buyer cancelled "${item.productSnapshot.title}" in order #${id} — don't ship it.`,
+        { type: "order_status", link: "/dashboard/seller/orders" }
+      ).catch((err) => logger.error(`[order ${order._id}] cancel notice failed:`, err));
+    }
+  }
+
+  return { order, refund };
 };
 
 module.exports = {
@@ -292,4 +342,5 @@ module.exports = {
   updateOrderByOwner,
   cancelOrder,
   confirmDelivery,
+  cancelMyItem,
 };

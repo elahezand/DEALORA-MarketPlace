@@ -7,10 +7,17 @@ const path = require("node:path");
 let wallet = { pending: 0, balance: 0 };
 let userWallet = 0;
 let stock = { offer: 10 };
+const refundKeys = new Set();
+const released = new Set(); // items whose money was claimed (stands in for the atomic DB update)
 
 const stubs = {
   [path.resolve(__dirname, "../models/walletTransaction.js")]: { findOne: () => ({ lean: async () => null }), create: async () => ({}) },
-  [path.resolve(__dirname, "../services/shared/wallet.js")]: { walletSpentOn: async () => 0, spendFromWallet: async (u, o, a) => a, refundToWallet: async (u, o, a) => { userWallet += a; return a; } },
+  [path.resolve(__dirname, "../services/shared/wallet.js")]: {
+    walletSpentOn: async () => 0,
+    spendFromWallet: async (u, o, a) => a,
+    refundToWallet: async (u, o, a) => { userWallet += a; return a; },
+    refundPartToWallet: async (u, o, key, a) => { if (refundKeys.has(key)) return 0; refundKeys.add(key); userWallet += a; return a; },
+  },
   mongoose: { Types: { ObjectId: class { constructor(v) { this.v = v; } } } },
   [path.resolve(__dirname, "../models/coupon.js")]: { updateOne: async () => ({ modifiedCount: 1 }) },
   [path.resolve(__dirname, "../models/listing.js")]: { updateOne: async () => ({ modifiedCount: 1 }) },
@@ -27,7 +34,15 @@ const stubs = {
   [path.resolve(__dirname, "../models/user.js")]: {
     updateOne: async (f, u) => { userWallet += u.$inc["wallet.balance"] || 0; return { modifiedCount: 1 }; },
   },
-  [path.resolve(__dirname, "../models/order.js")]: { find: () => ({ limit: async () => [] }) },
+  [path.resolve(__dirname, "../models/order.js")]: {
+    find: () => ({ limit: async () => [] }),
+    updateOne: async (f) => {
+      const id = f.items.$elemMatch._id;
+      if (released.has(id)) return { modifiedCount: 0 };
+      released.add(id);
+      return { modifiedCount: 1 };
+    },
+  },
   [path.resolve(__dirname, "../utils/helper.js")]: { escapeRegex: (x) => x, paginate: async () => ({}) },
   [path.resolve(__dirname, "../utils/logger.js")]: { warn() {}, error() {}, info() {} },
 };
@@ -40,14 +55,16 @@ Module._load = function (request, parent, isMain) {
   } catch (_) {}
   return origLoad.apply(this, arguments);
 };
-const { finalizeOrder, releaseOrderFunds, revertOrder } = require("../services/shared/order");
+const { finalizeOrder, releaseItemFunds, revertOrder } = require("../services/shared/order");
 
+let nextId = 0;
 const makeOrder = () => ({
   _id: "o1", user: "u1", paymentStatus: "pending", pricing: { total: 100 }, coupon: null, couponCounted: false, status: "created",
   fundsReleasedAt: null, revertedAt: null,
-  items: [{ productId: "p1", offer: "of1", quantity: 2, finalPrice: 50, store: "s1",
+  items: [{ _id: `i${++nextId}`, productId: "p1", offer: "of1", quantity: 2, finalPrice: 50, store: "s1",
             stockReserved: false, walletCredited: false, walletReleased: false }],
   save: async () => {},
+  markModified() {},
 });
 
 test("payment holds the money instead of paying the seller", async () => {
@@ -61,10 +78,11 @@ test("delivery moves the held money to the withdrawable balance", async () => {
   wallet = { pending: 0, balance: 0 };
   const o = makeOrder();
   await finalizeOrder(o);
-  await releaseOrderFunds(o);
+  await releaseItemFunds(o, o.items);
   assert.deepEqual(wallet, { pending: 0, balance: 100 });
 
-  await releaseOrderFunds(o);              // again → no change
+  o.items[0].walletReleased = false;       // a second run that read the order before the first one
+  await releaseItemFunds(o, o.items);      // → loses the claim, pays nothing
   assert.deepEqual(wallet, { pending: 0, balance: 100 });
 });
 
@@ -87,7 +105,7 @@ test("money already released is not taken back by a later cancel", async () => {
   wallet = { pending: 0, balance: 0 }; stock = { offer: 10 };
   const o = makeOrder();
   await finalizeOrder(o);
-  await releaseOrderFunds(o);
+  await releaseItemFunds(o, o.items);
   await revertOrder(o);
   assert.equal(wallet.balance, 100);
 });

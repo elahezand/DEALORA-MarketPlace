@@ -47,12 +47,19 @@ const getSellerOrders = async (userId, query = {}) => {
     const myItems = order.items.filter(
       (item) => item.store && String(item.store) === String(store._id)
     );
-    const mySubtotal = myItems.reduce((sum, item) => sum + item.finalPrice * item.quantity, 0);
-    const shippedCount = myItems.filter((item) => item.fulfillment?.status === "shipped").length;
+    const active = myItems.filter((item) => !item.cancelledAt);
+    const mySubtotal = active.reduce((sum, item) => sum + item.finalPrice * item.quantity, 0);
+    const shippedCount = active.filter((item) => item.fulfillment?.status === "shipped").length;
     const myFulfillmentStatus =
-      shippedCount === 0 ? "pending" : shippedCount === myItems.length ? "shipped" : "partial";
+      shippedCount === 0 ? "pending" : shippedCount === active.length ? "shipped" : "partial";
 
-    return { ...order, items: myItems, mySubtotal, myFulfillmentStatus };
+    // this store's own part, independent of the other stores in the order
+    let myStatus = "processing";
+    if (!active.length) myStatus = "cancelled";
+    else if (active.every((item) => item.deliveredAt)) myStatus = "completed";
+    else if (shippedCount === active.length) myStatus = "shipped";
+
+    return { ...order, items: myItems, mySubtotal, myFulfillmentStatus, myStatus };
   });
 
   return { data, pagination: result.pagination };

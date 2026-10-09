@@ -6,7 +6,8 @@ import { IOrder } from "../../types/Order";
 export const useConfirmDelivery = () => {
   const queryClient = useQueryClient();
 
-  return usePatch<{ success: boolean; message: string; data: IOrder }, { id: string }>(
+  // group = one store's part (store id, or "site"); left out = everything shipped
+  return usePatch<{ success: boolean; message: string; data: IOrder }, { id: string; group?: string }>(
     (data) => `/orders/${data.id}/confirm-delivery`,
     {
       onSuccess: (res) => {

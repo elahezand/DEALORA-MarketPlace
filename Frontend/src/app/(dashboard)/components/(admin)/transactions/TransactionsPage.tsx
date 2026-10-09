@@ -55,7 +55,6 @@ export default function TransactionsClient({
   const [filters, setFilters] = useState<TableFilterValue>(emptyFilters);
   const [status, setStatus] = useState<OrderStatus | "all">("processing");
   const [needsActionOnly, setNeedsActionOnly] = useState(false);
-  // shipped cash orders nobody confirmed in time
   const [overdueCashOnly, setOverdueCashOnly] = useState(false);
 
   const params: QueryParams = {
@@ -129,8 +128,8 @@ export default function TransactionsClient({
             type="button"
             onClick={() => setNeedsActionOnly((v) => !v)}
             className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors flex items-center gap-1.5 ${needsActionOnly
-                ? "bg-[var(--warning-500)] text-white border-[var(--warning-500)]"
-                : "border-[var(--warning-500)]/40 text-[var(--warning-500)] hover:bg-[var(--warning-bg)]"
+              ? "bg-[var(--warning-500)] text-white border-[var(--warning-500)]"
+              : "border-[var(--warning-500)]/40 text-[var(--warning-500)] hover:bg-[var(--warning-bg)]"
               }`}
           >
             <HiOutlineExclamationTriangle className="w-4 h-4" />
@@ -142,13 +141,12 @@ export default function TransactionsClient({
             onClick={() => {
               const next = !overdueCashOnly;
               setOverdueCashOnly(next);
-              // overdue cash orders are always "shipped"
               if (next) setStatus("all");
             }}
             title="Cash orders shipped long ago that nobody confirmed — mark them delivered or cancel them"
             className={`text-xs font-bold px-4 py-2 rounded-lg border transition-colors flex items-center gap-1.5 ${overdueCashOnly
-                ? "bg-[var(--destructive)] text-white border-[var(--destructive)]"
-                : "border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)]"
+              ? "bg-[var(--destructive)] text-white border-[var(--destructive)]"
+              : "border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)]"
               }`}
           >
             Cash to check
@@ -156,8 +154,10 @@ export default function TransactionsClient({
         </div>
       </div>
 
-      <TableFilters value={filters} onChange={setFilters} searchPlaceholder="Search order id..." />
-
+      <TableFilters
+        value={filters}
+        onChange={setFilters}
+        searchPlaceholder="Search order id..." />
 
       <TableCard
         header={
@@ -245,8 +245,6 @@ export default function TransactionsClient({
               </td>
               <td className="px-6 py-4">
                 <div className="flex items-center justify-end gap-2">
-                  {/* no "Mark delivered" here: orders are completed by the buyer, by the system
-                      (online, after the waiting period) or when the cash is confirmed (cash) */}
                   <ViewAction href={`/dashboard/admin/transactions/${order._id}`} />
                 </div>
               </td>

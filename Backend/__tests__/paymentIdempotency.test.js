@@ -17,6 +17,8 @@ const stubs = {
   [path.resolve(__dirname, "../models/walletTransaction.js")]: { findOne: () => ({ lean: async () => null }), create: async () => ({}) },
   [path.resolve(__dirname, "../services/shared/wallet.js")]: { walletSpentOn: async () => 0, spendFromWallet: async (u, o, a) => a, refundToWallet: async () => 0 },
   mongoose: { Types: { ObjectId: class {} }, startSession: async () => ({}) },
+  [path.resolve(__dirname, "../models/store.js")]: {},
+  [path.resolve(__dirname, "../utils/notify.js")]: async () => {},
   [path.resolve(__dirname, "../models/user.js")]: { findById: () => ({ select: () => ({ lean: async () => ({ wallet: { balance: 0 } }) }) }), findOneAndUpdate: async () => null, updateOne: async () => ({}) },
   [path.resolve(__dirname, "../models/cart.js")]: { findOneAndUpdate: () => ({ populate: async () => null }) },
   [path.resolve(__dirname, "../models/listing.js")]: {},

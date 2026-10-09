@@ -7,7 +7,9 @@ const { finalizeOrder } = require("../shared/order");
 const STALE_CLAIM_MS = 2 * 60 * 1000;
 
 const isFinished = (order) =>
-  order.items.every((i) => i.stockReserved && (!i.store || i.walletCredited));
+  order.items
+    .filter((i) => !i.cancelledAt)
+    .every((i) => i.stockReserved && (!i.store || i.walletCredited));
 
 const toRial = (toman) => Math.round(Number(toman || 0) * 10);
 

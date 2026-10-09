@@ -63,15 +63,8 @@ test("the delivery time of a shipped item can be changed, not of an unshipped or
   assert.throws(() => shared.setItemDeliveryEstimate(order, pending, new Date()), /Ship the item first/);
   assert.throws(
     () => shared.setItemDeliveryEstimate({ ...order, status: "completed" }, shipped, new Date()),
-    /completed order/
+    /can't be changed anymore/
   );
-});
-
-test("auto-complete waits for the promised arrival, not only the ship date", async () => {
-  await require("../services/shared/orderSweeper").autoCompleteShippedOrders();
-  assert.ok(lastFind.shippedAt.$lte instanceof Date);
-  assert.deepEqual(lastFind.$or[0], { expectedDeliveryAt: null });
-  assert.ok(lastFind.$or[1].expectedDeliveryAt.$lte instanceof Date);
 });
 
 test("the buyer is told the day and time in Tehran time", async () => {

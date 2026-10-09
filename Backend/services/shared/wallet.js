@@ -81,8 +81,24 @@ const refundToWallet = async (userId, orderId, amount, note = "") => {
   return amount;
 };
 
+/** Refund for part of an order. The key makes it run once per cancelled part. */
+const refundPartToWallet = async (userId, orderId, key, amount, note = "") => {
+  if (!amount || amount <= 0) return 0;
+
+  try {
+    await WalletTransaction.create({ user: userId, orderRef: orderId, key, type: "refund", amount, note });
+  } catch (err) {
+    if (err?.code === 11000) return 0;
+    throw err;
+  }
+
+  await User.updateOne({ _id: userId }, { $inc: { "wallet.balance": amount } });
+  return amount;
+};
+
 module.exports = {
   walletSpentOn,
   spendFromWallet,
   refundToWallet,
+  refundPartToWallet,
 };

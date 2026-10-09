@@ -26,10 +26,10 @@ import DeliveryTimeFields, {
   deliveryTimeError,
   deliveryTimeToIso,
 } from "../../shared/DeliveryTimeFields";
-import { formatDateTime } from "@/utils/orderDates";
+import { formatDateTime, groupOrderItems, partStatus, itemDueTime, PartStatus } from "@/utils/orderDates";
+import { useAdminCancelGroup, useAdminCancelItem } from "@/services/Order/useAdminCancelGroup";
 import { getUrl } from "@/utils/helper";
 import { getOrderItemVariantLabel } from "@/utils/orderItem";
-
 
 const STATUS_MOVES: Record<OrderStatus, OrderStatus[]> = {
   created: ["cancelled"],
@@ -108,10 +108,23 @@ export default function TransactionDetail({
   const { mutate: confirmCash, isPending: isConfirmingCash, variables: cashVars } = useAdminCashReceived();
 
   const { mutate: reportMissing, isPending: isReporting, variables: reportVars } = useAdminCashNotReceived();
+  const { mutate: cancelGroup, isPending: isCancellingGroup, variables: cancelVars } = useAdminCancelGroup();
+
+  const { mutate: cancelItem, isPending: isCancellingItem, variables: cancelItemVars } = useAdminCancelItem();
+
+  function handleCancelItem(item: IAdminOrderItem) {
+    if (!window.confirm(`Cancel "${item.productSnapshot.title}"? Its stock goes back and the buyer is refunded for it.`)) return;
+    cancelItem({ orderId, itemId: item._id });
+  }
+
+  function handleCancelGroup(group: string, name: string) {
+    if (!window.confirm(`Cancel everything from ${name} in this order? Its stock goes back and the buyer is refunded for it.`)) return;
+    cancelGroup({ orderId, group });
+  }
 
   function handleCashNotReceived(item: IAdminOrderItem) {
     if (!order) return;
-    const note = askCashNotReceived(order);
+    const note = askCashNotReceived([item]);
     if (note === null) return;
     reportMissing({ orderId, itemId: item._id, note: note || undefined });
   }
@@ -269,6 +282,49 @@ export default function TransactionDetail({
         </div>
       )}
 
+      {/* Packages — each store's part is delivered, paid out and cancelled on its own */}
+      {(() => {
+        const parts = groupOrderItems(order.items ?? []);
+        if (parts.length < 2 && !["processing", "shipped"].includes(order.status)) return null;
+        const PART_TONE: Record<PartStatus, "success" | "warning" | "destructive" | "info"> = {
+          preparing: "warning", shipped: "info", delivered: "success", cancelled: "destructive",
+        };
+        return (
+          <div className="card rounded-2xl border border-[var(--border)] p-5 flex flex-col gap-3">
+            <p className="text-sm font-bold text-[var(--foreground)]">Packages ({parts.length})</p>
+            {parts.map(({ key, items }) => {
+              const status = partStatus(items);
+              const name = items[0]?.storeSnapshot?.name || "Site";
+              const amount = items
+                .filter((item) => !item.cancelledAt)
+                .reduce((sum, item) => sum + item.finalPrice * item.quantity, 0);
+              const canCancel =
+                ["processing", "shipped"].includes(order.status) && (status === "preparing" || status === "shipped");
+              return (
+                <div key={key} className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <HiOutlineBuildingStorefront className="w-4 h-4 text-[var(--foreground-muted)]" />
+                    <span className="text-sm text-[var(--foreground)] font-semibold truncate">{name}</span>
+                    <Badge tone={PART_TONE[status]} label={status} />
+                    <span className="text-xs text-[var(--foreground-muted)]">${amount.toLocaleString()}</span>
+                  </div>
+                  {canCancel && (
+                    <button
+                      type="button"
+                      onClick={() => handleCancelGroup(key, name)}
+                      disabled={isCancellingGroup && cancelVars?.group === key}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {isCancellingGroup && cancelVars?.group === key ? "Cancelling..." : "Cancel this part"}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       <div className="card rounded-2xl border border-[var(--border)] overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--border)]">
           <HiOutlineShoppingBag className="w-5 h-5 text-[var(--foreground-muted)]" />
@@ -279,16 +335,15 @@ export default function TransactionDetail({
         <div className="divide-y divide-[var(--border)]">
           {order.items?.map((item, idx) => {
             const sellerName = item.storeSnapshot.name;
+            // a store's item → its cash went to the store; no store → the site got the cash
             const isStoreItem = !!item.store;
-            const eta = item.fulfillment?.estimatedDeliveryAt;
-            const shipped = item.fulfillment?.shippedAt;
-            const dueTime = eta
-              ? new Date(eta).getTime()
-              : shipped ? new Date(shipped).getTime() + 3 * 24 * 60 * 60 * 1000 : 0;
-            const pastDue = Date.now() >= dueTime;
             const title = item.productSnapshot.title;
             const productId = typeof item.productId === "object" ? item.productId?._id : item.productId;
             const isShipped = item.fulfillment?.status === "shipped";
+            const isCancelled = !!item.cancelledAt;
+            const isDelivered = !!item.deliveredAt;
+            const isOpen = !isCancelled && !isDelivered && ["processing", "shipped"].includes(order.status);
+            const pastDue = Date.now() >= itemDueTime(item);
 
             return (
               <div
@@ -328,9 +383,13 @@ export default function TransactionDetail({
                           Personal ad
                         </span>
                       )}
-                      {item.fulfillment && (
+                      {isCancelled ? (
+                        <Badge tone="destructive" label="Cancelled" />
+                      ) : isDelivered ? (
+                        <Badge tone="success" label="Delivered" />
+                      ) : item.fulfillment && (
                         <Badge
-                          tone={isShipped ? "success" : "warning"}
+                          tone={isShipped ? "info" : "warning"}
                           label={isShipped ? "Shipped" : "Pending shipment"}
                         />
                       )}
@@ -363,20 +422,19 @@ export default function TransactionDetail({
                   <p className="text-sm font-black text-[var(--foreground)]">
                     ${(item.finalPrice * item.quantity).toLocaleString()}
                   </p>
-                  {order.paymentMethod === "cash" && !isStoreItem && isShipped && !item.cashCollectedAt
-                    && !order.cashDispute?.reportedAt && ["processing", "shipped"].includes(order.status) && (
-                      <button
-                        type="button"
-                        onClick={() => handleCashReceived(item)}
-                        disabled={isConfirmingCash && cashVars?.itemId === item._id}
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--success-500)]/40 text-[var(--success-500)] hover:bg-[var(--success-bg)] transition-colors flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
-                      >
-                        <HiOutlineBanknotes className="w-4 h-4" />
-                        {isConfirmingCash && cashVars?.itemId === item._id ? "Saving..." : "Cash received"}
-                      </button>
-                    )}
-                  {order.paymentMethod === "cash" && !isStoreItem && isShipped && !item.cashCollectedAt
-                    && !order.cashDispute?.reportedAt && pastDue && ["processing", "shipped"].includes(order.status) && (
+                  {order.paymentMethod === "cash" && !isStoreItem && isShipped && !item.cashCollectedAt && isOpen && (
+                    <button
+                      type="button"
+                      onClick={() => handleCashReceived(item)}
+                      disabled={isConfirmingCash && cashVars?.itemId === item._id}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--success-500)]/40 text-[var(--success-500)] hover:bg-[var(--success-bg)] transition-colors flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
+                    >
+                      <HiOutlineBanknotes className="w-4 h-4" />
+                      {isConfirmingCash && cashVars?.itemId === item._id ? "Saving..." : "Cash received"}
+                    </button>
+                  )}
+                  {order.paymentMethod === "cash" && !isStoreItem && isShipped && !item.cashCollectedAt && isOpen
+                    && !order.cashDispute?.reportedAt && pastDue && (
                       <button
                         type="button"
                         onClick={() => handleCashNotReceived(item)}
@@ -386,7 +444,7 @@ export default function TransactionDetail({
                         {isReporting && reportVars?.itemId === item._id ? "Saving..." : "Not received"}
                       </button>
                     )}
-                  {isShipped && item._id && ["processing", "shipped"].includes(order.status) && (
+                  {isShipped && item._id && isOpen && (
                     <button
                       type="button"
                       onClick={() => openEta(item)}
@@ -397,7 +455,17 @@ export default function TransactionDetail({
                       <HiOutlineClock className="w-4 h-4" />
                     </button>
                   )}
-                  {!isShipped && item._id && item.needsAdminShipment && (
+                  {isOpen && item._id && (
+                    <button
+                      type="button"
+                      onClick={() => handleCancelItem(item)}
+                      disabled={isCancellingItem && cancelItemVars?.itemId === item._id}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {isCancellingItem && cancelItemVars?.itemId === item._id ? "Cancelling..." : "Cancel item"}
+                    </button>
+                  )}
+                  {!isShipped && !isCancelled && item._id && item.needsAdminShipment && (
                     <button
                       type="button"
                       onClick={() => openShip(item)}

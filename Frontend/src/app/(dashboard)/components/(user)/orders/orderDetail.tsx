@@ -17,8 +17,8 @@ import {
   formatDateTime, formatDay, formatTime, getDeliveryInfo, getExpectedDelivery, getShippedAt,
   groupOrderItems, partStatus, PartStatus,
 } from "@/utils/orderDates";
-import { useConfirmDelivery } from "@/services/Order/useConfirmDelivery";
 import { useCancelOrder } from "@/services/Order/useCancelOrder";
+import { useConfirmDelivery } from "@/services/Order/useConfirmDelivery";
 import { useCancelOrderItem } from "@/services/Order/useCancelOrderItem";
 import { Badge } from "../../shared/table/TableParts";
 import { IOrder, OrderStatus, PaymentStatus } from "@/types/Order";
@@ -95,6 +95,7 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
             { id: orderId, itemId },
             {
               onSuccess: (res) => {
+                toast.success(res?.message || "Item cancelled");
                 if (res?.data) setOrder(res.data);
                 router.refresh();
               },
@@ -320,6 +321,8 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
         const waitingForCash =
           status === "shipped" && confirmed && order.paymentMethod === "cash" && active.some((item) => !item.cashCollectedAt);
         const deliveredAt = active.find((item) => item.deliveredAt)?.deliveredAt;
+        // the whole package ships together → one arrival time and tracking code for it
+        const packageShipping = status === "shipped" ? active[0]?.fulfillment : null;
 
         return (
           <div key={key} className="card rounded-2xl border border-[var(--border)] overflow-hidden">
@@ -332,6 +335,16 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
                 <Badge tone={badge.tone} label={badge.label} />
                 {status === "delivered" && deliveredAt && (
                   <span className="text-[11px] text-[var(--foreground-muted)]">{formatDateTime(deliveredAt)}</span>
+                )}
+                {packageShipping?.estimatedDeliveryAt && (
+                  <span className="text-[11px] font-semibold text-[var(--primary-500)]">
+                    Arrives {formatDateTime(packageShipping.estimatedDeliveryAt)}
+                  </span>
+                )}
+                {packageShipping?.trackingCode && (
+                  <span className="text-[11px] text-[var(--foreground-muted)] font-mono">
+                    · Tracking: {packageShipping.trackingCode}
+                  </span>
                 )}
               </div>
               {canConfirm && (
@@ -379,17 +392,17 @@ export default function OrderDetail({ initialOrder, orderId }: OrderDetailProps)
                             label={item.deliveredAt ? "Delivered" : isShipped ? "Shipped" : isDelayed ? "Delayed" : "Preparing"}
                           />
                         )}
-                        {isShipped && !isCancelled && item.fulfillment?.shippedAt && (
+                        {!packageShipping && isShipped && !isCancelled && item.fulfillment?.shippedAt && (
                           <span className="text-[11px] text-[var(--foreground-muted)]">
                             on {formatDate(item.fulfillment.shippedAt)}
                           </span>
                         )}
-                        {isShipped && item.fulfillment?.trackingCode && (
+                        {!packageShipping && isShipped && item.fulfillment?.trackingCode && (
                           <span className="text-[11px] text-[var(--foreground-muted)] font-mono">
                             · Tracking: {item.fulfillment.trackingCode}
                           </span>
                         )}
-                        {isShipped && !item.deliveredAt && !isCancelled && item.fulfillment?.estimatedDeliveryAt && (
+                        {!packageShipping && isShipped && !item.deliveredAt && !isCancelled && item.fulfillment?.estimatedDeliveryAt && (
                           <span className="text-[11px] font-semibold text-[var(--primary-500)]">
                             · Arrives {formatDateTime(item.fulfillment.estimatedDeliveryAt)}
                           </span>

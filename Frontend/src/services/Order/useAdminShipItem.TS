@@ -3,27 +3,26 @@ import { usePatch } from "../../utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
 import { IAdminOrder } from "../../types/Order";
 
-export interface AdminShipItemPayload {
+export interface AdminShipPayload {
   orderId: string;
-  itemId: string;
   trackingCode?: string;
-  /** ISO string — when the buyer should receive it */
   estimatedDeliveryAt?: string;
 }
 
+/* ADMIN — ships all the site's items of the order together */
 export const useAdminShipItem = (onSuccessCallback?: () => void) => {
   const queryClient = useQueryClient();
 
   return usePatch<
     { success: boolean; message: string; data: IAdminOrder },
-    AdminShipItemPayload
-  >((d) => `/orders/admin/${d.orderId}/items/${d.itemId}/ship`, {
-    onSuccess: () => {
-      toast.success("Item marked as shipped");
+    AdminShipPayload
+  >((d) => `/orders/admin/${d.orderId}/ship`, {
+    onSuccess: (res) => {
+      toast.success(res?.message || "Marked as shipped");
       queryClient.invalidateQueries({ queryKey: ["admin-order"] });
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       onSuccessCallback?.();
     },
-    errorFallback: "Failed to update item",
+    errorFallback: "Failed to ship the items",
   });
 };

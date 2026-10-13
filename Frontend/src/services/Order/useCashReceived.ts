@@ -22,13 +22,13 @@ export const useSellerCashReceived = (onSuccessCallback?: () => void) => {
   });
 };
 
-/* ADMIN — the site received the cash for one of its OWN items */
+/* ADMIN — the site received the cash for its own items in this order */
 export const useAdminCashReceived = (onSuccessCallback?: () => void) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ orderId, itemId }: { orderId: string; itemId: string }) =>
-      (await api.patch(`/orders/admin/${orderId}/items/${itemId}/cash-received`)).data as { message?: string },
+    mutationFn: async ({ orderId }: { orderId: string }) =>
+      (await api.patch(`/orders/admin/${orderId}/cash-received`)).data as { message?: string },
     onSuccess: (res) => {
       toast.success(res?.message || "Cash confirmed");
       queryClient.invalidateQueries({ queryKey: ["admin-order"] });
@@ -55,13 +55,13 @@ export const useSellerCashNotReceived = (onSuccessCallback?: () => void) => {
   });
 };
 
-/* ADMIN — the site did NOT receive the cash for one of its own items */
+/* ADMIN — the site did NOT receive the cash for its own items */
 export const useAdminCashNotReceived = (onSuccessCallback?: () => void) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ orderId, itemId, note }: { orderId: string; itemId: string; note?: string }) =>
-      (await api.patch(`/orders/admin/${orderId}/items/${itemId}/cash-not-received`, { note })).data as { message?: string },
+    mutationFn: async ({ orderId, note }: { orderId: string; note?: string }) =>
+      (await api.patch(`/orders/admin/${orderId}/cash-not-received`, { note })).data as { message?: string },
     onSuccess: (res) => {
       toast.success(res?.message || "Reported");
       queryClient.invalidateQueries({ queryKey: ["admin-order"] });

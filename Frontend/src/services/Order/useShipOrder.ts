@@ -10,21 +10,13 @@ export interface ShipOrderPayload {
   estimatedDeliveryAt?: string;
 }
 
-/* Ships every item of this seller in the order that isn't shipped yet
-   (backend: PATCH /orders/seller/:id/items/:itemId/ship — one call per item). */
+/* SELLER — ships all of this seller's items in the order together */
 export const useShipOrder = (onSuccessCallback?: () => void) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ order, trackingCode, estimatedDeliveryAt }: ShipOrderPayload) => {
-      const pending = order.items.filter((item) => item.fulfillment?.status !== "shipped");
-      for (const item of pending) {
-        await api.patch(`/orders/seller/${order._id}/items/${item._id}/ship`, {
-          trackingCode,
-          estimatedDeliveryAt,
-        });
-      }
-    },
+    mutationFn: async ({ order, trackingCode, estimatedDeliveryAt }: ShipOrderPayload) =>
+      (await api.patch(`/orders/seller/${order._id}/ship`, { trackingCode, estimatedDeliveryAt })).data,
     onSuccess: () => {
       toast.success("Order marked as shipped");
       queryClient.invalidateQueries({ queryKey: ["/orders/seller"] });

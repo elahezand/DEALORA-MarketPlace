@@ -31,6 +31,12 @@ import { useAdminCancelGroup, useAdminCancelItem } from "@/services/Order/useAdm
 import { getUrl } from "@/utils/helper";
 import { getOrderItemVariantLabel } from "@/utils/orderItem";
 
+/*
+ * Same rules as the backend (services/admin/order.js → ALLOWED_STATUS_MOVES).
+ * The current value is always listed first so the select never shows a blank.
+ * An admin only CANCELS by hand. Completing happens when the buyer confirms, automatically
+ * (online), or when the cash is confirmed by whoever received it (cash).
+ */
 const STATUS_MOVES: Record<OrderStatus, OrderStatus[]> = {
   created: ["cancelled"],
   processing: ["cancelled"],
@@ -84,12 +90,13 @@ export default function TransactionDetail({
 
   const [status, setStatus] = useState<OrderStatus>("created");
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("pending");
-  const [shipTarget, setShipTarget] = useState<IAdminOrderItem | null>(null);
+  // the site's items are shipped together
+  const [shipOpen, setShipOpen] = useState(false);
   const [trackingCode, setTrackingCode] = useState("");
   const [delivery, setDelivery] = useState<DeliveryTimeValue>(defaultDeliveryTime());
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
-  // shipped item whose expected arrival is being changed
-  const [etaTarget, setEtaTarget] = useState<IAdminOrderItem | null>(null);
+  // part (store id or "site") whose arrival time is being changed
+  const [etaTarget, setEtaTarget] = useState<{ key: string; name: string } | null>(null);
 
   useEffect(() => {
     if (order) {
@@ -100,14 +107,14 @@ export default function TransactionDetail({
 
   const { mutate: updateOrder, isPending } = useUpdateOrder(orderId);
   const { mutate: shipItem, isPending: isShipping } = useAdminShipItem(() => {
-    setShipTarget(null);
+    setShipOpen(false);
     setTrackingCode("");
   });
 
   const { mutate: setEstimate, isPending: isSavingEta } = useAdminSetDeliveryEstimate(() => setEtaTarget(null));
-  const { mutate: confirmCash, isPending: isConfirmingCash, variables: cashVars } = useAdminCashReceived();
+  const { mutate: confirmCash, isPending: isConfirmingCash } = useAdminCashReceived();
 
-  const { mutate: reportMissing, isPending: isReporting, variables: reportVars } = useAdminCashNotReceived();
+  const { mutate: reportMissing, isPending: isReporting } = useAdminCashNotReceived();
   const { mutate: cancelGroup, isPending: isCancellingGroup, variables: cancelVars } = useAdminCancelGroup();
 
   const { mutate: cancelItem, isPending: isCancellingItem, variables: cancelItemVars } = useAdminCancelItem();
@@ -122,40 +129,39 @@ export default function TransactionDetail({
     cancelGroup({ orderId, group });
   }
 
-  function handleCashNotReceived(item: IAdminOrderItem) {
+  function handleCashNotReceived(items: IAdminOrderItem[]) {
     if (!order) return;
-    const note = askCashNotReceived([item]);
+    const note = askCashNotReceived(items);
     if (note === null) return;
-    reportMissing({ orderId, itemId: item._id, note: note || undefined });
+    reportMissing({ orderId, note: note || undefined });
   }
 
-  function handleCashReceived(item: IAdminOrderItem) {
-    if (!window.confirm(`Confirm the site received the cash for "${item.productSnapshot.title}"?`)) return;
-    confirmCash({ orderId, itemId: item._id });
+  function handleCashReceived() {
+    if (!window.confirm("Confirm the site received the cash for its items in this order?")) return;
+    confirmCash({ orderId });
   }
 
-  function openShip(item: IAdminOrderItem) {
-    setShipTarget(item);
+  function openShip() {
+    setShipOpen(true);
     setTrackingCode("");
     setDelivery(defaultDeliveryTime());
     setDeliveryError(null);
   }
 
-  function openEta(item: IAdminOrderItem) {
-    setEtaTarget(item);
-    setDelivery(defaultDeliveryTime(item.fulfillment?.estimatedDeliveryAt ?? null));
+  function openEta(key: string, name: string, items: IAdminOrderItem[]) {
+    const current = items.find((item) => item.fulfillment?.estimatedDeliveryAt)?.fulfillment?.estimatedDeliveryAt ?? null;
+    setEtaTarget({ key, name });
+    setDelivery(defaultDeliveryTime(current));
     setDeliveryError(null);
   }
 
   function submitShip(e: React.FormEvent) {
     e.preventDefault();
-    if (!shipTarget) return;
     const error = deliveryTimeError(delivery);
     setDeliveryError(error);
     if (error) return;
     shipItem({
       orderId,
-      itemId: shipTarget._id,
       trackingCode: trackingCode.trim() || undefined,
       estimatedDeliveryAt: deliveryTimeToIso(delivery) ?? undefined,
     });
@@ -167,7 +173,7 @@ export default function TransactionDetail({
     const error = deliveryTimeError(delivery);
     setDeliveryError(error);
     if (error) return;
-    setEstimate({ orderId, itemId: etaTarget._id, estimatedDeliveryAt: deliveryTimeToIso(delivery)! });
+    setEstimate({ orderId, group: etaTarget.key, estimatedDeliveryAt: deliveryTimeToIso(delivery)! });
   }
 
   const formatDate = (date: string | Date) =>
@@ -298,8 +304,19 @@ export default function TransactionDetail({
               const amount = items
                 .filter((item) => !item.cancelledAt)
                 .reduce((sum, item) => sum + item.finalPrice * item.quantity, 0);
-              const canCancel =
-                ["processing", "shipped"].includes(order.status) && (status === "preparing" || status === "shipped");
+              const isOrderOpen = ["processing", "shipped"].includes(order.status);
+              const canCancel = isOrderOpen && (status === "preparing" || status === "shipped");
+              const open = items.filter((item) => !item.cancelledAt && !item.deliveredAt);
+              const shippedOpen = open.filter((item) => item.fulfillment?.status === "shipped");
+              const isSite = key === "site";
+              // the site's own items wait for the admin to ship them
+              const canShip = isSite && isOrderOpen &&
+                open.some((item) => item.needsAdminShipment && item.fulfillment?.status !== "shipped");
+              // cash paid to the site: shipped and not confirmed yet
+              const cashOpen = isSite && isOrderOpen && order.paymentMethod === "cash"
+                ? shippedOpen.filter((item) => !item.cashCollectedAt)
+                : [];
+              const pastDue = cashOpen.length > 0 && cashOpen.every((item) => Date.now() >= itemDueTime(item));
               return (
                 <div key={key} className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2 min-w-0">
@@ -308,6 +325,49 @@ export default function TransactionDetail({
                     <Badge tone={PART_TONE[status]} label={status} />
                     <span className="text-xs text-[var(--foreground-muted)]">${amount.toLocaleString()}</span>
                   </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                  {canShip && (
+                    <button
+                      type="button"
+                      onClick={openShip}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--primary-500)]/30 text-[var(--primary-500)] hover:bg-[var(--primary-500)]/10 transition-colors flex items-center gap-1.5"
+                    >
+                      <HiOutlineTruck className="w-4 h-4" />
+                      Ship
+                    </button>
+                  )}
+                  {cashOpen.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleCashReceived}
+                      disabled={isConfirmingCash}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--success-500)]/40 text-[var(--success-500)] hover:bg-[var(--success-bg)] transition-colors flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
+                    >
+                      <HiOutlineBanknotes className="w-4 h-4" />
+                      {isConfirmingCash ? "Saving..." : "Cash received"}
+                    </button>
+                  )}
+                  {cashOpen.length > 0 && pastDue && !order.cashDispute?.reportedAt && (
+                    <button
+                      type="button"
+                      onClick={() => handleCashNotReceived(cashOpen)}
+                      disabled={isReporting}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {isReporting ? "Saving..." : "Not received"}
+                    </button>
+                  )}
+                  {isOrderOpen && shippedOpen.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => openEta(key, name, shippedOpen)}
+                      title="Change delivery time"
+                      aria-label="Change delivery time"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
+                    >
+                      <HiOutlineClock className="w-4 h-4" />
+                    </button>
+                  )}
                   {canCancel && (
                     <button
                       type="button"
@@ -318,6 +378,7 @@ export default function TransactionDetail({
                       {isCancellingGroup && cancelVars?.group === key ? "Cancelling..." : "Cancel this part"}
                     </button>
                   )}
+                  </div>
                 </div>
               );
             })}
@@ -343,7 +404,6 @@ export default function TransactionDetail({
             const isCancelled = !!item.cancelledAt;
             const isDelivered = !!item.deliveredAt;
             const isOpen = !isCancelled && !isDelivered && ["processing", "shipped"].includes(order.status);
-            const pastDue = Date.now() >= itemDueTime(item);
 
             return (
               <div
@@ -422,39 +482,6 @@ export default function TransactionDetail({
                   <p className="text-sm font-black text-[var(--foreground)]">
                     ${(item.finalPrice * item.quantity).toLocaleString()}
                   </p>
-                  {order.paymentMethod === "cash" && !isStoreItem && isShipped && !item.cashCollectedAt && isOpen && (
-                    <button
-                      type="button"
-                      onClick={() => handleCashReceived(item)}
-                      disabled={isConfirmingCash && cashVars?.itemId === item._id}
-                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--success-500)]/40 text-[var(--success-500)] hover:bg-[var(--success-bg)] transition-colors flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
-                    >
-                      <HiOutlineBanknotes className="w-4 h-4" />
-                      {isConfirmingCash && cashVars?.itemId === item._id ? "Saving..." : "Cash received"}
-                    </button>
-                  )}
-                  {order.paymentMethod === "cash" && !isStoreItem && isShipped && !item.cashCollectedAt && isOpen
-                    && !order.cashDispute?.reportedAt && pastDue && (
-                      <button
-                        type="button"
-                        onClick={() => handleCashNotReceived(item)}
-                        disabled={isReporting && reportVars?.itemId === item._id}
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {isReporting && reportVars?.itemId === item._id ? "Saving..." : "Not received"}
-                      </button>
-                    )}
-                  {isShipped && item._id && isOpen && (
-                    <button
-                      type="button"
-                      onClick={() => openEta(item)}
-                      title="Change delivery time"
-                      aria-label="Change delivery time"
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
-                    >
-                      <HiOutlineClock className="w-4 h-4" />
-                    </button>
-                  )}
                   {isOpen && item._id && (
                     <button
                       type="button"
@@ -463,16 +490,6 @@ export default function TransactionDetail({
                       className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--destructive)]/40 text-[var(--destructive)] hover:bg-[var(--destructive-bg)] transition-colors disabled:opacity-50 whitespace-nowrap"
                     >
                       {isCancellingItem && cancelItemVars?.itemId === item._id ? "Cancelling..." : "Cancel item"}
-                    </button>
-                  )}
-                  {!isShipped && !isCancelled && item._id && item.needsAdminShipment && (
-                    <button
-                      type="button"
-                      onClick={() => openShip(item)}
-                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--primary-500)]/30 text-[var(--primary-500)] hover:bg-[var(--primary-500)]/10 transition-colors flex items-center gap-1.5"
-                    >
-                      <HiOutlineTruck className="w-4 h-4" />
-                      Ship
                     </button>
                   )}
                 </div>
@@ -616,15 +633,15 @@ export default function TransactionDetail({
 
       {/* SHIP ITEM MODAL */}
       <AdminFormModal
-        isOpen={!!shipTarget}
-        onClose={() => setShipTarget(null)}
-        title="Mark Item as Shipped"
+        isOpen={shipOpen}
+        onClose={() => setShipOpen(false)}
+        title="Ship the Site's Items"
         icon={HiOutlineTruck}
         footer={
           <>
             <button
               type="button"
-              onClick={() => setShipTarget(null)}
+              onClick={() => setShipOpen(false)}
               className="text-xs font-bold px-4 h-9 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
             >
               Cancel
@@ -642,11 +659,8 @@ export default function TransactionDetail({
       >
         <form id="admin-ship-item-form" onSubmit={submitShip} className="flex flex-col gap-4">
           <p className="text-sm text-[var(--foreground)]">
-            Confirm{" "}
-            <span className="font-bold">
-              {shipTarget?.productSnapshot.title ?? "this item"}
-            </span>{" "}
-            has been handed off for delivery.
+            Confirm the site&apos;s items in this order were handed off for delivery. They all get the same
+            tracking code and delivery time.
           </p>
           <DeliveryTimeFields value={delivery} onChange={setDelivery} error={deliveryError} />
           <FormField label="Tracking code (optional)">
@@ -689,8 +703,8 @@ export default function TransactionDetail({
       >
         <form id="admin-eta-form" onSubmit={submitEta} className="flex flex-col gap-4">
           <p className="text-sm text-[var(--foreground)]">
-            New expected arrival for{" "}
-            <span className="font-bold">{etaTarget?.productSnapshot.title ?? "this item"}</span>.
+            New expected arrival for everything shipped from{" "}
+            <span className="font-bold">{etaTarget?.name ?? "this part"}</span>.
           </p>
           <DeliveryTimeFields value={delivery} onChange={setDelivery} error={deliveryError} />
         </form>

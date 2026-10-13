@@ -7,21 +7,15 @@ const getSeller = async (req, res, next) => {
     next(err);
   }
 };
-const sellerShipItem = async (req, res, next) => {
+const sellerShipOrder = async (req, res, next) => {
   try {
-    const order = await sellerOrderService.sellerShipItem(
+    const order = await sellerOrderService.sellerShipOrder(
       req.user._id,
       req.params.id,
-      req.params.itemId,
       req.parsed.data.trackingCode,
       req.parsed.data.estimatedDeliveryAt || null
     );
-
-    res.status(200).json({
-      success: true,
-      message: "Item marked as shipped",
-      data: order,
-    });
+    res.status(200).json({ success: true, message: "Your items were marked as shipped", data: order });
   } catch (err) {
     next(err);
   }
@@ -32,7 +26,6 @@ const sellerSetDeliveryEstimate = async (req, res, next) => {
     const order = await sellerOrderService.sellerSetDeliveryEstimate(
       req.user._id,
       req.params.id,
-      req.params.itemId,
       req.parsed.data.estimatedDeliveryAt
     );
     res.status(200).json({ success: true, message: "Delivery time updated", data: order });
@@ -82,5 +75,5 @@ module.exports = {
   sellerReportCashMissing,
   sellerSetDeliveryEstimate,
   getSeller,
-  sellerShipItem,
+  sellerShipOrder,
 };

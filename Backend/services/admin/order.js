@@ -3,13 +3,12 @@ const Store = require("../../models/store");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 const {
-  buildOrderIdSearchExpr, maybeMarkOrderShipped, markItemShipped, assertShippable, revertOrder,
-  refreshExpectedDelivery, setItemDeliveryEstimate, markCashCollected, reportCashNotReceived,
-  cancelItems, groupItems, activeItems,
+  buildOrderIdSearchExpr, revertOrder, shipItems, setItemsDeliveryEstimate,
+  markCashCollected, reportCashNotReceived, cancelItems, groupItems, activeItems,
 } = require("../shared/order");
 const notifyUser = require("../../utils/notify");
 const { notifyCashNotReceived } = require("../shared/cashNotice");
-const { notifyItemShipped, notifyDeliveryUpdated } = require("../shared/deliveryNotice");
+const { notifyItemsShipped, notifyDeliveryUpdated } = require("../shared/deliveryNotice");
 const { buildListQuery, listLimit } = require("../../utils/listQuery");
 const { overdueCashQuery } = require("../shared/orderSweeper");
 
@@ -21,13 +20,6 @@ const getAllOrders = async (query = {}) => {
     // not used in the panel yet
     ids: { user: "user", store: "items.store" },
   });
-
-  // "All" tab: don't show cancelled orders
-  if (!query.status || query.status === "all") filters.status = { $ne: "cancelled" };
-
-  // not used in the panel yet
-  if (query.paymentStatus && query.paymentStatus !== "all") filters.paymentStatus = query.paymentStatus;
-  if (query.paymentMethod && query.paymentMethod !== "all") filters.paymentMethod = query.paymentMethod;
 
   // cash orders the admin should check
   if (query.overdueCash === "true") {
@@ -85,44 +77,37 @@ const getOrderByIdAdmin = async (orderId) => {
   return order;
 };
 
-//SHIP BY ADMIN
-const adminShipItem = async (orderId, itemId, trackingCode, estimatedDeliveryAt = null) => {
+// SITE ITEMS: THE ONES THE SITE SHIPS / THE ONES WHOSE CASH IS PAID TO THE SITE
+const siteShipItems = (order) => order.items.filter((item) => item.needsAdminShipment);
+const siteCashItems = (order) => order.items.filter((item) => !item.store);
+
+//SHIP BY ADMIN (ALL SITE ITEMS TOGETHER)
+const adminShipSiteItems = async (orderId, trackingCode, estimatedDeliveryAt = null) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError(404, "Order not found");
 
-  assertShippable(order);
+  const items = siteShipItems(order);
+  if (!items.length) throw new AppError(404, "This order has no items the site ships");
 
-  const item = order.items.id(itemId);
-  if (!item) throw new AppError(404, "Item not found in this order");
-  if (item.fulfillment?.status === "shipped") {
-    throw new AppError(409, "This item is already marked as shipped");
-  }
-  if (!item.needsAdminShipment) {
-    throw new AppError(403, "This item belongs to a seller — only they can mark it as shipped");
-  }
-
-  markItemShipped(item, trackingCode, estimatedDeliveryAt);
-  order.markModified("items");
-  refreshExpectedDelivery(order);
-  maybeMarkOrderShipped(order);
+  const shipped = shipItems(order, items, trackingCode, estimatedDeliveryAt);
   await order.save();
 
-  await notifyItemShipped(order, item);
+  await notifyItemsShipped(order, shipped);
   return order;
 };
 
-//ADMIN CAN CHANGE THE EXPECTED ARRIVAL OF ANY SHIPPED ITEM (THEIRS AND SELLERS)
-const adminSetDeliveryEstimate = async (orderId, itemId, estimatedDeliveryAt) => {
+//ADMIN CAN CHANGE THE EXPECTED ARRIVAL OF ONE PART (SITE OR ANY STORE)
+const adminSetDeliveryEstimate = async (orderId, group, estimatedDeliveryAt) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError(404, "Order not found");
 
-  const item = order.items.id(itemId);
-  if (!item) throw new AppError(404, "Item not found in this order");
+  const items = groupItems(order, group);
+  if (!items.length) throw new AppError(404, "This part of the order doesn't exist");
 
-  setItemDeliveryEstimate(order, item, estimatedDeliveryAt);
+  const changed = setItemsDeliveryEstimate(order, items, estimatedDeliveryAt);
   await order.save();
 
-  await notifyDeliveryUpdated(order, item);
+  await notifyDeliveryUpdated(order, changed);
   return order;
 };
 
@@ -251,33 +236,26 @@ const runAutoComplete = async () => {
   return runOrderSweeps();
 };
 
-
 // CASH FOR SITE ITEMS: ADMIN CONFIRMS IT (STORE ITEMS ARE CONFIRMED BY THE STORE)
-const adminConfirmCash = async (orderId, itemId, adminId) => {
+const adminConfirmCash = async (orderId, adminId) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError(404, "Order not found");
 
-  const item = order.items.id(itemId);
-  if (!item) throw new AppError(404, "Item not found in this order");
-  if (item.store) {
-    throw new AppError(403, "This item's cash was paid to the store — only the store can confirm it");
-  }
+  const items = siteCashItems(order);
+  if (!items.length) throw new AppError(404, "This order has no items paid to the site");
 
-  return markCashCollected(order, [item], adminId);
+  return markCashCollected(order, items, adminId);
 };
 
-// SITE DIDN'T RECEIVE THE CASH FOR ONE OF ITS ITEMS
-const adminReportCashMissing = async (orderId, itemId, adminId, note) => {
+// SITE DIDN'T RECEIVE THE CASH FOR ITS ITEMS
+const adminReportCashMissing = async (orderId, adminId, note) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError(404, "Order not found");
 
-  const item = order.items.id(itemId);
-  if (!item) throw new AppError(404, "Item not found in this order");
-  if (item.store) {
-    throw new AppError(403, "This item's cash was paid to the store — only the store can report it");
-  }
+  const items = siteCashItems(order);
+  if (!items.length) throw new AppError(404, "This order has no items paid to the site");
 
-  const result = await reportCashNotReceived(order, [item], adminId, note);
+  const result = await reportCashNotReceived(order, items, adminId, note);
   await notifyCashNotReceived(result.order, result.outcome);
   return result;
 };
@@ -292,5 +270,5 @@ module.exports = {
   getAllOrders,
   getOrderByIdAdmin,
   updateOrder,
-  adminShipItem,
+  adminShipSiteItems,
 };

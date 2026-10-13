@@ -1,5 +1,9 @@
 const { z } = require("zod");
 
+// PERCENT COUPONS: NEVER MORE THAN HALF THE ORDER
+const MAX_PERCENT = 50;
+exports.MAX_PERCENT = MAX_PERCENT;
+
 exports.createCouponSchema = z.object({
   code: z.string().min(3).max(20),
   type: z.enum(["fixed", "percent"]),
@@ -17,6 +21,9 @@ exports.createCouponSchema = z.object({
 }, {
   message: "expiresAt must be later than startsAt",
   path: ["expiresAt"],
+}).refine((data) => data.type !== "percent" || data.amount <= MAX_PERCENT, {
+  message: `A percent coupon can be at most ${MAX_PERCENT}%`,
+  path: ["amount"],
 });
 
 exports.updateCouponSchema = z.object({

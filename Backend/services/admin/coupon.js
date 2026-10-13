@@ -2,6 +2,7 @@ const Coupon = require("../../models/coupon");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 const { buildListQuery, listLimit } = require("../../utils/listQuery");
+const { MAX_PERCENT } = require("../../validators/coupon");
 
 const getCoupons = async (query = {}) => {
   const filter = {};
@@ -30,13 +31,19 @@ const createCoupon = async (data) => {
 };
 
 const updateCoupon = async (id, data) => {
-  const current = await Coupon.findById(id).select("startsAt expiresAt usedCount").lean();
+  const current = await Coupon.findById(id).select("type amount startsAt expiresAt usedCount").lean();
   if (!current) throw new AppError(404, "Coupon not found");
 
   const startsAt = data.startsAt !== undefined ? data.startsAt : current.startsAt;
   const expiresAt = data.expiresAt !== undefined ? data.expiresAt : current.expiresAt;
   if (startsAt && expiresAt && new Date(expiresAt) <= new Date(startsAt)) {
     throw new AppError(400, "expiresAt must be later than startsAt");
+  }
+  // ONLY THE AMOUNT OR ONLY THE TYPE MAY CHANGE → CHECK WITH THE SAVED ONE
+  const type = data.type ?? current.type;
+  const amount = data.amount ?? current.amount;
+  if (type === "percent" && amount > MAX_PERCENT) {
+    throw new AppError(400, `A percent coupon can be at most ${MAX_PERCENT}%`);
   }
   if (data.usageLimit != null && data.usageLimit < (current.usedCount || 0)) {
     throw new AppError(400, `usageLimit can't be below the ${current.usedCount} uses already made`);

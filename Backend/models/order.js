@@ -30,23 +30,19 @@ const orderItemSchema = new Schema({
   stockReserved: { type: Boolean, default: false },
   walletCredited: { type: Boolean, default: false },
   walletReleased: { type: Boolean, default: false },
-  // cash-on-delivery for a store's item: the buyer pays the store directly,
-  // so the site never holds this money and never credits the store's wallet
   paidDirectToStore: { type: Boolean, default: false },
-  // cash-on-delivery: when the one who received the money (store or site) confirmed it
   cashCollectedAt: { type: Date, default: null },
   cashCollectedBy: { type: Types.ObjectId, ref: "User", default: null },
+ 
   fulfillment: {
     status: { type: String, enum: ["pending", "shipped"], default: "pending" },
     trackingCode: { type: String, trim: true, default: null },
     shippedAt: { type: Date, default: null },
-    // when the shipper expects it to reach the buyer (entered when shipping, can be updated)
     estimatedDeliveryAt: { type: Date, default: null },
   },
   estimatedShipBy: { type: Date, default: null },
   needsAdminShipment: { type: Boolean, default: false },
 
-  // each store's part of the order is delivered / cancelled on its own
   buyerConfirmedAt: { type: Date, default: null },
   deliveredAt: { type: Date, default: null },
   autoCompletedAt: { type: Date, default: null },
@@ -121,16 +117,11 @@ const orderSchema = new Schema(
     idempotencyKey: { type: String, default: null },
     finalizedAt: { type: Date, default: null },
     shippedAt: { type: Date, default: null },
-    // latest estimatedDeliveryAt of the items — shown to the buyer, and auto-complete waits for it
     expectedDeliveryAt: { type: Date, default: null },
     autoCompletedAt: { type: Date, default: null },
-    // cash on delivery: escalated to admins (nobody confirmed the cash in time)
     cashOverdueNotifiedAt: { type: Date, default: null },
-    // cash on delivery: last time the store / admins were asked "did you receive the cash?"
     cashCheckAskedAt: { type: Date, default: null },
-    // when the buyer pressed "I received it" (for cash this does NOT mean the cash was confirmed)
     buyerConfirmedAt: { type: Date, default: null },
-    // cash on delivery: whoever should have received the cash reported they didn't
     cashDispute: {
       reportedAt: { type: Date, default: null },
       reportedBy: { type: Types.ObjectId, ref: "User", default: null },

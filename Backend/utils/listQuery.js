@@ -46,17 +46,22 @@ const dateRangeFilter = (query = {}, field = "createdAt") => {
 };
 
 /** Case-insensitive "contains" search across the given fields */
-const searchFilter = (query = {}, serachFields = []) => {
+const searchFilter = (query = {}, searchFields = []) => {
   const term = String(query.q || "").trim();
-  if (!term || !serachFields.length) return {};
+  if (!term || !searchFields.length) return {};
 
-  const regex = new RegExp(escapeRegex(term.slice(0, 100)), "i");
-  return serachFields.length === 1
-    ? { [serachFields[0]]: regex }
-    : { $or: serachFields.map((field) => ({ [field]: regex })) };
+  return searchFields.length === 1
+    ? { [searchFields[0]]: { $regex: escapeRegex(term.slice(0, 100)), $options: "i" } }
+    : { $or: searchFields.map((field) => ({ [field]: { $regex: escapeRegex(term.slice(0, 100)), $options: "i" } })) };
+
 };
 
 /** ?status=... , ignored when it isn't one of the allowed values or is "all" */
+const statusFilter = (query = {}, allowed = []) => {
+  const value = query.status;
+  if (!value || value === "all") return {};
+  return allowed.length && !allowed.includes(value) ? {} : { status: value };
+};
 
 /** ?<field>=<objectId> (category, store, user, ...) */
 const idFilter = (query = {}, param, field = param) => {
@@ -66,12 +71,12 @@ const idFilter = (query = {}, param, field = param) => {
 
 const buildListQuery = (query = {}, options = {}) => {
   const {
-    dateField = "createdAt",
-    statuses = [],
-    search:serachFields = [],
-    ids = {},
     base = {},
-  } = options;
+    ids = {},
+    dateField = "createdAt",
+    serach: searchFields = [],
+    statuses = [],
+  } = options
 
   const idFilters = Object.entries(ids).reduce(
     (acc, [param, field]) => ({ ...acc, ...idFilter(query, param, field) }),
@@ -82,7 +87,7 @@ const buildListQuery = (query = {}, options = {}) => {
     ...base,
     ...dateRangeFilter(query, dateField),
     ...statusFilter(query, statuses),
-    ...searchFilter(query, serachFields),
+    ...searchFilter(query, searchFields),
     ...idFilters,
   };
 };

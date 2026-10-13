@@ -1,19 +1,13 @@
 const adminOrderService = require("../../services/admin/order");
 
-const adminShipItem = async (req, res, next) => {
+const adminShipSiteItems = async (req, res, next) => {
   try {
-    const order = await adminOrderService.adminShipItem(
+    const order = await adminOrderService.adminShipSiteItems(
       req.params.id,
-      req.params.itemId,
       req.parsed.data.trackingCode,
       req.parsed.data.estimatedDeliveryAt || null
     );
-
-    res.status(200).json({
-      success: true,
-      message: "Item marked as shipped",
-      data: order,
-    });
+    res.status(200).json({ success: true, message: "Site items marked as shipped", data: order });
   } catch (err) {
     next(err);
   }
@@ -69,18 +63,14 @@ const runAutoComplete = async (req, res, next) => {
 
 const adminConfirmCash = async (req, res, next) => {
   try {
-    const { order, paid, completed } = await adminOrderService.adminConfirmCash(
-      req.params.id,
-      req.params.itemId,
-      req.user._id
-    );
+    const { order, paid, completed } = await adminOrderService.adminConfirmCash(req.params.id, req.user._id);
     res.status(200).json({
       success: true,
       message: completed
         ? "Cash confirmed — order completed"
         : paid
           ? "Cash confirmed — the order is paid"
-          : "Cash confirmed for this item",
+          : "Cash confirmed for the site's items",
       data: order,
     });
   } catch (err) {
@@ -92,7 +82,6 @@ const adminReportCashMissing = async (req, res, next) => {
   try {
     const { order, outcome } = await adminOrderService.adminReportCashMissing(
       req.params.id,
-      req.params.itemId,
       req.user._id,
       req.parsed.data.note
     );
@@ -128,7 +117,7 @@ const adminSetDeliveryEstimate = async (req, res, next) => {
   try {
     const order = await adminOrderService.adminSetDeliveryEstimate(
       req.params.id,
-      req.params.itemId,
+      req.params.group,
       req.parsed.data.estimatedDeliveryAt
     );
     res.status(200).json({ success: true, message: "Delivery time updated", data: order });
@@ -147,5 +136,5 @@ module.exports = {
   getAdmin,
   getByIdAdmin,
   patchAdmin,
-  adminShipItem,
+  adminShipSiteItems,
 };

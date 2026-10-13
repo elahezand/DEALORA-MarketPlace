@@ -6,8 +6,12 @@ const { buildListQuery, listLimit } = require("../../utils/listQuery");
 const getAllArticlesAdmin = async (query = {}) => {
   const limit = listLimit(query, 15);
 
-  const filters = buildListQuery(query, { search: ["title"] });
-  if (query.category) filters.category = query.category;
+  const filters = buildListQuery(query,
+    {
+      search: ["title"],
+      ids: { category: "category" }
+    });
+
   if (query.isPublished !== undefined && query.isPublished !== "all") {
     filters.isPublished = query.isPublished === "true";
   }

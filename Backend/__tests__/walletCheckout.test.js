@@ -11,6 +11,7 @@ let paymentCalls = 0;
 let cartStatus = [];
 let outOfStock = false;
 let revertCalls = 0;
+let cartTotal = 100;
 
 const chain = (v) => ({ select() { return this; }, populate: async () => v, lean: async () => v, then: (r) => r(v) });
 
@@ -49,7 +50,7 @@ const stubs = {
       items: [{ productId: "p1", quantity: 1, price: 100, discount: 0, finalPrice: 100, store: null,
                 productInfo: { title: "x", images: ["/i.jpg"], slug: "x" }, variantSnapshot: null, listingType: "store_product" }],
       skippedItems: [],
-      pricing: { subtotal: 100, discount: 0, shippingCost: 0, total: 100 },
+      pricing: { subtotal: 100, discount: 100 - cartTotal, shippingCost: 0, total: cartTotal },
     }),
   },
   [path.resolve(__dirname, "../services/shared/zarinpal.js")]: {
@@ -59,6 +60,7 @@ const stubs = {
     buildOrderIdSearchExpr: () => null,
     finalizeOrder: async () => { finalizeCalls++; },
     reserveStock: async () => { if (outOfStock) { const e = new Error("out of stock"); e.status = 409; throw e; } },
+    reserveCoupon: async () => {},
     revertOrder: async () => { revertCalls++; },
     completeItems: async () => {},
     activeItems: (o) => o.items,
@@ -89,6 +91,7 @@ test("a wallet that covers the whole order skips the gateway", async () => {
   assert.equal(paymentCalls, 0);   // no gateway call
   assert.equal(finalizeCalls, 1);  // stock reserved right away
   assert.equal(userBalance, 50);
+  assert.ok(order.finalizedAt);     // the sweeper can finish it after a crash
 });
 
 test("a partial wallet pays the rest through the gateway", async () => {
@@ -100,6 +103,8 @@ test("a partial wallet pays the rest through the gateway", async () => {
   assert.equal(paymentCalls, 1);
   assert.ok(paymentUrl.endsWith("A1"));
   assert.equal(userBalance, 0);
+  // must stay empty: verify uses it as its lock, a set value would block the buyer's return
+  assert.ok(!order.finalizedAt);
 });
 
 test("without useWallet the balance is untouched", async () => {
@@ -118,4 +123,16 @@ test("out of stock at checkout → no payment, cart unlocked, order reverted", a
   assert.equal(revertCalls, 1);
   assert.equal(created.status, "cancelled");
   outOfStock = false;
+});
+
+test("a coupon that leaves nothing to pay → paid now, no gateway, no wallet", async () => {
+  userBalance = 0; finalizeCalls = 0; paymentCalls = 0; cartTotal = 0;
+  const { order, paymentUrl } = await checkout("u1", address, "zarinpal", null, false);
+
+  assert.equal(order.paymentStatus, "paid");
+  assert.equal(order.paymentMethod, "zarinpal"); // wallet paid nothing, so it stays as chosen
+  assert.equal(paymentUrl, null);
+  assert.equal(paymentCalls, 0);
+  assert.equal(finalizeCalls, 1);
+  cartTotal = 100;
 });

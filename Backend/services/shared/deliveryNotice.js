@@ -36,16 +36,20 @@ const sendOnce = async (userId, msg, opts) => {
   await notifyUser(userId, msg, opts);
 };
 
-/** after an item was marked shipped */
-const notifyItemShipped = async (order, item) => {
-  const eta = item.fulfillment?.estimatedDeliveryAt;
-  const tracking = item.fulfillment?.trackingCode;
+// AFTER ONE STORE'S ITEMS WERE SHIPPED
+const notifyItemsShipped = async (order, items) => {
+  const first = items[0];
+  const eta = first?.fulfillment?.estimatedDeliveryAt;
+  const tracking = first?.fulfillment?.trackingCode;
   const whole = order.status === "shipped";
+  const what = items.length === 1
+    ? first.productSnapshot?.title || "an item"
+    : `${items.length} items` + (first.storeSnapshot?.name ? ` from ${first.storeSnapshot.name}` : "");
 
   const msg = [
     whole
       ? `Your order #${shortId(order)} has shipped.`
-      : `Part of your order #${shortId(order)} has shipped (${item.productSnapshot?.title || "an item"}).`,
+      : `Part of your order #${shortId(order)} has shipped (${what}).`,
     eta ? `Expected delivery: ${formatArrival(eta)}.` : null,
     tracking ? `Tracking code: ${tracking}.` : null,
   ].filter(Boolean).join(" ");
@@ -53,12 +57,12 @@ const notifyItemShipped = async (order, item) => {
   await sendOnce(order.user, msg, { type: "order_shipped", link: `/dashboard/orders/${order._id}` });
 };
 
-/** after the expected arrival of a shipped item was changed */
-const notifyDeliveryUpdated = async (order, item) => {
-  const eta = item.fulfillment?.estimatedDeliveryAt;
+// AFTER THE ARRIVAL TIME OF SHIPPED ITEMS WAS CHANGED
+const notifyDeliveryUpdated = async (order, items) => {
+  const eta = items[0]?.fulfillment?.estimatedDeliveryAt;
   if (!eta) return;
   const msg = `Delivery time for your order #${shortId(order)} was updated: now expected ${formatArrival(eta)}.`;
   await sendOnce(order.user, msg, { type: "delivery_update", link: `/dashboard/orders/${order._id}` });
 };
 
-module.exports = { notifyItemShipped, notifyDeliveryUpdated, formatArrival };
+module.exports = { notifyItemsShipped, notifyDeliveryUpdated, formatArrival };

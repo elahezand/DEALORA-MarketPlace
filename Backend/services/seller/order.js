@@ -4,33 +4,32 @@ const Store = require("../../models/store");
 const { paginate } = require("../../utils/helper");
 const AppError = require("../../utils/AppError");
 const {
-  buildOrderIdSearchExpr, maybeMarkOrderShipped, markItemShipped, assertShippable,
-  refreshExpectedDelivery, setItemDeliveryEstimate, markCashCollected, reportCashNotReceived,
+  buildOrderIdSearchExpr, shipItems, setItemsDeliveryEstimate, markCashCollected, reportCashNotReceived,
 } = require("../shared/order");
 const { notifyCashNotReceived } = require("../shared/cashNotice");
-const { notifyItemShipped, notifyDeliveryUpdated } = require("../shared/deliveryNotice");
+const { notifyItemsShipped, notifyDeliveryUpdated } = require("../shared/deliveryNotice");
 const { buildListQuery, listLimit } = require("../../utils/listQuery");
 
-/* An order counts for the seller once it's confirmed:
-   paid online, or cash on delivery (cash orders stay "pending" until delivery). */
-const CONFIRMED_ORDER = {
-  $or: [{ paymentStatus: "paid" }, { paymentMethod: "cash", status: { $ne: "created" } }],
-};
 
-/* Seller Orders — confirmed orders containing at least one of this store's items */
+// SELLER ORDERS: CONFIRMED ORDERS THAT HAVE THIS STORE'S ITEMS
 const getSellerOrders = async (userId, query = {}) => {
   const store = await Store.findOne({ owner: userId }).select("_id").lean();
   if (!store) throw new AppError(404, "Store not found");
 
   const limit = listLimit(query, 20, 50);
+  const searchExpr = buildOrderIdSearchExpr(query.q);
 
   const filters = buildListQuery(query, {
-    base: { "items.store": store._id, ...CONFIRMED_ORDER },
-    statuses: ["created", "processing", "shipped", "completed", "cancelled"],
+    base: {
+      "items.store": store._id,
+      $or: [{ paymentStatus: "paid" }, { paymentMethod: "cash", status: { $ne: "created" } }],
+      ...(searchExpr ? { $expr: searchExpr } : {}),
+    },
+    statuses: ["processing", "shipped", "completed", "cancelled"],
+    ids: { user: "user" },
   });
 
-  const searchExpr = buildOrderIdSearchExpr(query.q);
-  if (searchExpr) filters.$expr = searchExpr;
+
 
   const result = await paginate(Order, {
     limit,
@@ -48,13 +47,16 @@ const getSellerOrders = async (userId, query = {}) => {
       (item) => item.store && String(item.store) === String(store._id)
     );
     const active = myItems.filter((item) => !item.cancelledAt);
+   
     const mySubtotal = active.reduce((sum, item) => sum + item.finalPrice * item.quantity, 0);
+   
     const shippedCount = active.filter((item) => item.fulfillment?.status === "shipped").length;
+   
     const myFulfillmentStatus =
       shippedCount === 0 ? "pending" : shippedCount === active.length ? "shipped" : "partial";
 
-    // this store's own part, independent of the other stores in the order
     let myStatus = "processing";
+   
     if (!active.length) myStatus = "cancelled";
     else if (active.every((item) => item.deliveredAt)) myStatus = "completed";
     else if (shippedCount === active.length) myStatus = "shipped";
@@ -65,74 +67,51 @@ const getSellerOrders = async (userId, query = {}) => {
   return { data, pagination: result.pagination };
 };
 
-/* Seller — mark ONE of their items as shipped */
-/* the seller's own order + item, or 404 */
-const findSellerItem = async (userId, orderId, itemId) => {
+// THE SELLER'S ORDER + ITS OWN ITEMS IN IT, OR 404
+const findSellerPart = async (userId, orderId) => {
   const store = await Store.findOne({ owner: userId }).select("_id").lean();
   if (!store) throw new AppError(404, "Store not found");
 
   const order = await Order.findOne({ _id: orderId, "items.store": store._id });
   if (!order) throw new AppError(404, "Order not found");
 
-  const item = order.items.id(itemId);
-  if (!item || !item.store || String(item.store) !== String(store._id)) {
-    throw new AppError(404, "Item not found in this order");
-  }
-  return { order, item };
+  const items = order.items.filter((item) => item.store && String(item.store) === String(store._id));
+  return { order, items };
 };
 
-const sellerShipItem = async (userId, orderId, itemId, trackingCode, estimatedDeliveryAt = null) => {
-  const { order, item } = await findSellerItem(userId, orderId, itemId);
+// SELLER SHIPS ALL ITS ITEMS OF THE ORDER TOGETHER
+const sellerShipOrder = async (userId, orderId, trackingCode, estimatedDeliveryAt = null) => {
+  const { order, items } = await findSellerPart(userId, orderId);
 
-  assertShippable(order);
-  if (item.fulfillment?.status === "shipped") {
-    throw new AppError(409, "This item is already marked as shipped");
-  }
-
-  markItemShipped(item, trackingCode, estimatedDeliveryAt);
-  order.markModified("items");
-  refreshExpectedDelivery(order);
-  maybeMarkOrderShipped(order);
+  const shipped = shipItems(order, items, trackingCode, estimatedDeliveryAt);
   await order.save();
 
-  await notifyItemShipped(order, item);
+  await notifyItemsShipped(order, shipped);
   return order;
 };
 
-/* the seller changes when a shipped item should arrive (courier delay, ...) */
-const sellerSetDeliveryEstimate = async (userId, orderId, itemId, estimatedDeliveryAt) => {
-  const { order, item } = await findSellerItem(userId, orderId, itemId);
+// SELLER CHANGES WHEN ITS SHIPPED ITEMS SHOULD ARRIVE (COURIER DELAY, ...)
+const sellerSetDeliveryEstimate = async (userId, orderId, estimatedDeliveryAt) => {
+  const { order, items } = await findSellerPart(userId, orderId);
 
-  setItemDeliveryEstimate(order, item, estimatedDeliveryAt);
+  const changed = setItemsDeliveryEstimate(order, items, estimatedDeliveryAt);
   await order.save();
 
-  await notifyDeliveryUpdated(order, item);
+  await notifyDeliveryUpdated(order, changed);
   return order;
 };
 
-/* the store received the cash for its items in this order (cash on delivery) */
+// THE STORE RECEIVED THE CASH FOR ITS ITEMS IN THIS ORDER
 const sellerConfirmCash = async (userId, orderId) => {
-  const store = await Store.findOne({ owner: userId }).select("_id").lean();
-  if (!store) throw new AppError(404, "Store not found");
-
-  const order = await Order.findOne({ _id: orderId, "items.store": store._id });
-  if (!order) throw new AppError(404, "Order not found");
-
-  const myItems = order.items.filter((item) => item.store && String(item.store) === String(store._id));
-  const result = await markCashCollected(order, myItems, userId);
-  return result;
+  const { order, items } = await findSellerPart(userId, orderId);
+  return markCashCollected(order, items, userId);
 };
 
-/* the store did NOT receive the cash for its items → cancelled, or a dispute for the admins */
+// THE STORE DIDN'T RECEIVE THE CASH → PART CANCELLED, OR A DISPUTE FOR THE ADMINS
 const sellerReportCashMissing = async (userId, orderId, note) => {
-  const store = await Store.findOne({ owner: userId }).select("_id").lean();
-  if (!store) throw new AppError(404, "Store not found");
+  const { order, items } = await findSellerPart(userId, orderId);
 
-  const order = await Order.findOne({ _id: orderId, "items.store": store._id });
-  if (!order) throw new AppError(404, "Order not found");
-
-  const myItems = order.items.filter((item) => item.store && String(item.store) === String(store._id));
-  const result = await reportCashNotReceived(order, myItems, userId, note);
+  const result = await reportCashNotReceived(order, items, userId, note);
   await notifyCashNotReceived(result.order, result.outcome);
   return result;
 };
@@ -141,6 +120,6 @@ module.exports = {
   sellerConfirmCash,
   sellerReportCashMissing,
   getSellerOrders,
-  sellerShipItem,
+  sellerShipOrder,
   sellerSetDeliveryEstimate,
 };

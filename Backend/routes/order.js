@@ -41,21 +41,19 @@ orderRouter.post(
 
 // cash received (site items)
 orderRouter.patch(
-    "/admin/:id/items/:itemId/cash-received",
+    "/admin/:id/cash-received",
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    validateObjectIdParam("itemId"),
     adminController.adminConfirmCash
 );
 
 // cash not received (site items)
 orderRouter.patch(
-    "/admin/:id/items/:itemId/cash-not-received",
+    "/admin/:id/cash-not-received",
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    validateObjectIdParam("itemId"),
     validate(cashNotReceivedSchema),
     adminController.adminReportCashMissing
 );
@@ -97,23 +95,23 @@ orderRouter.patch(
     adminController.patchAdmin
 );
 
+// ship the site's items
 orderRouter.patch(
-    "/admin/:id/items/:itemId/ship",
+    "/admin/:id/ship",
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    validateObjectIdParam("itemId"),
     validate(shipOrderSchema),
-    adminController.adminShipItem
+    adminController.adminShipSiteItems
 );
 
-// change delivery time
+// change delivery time of one part
 orderRouter.patch(
-    "/admin/:id/items/:itemId/delivery-estimate",
+    "/admin/:id/groups/:group/delivery-estimate",
     authUser,
     authAdmin,
     validateObjectIdParam("id"),
-    validateObjectIdParam("itemId"),
+    validateGroupParam,
     validate(deliveryEstimateSchema),
     adminController.adminSetDeliveryEstimate
 );
@@ -140,13 +138,13 @@ orderRouter.get("/seller",
     authSeller,
     sellerController.getSeller);
 
-orderRouter.patch("/seller/:id/items/:itemId/ship",
+// ship all of this store's items
+orderRouter.patch("/seller/:id/ship",
     authUser,
     authSeller,
     validateObjectIdParam("id"),
-    validateObjectIdParam("itemId"),
     validate(shipOrderSchema),
-    sellerController.sellerShipItem);
+    sellerController.sellerShipOrder);
 
 // cash received
 orderRouter.patch("/seller/:id/cash-received",
@@ -163,11 +161,10 @@ orderRouter.patch("/seller/:id/cash-not-received",
     validate(cashNotReceivedSchema),
     sellerController.sellerReportCashMissing);
 
-orderRouter.patch("/seller/:id/items/:itemId/delivery-estimate",
+orderRouter.patch("/seller/:id/delivery-estimate",
     authUser,
     authSeller,
     validateObjectIdParam("id"),
-    validateObjectIdParam("itemId"),
     validate(deliveryEstimateSchema),
     sellerController.sellerSetDeliveryEstimate);
 

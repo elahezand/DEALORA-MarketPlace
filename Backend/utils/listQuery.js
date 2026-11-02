@@ -24,16 +24,18 @@ const endOfDay = (value) => {
  * Date range used by every dashboard table: ?from=2026-09-01&to=2026-09-30
  * `preset` is a shortcut the UI sends instead of two dates: today | 7d | 30d | 90d
  */
-const dateRangeFilter = (query = {}, field = "createdAt") => {
+const dateRangeFilter = (query = {}) => {
   const range = {};
 
   if (query.preset && query.preset !== "all") {
+   
     const days = { today: 0, "7d": 6, "30d": 29, "90d": 89 }[query.preset];
+    
     if (days !== undefined) {
       const from = new Date();
       from.setDate(from.getDate() - days);
       from.setHours(0, 0, 0, 0);
-      return { [field]: { $gte: from } };
+      return { createdAt: { $gte: from } };
     }
   }
 
@@ -42,7 +44,7 @@ const dateRangeFilter = (query = {}, field = "createdAt") => {
   if (from) range.$gte = from;
   if (to) range.$lte = to;
 
-  return Object.keys(range).length ? { [field]: range } : {};
+  return Object.keys(range).length ? { createdAt: range } : {};
 };
 
 /** Case-insensitive "contains" search across the given fields */
@@ -73,8 +75,7 @@ const buildListQuery = (query = {}, options = {}) => {
   const {
     base = {},
     ids = {},
-    dateField = "createdAt",
-    serach: searchFields = [],
+    search: searchFields = [],
     statuses = [],
   } = options
 
@@ -85,7 +86,7 @@ const buildListQuery = (query = {}, options = {}) => {
 
   return {
     ...base,
-    ...dateRangeFilter(query, dateField),
+    ...dateRangeFilter(query),
     ...statusFilter(query, statuses),
     ...searchFilter(query, searchFields),
     ...idFilters,

@@ -27,12 +27,7 @@ export type ApiResponse<T> = {
   data: T;
 };
 
-/**
- * Canonical shape for every paginated list endpoint in the backend:
- * `res.status(200).json({ success: true, data: [...], pagination })`.
- * Do NOT nest another `data` layer inside `data` — the backend always
- * returns the array directly at the top level next to `pagination`.
- */
+
 export type PaginatedResponse<T> = {
   success: boolean;
   message?: string;

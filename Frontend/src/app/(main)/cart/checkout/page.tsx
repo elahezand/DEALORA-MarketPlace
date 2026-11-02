@@ -23,7 +23,7 @@ export default function CheckoutPage() {
     const { data: cart } = useGetMyCart();
     const route = useRouter()
     const cartId = cart?.data?.id ?? cart?.data?._id;
-    // no online payment (cash, or the wallet paid everything) → show the new order
+
     const { mutate: placeOrder, isPending } = useCheckout(cartId, (orderId) => {
         route.replace(orderId ? `/dashboard/orders/${orderId}` : "/dashboard/orders");
     });

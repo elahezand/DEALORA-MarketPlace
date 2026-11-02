@@ -17,7 +17,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-
 let refreshPromise: Promise<unknown> | null = null;
 
 const refreshAccessToken = () => {
@@ -46,26 +45,20 @@ api.interceptors.response.use(
 
     const status = error.response?.status;
 
-    if (
-      status === 401 &&
-      !originalRequest._retry
-    ) {
+    if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
         await refreshAccessToken();
 
         return api.request(originalRequest);
-      } catch (refreshError) {
+      } catch {
         if (!originalRequest.silentAuth) {
-          toast.error("Please LogIn");
+          toast.error("Please LogIn", { id: "auth" });
+          error._authToastShown = true;
         }
 
-        if (refreshError instanceof Error) {
-          (refreshError as AxiosError)._authToastShown = true;
-        }
-
-        return Promise.reject(refreshError);
+        return Promise.reject(error);
       }
     }
 

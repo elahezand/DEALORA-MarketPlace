@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 import { useState } from 'react';
 import { useGetMyCart } from "@/services/Cart/useGetMyCart";
 import { useRemoveFromCart } from "@/services/Cart/useRemoveFromCart";

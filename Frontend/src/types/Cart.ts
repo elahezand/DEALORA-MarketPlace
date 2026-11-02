@@ -1,8 +1,4 @@
-/**
- * One cart item as returned by GET /cart/me.
- * The backend stores only product / variantId / offer / quantity; everything else
- * (prices, store, variant name) is calculated with the CURRENT prices on every read.
- */
+
 export interface CartItem {
   offer?: { _id: string; price?: number; discount?: number; stock?: number; shipsWithinDays?: number; store?: { _id: string; name?: string } | string; finalPrice?: number } | string | null;
   store?: string | null;
@@ -26,7 +22,6 @@ export interface CartPricing {
 }
 
 export interface ICart {
-  /** the API returns "id" (see the model's toJSON transform) */
   id?: string;
   _id?: string;
   user: string;

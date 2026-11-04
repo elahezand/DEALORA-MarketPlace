@@ -34,7 +34,6 @@
     "next-env.d.ts",
     "src/types/**/*.d.ts",
     ".next/types/**/*.ts",
-    "src/components/skeleton/SkeletonListings.tsx",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [

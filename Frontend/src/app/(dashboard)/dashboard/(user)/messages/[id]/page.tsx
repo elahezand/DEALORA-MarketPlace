@@ -1,6 +1,6 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData } from "@/utils/serverData";
 import { ConversationsResponse, MessagesResponse } from "@/types/Chat";
-import ConversationThread from "@/app/(dashboard)/components/(user)/messages/conversationThread";
+import ConversationThread from "@/components/dashboard/user/messages/conversationThread";
 
 export const revalidate = 0;
 
@@ -12,8 +12,8 @@ export default async function ConversationPageWrapper({
   const { id } = await params;
 
   const [conversations, messages] = await Promise.all([
-    useAuthServerData<ConversationsResponse>("/chat/conversations"),
-    useAuthServerData<MessagesResponse>(`/chat/conversations/${id}/messages`),
+    getAuthServerData<ConversationsResponse>("/chat/conversations"),
+    getAuthServerData<MessagesResponse>(`/chat/conversations/${id}/messages`),
   ]);
 
   const conversation =

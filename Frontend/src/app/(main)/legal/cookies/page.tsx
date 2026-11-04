@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import StaticPageLayout from "@/components/shared/StaticPageLayout";
+
+export const metadata: Metadata = {
+  title: "Cookie Policy",
+  description: "How Dealora uses cookies.",
+};
 
 export default function CookiesPage() {
   return (

@@ -1,7 +1,13 @@
-import { useServerData } from "@/utils/hooks/useServerData";
+import type { Metadata } from "next";
+import { getServerData } from "@/utils/serverData";
 import InfiniteStoresSection from "@/components/stores/storesClient";
 import { IStore } from "@/types/Store";
 import { IPagination } from "@/types/common";
+
+export const metadata: Metadata = {
+  title: "Verified Stores",
+  description: "Browse verified stores on Dealora and buy new products with secure checkout.",
+};
 
 interface VerifiedStoresServerResponse {
   data: IStore[];
@@ -9,7 +15,7 @@ interface VerifiedStoresServerResponse {
 }
 
 export default async function StoresPage() {
-  const result = await useServerData<VerifiedStoresServerResponse>(
+  const result = await getServerData<VerifiedStoresServerResponse>(
     "/stores/verified",
     "verified-stores",
     60

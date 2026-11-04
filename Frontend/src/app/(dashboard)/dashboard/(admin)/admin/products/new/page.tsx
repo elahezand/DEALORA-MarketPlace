@@ -1,4 +1,4 @@
-import ProductForm from "@/app/(dashboard)/components/(admin)/products/ProductForm";
+import ProductForm from "@/components/dashboard/admin/products/ProductForm";
 
 export default function Page() {
   return <ProductForm />;

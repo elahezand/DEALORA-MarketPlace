@@ -1,9 +1,9 @@
-import CategoriesClient from "@/app/(dashboard)/components/(admin)/categories/CategoriesPage";
+import CategoriesClient from "@/components/dashboard/admin/categories/CategoriesPage";
 import { CategoriesTypeResponse } from "@/types/Category";
-import { useAuthServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData } from "@/utils/serverData";
 
 export default async function CategoriesPage() {
-  const initialCategories = await useAuthServerData<CategoriesTypeResponse>(
+  const initialCategories = await getAuthServerData<CategoriesTypeResponse>(
     "/categories",
   );
   return <CategoriesClient initialData={initialCategories ? initialCategories : undefined} />;

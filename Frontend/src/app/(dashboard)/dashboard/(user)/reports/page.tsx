@@ -1,10 +1,10 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData } from "@/utils/serverData";
 import { ReportsResponse } from "@/types/Report";
-import ReportsPage from "@/app/(dashboard)/components/(user)/reports/reportsPage";
+import ReportsPage from "@/components/dashboard/user/reports/reportsPage";
 export const revalidate = 60;
 
 export default async function ReportsPageWrapper() {
-  const initialReports = await useAuthServerData<ReportsResponse>("/reports/mine?status=pending");
+  const initialReports = await getAuthServerData<ReportsResponse>("/reports/mine?status=pending");
 
   return (
     <ReportsPage

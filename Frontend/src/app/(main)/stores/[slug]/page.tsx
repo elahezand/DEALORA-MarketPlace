@@ -1,5 +1,6 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { useServerData } from "@/utils/hooks/useServerData";
+import { getServerData } from "@/utils/serverData";
 import StoreProductsSection from "@/components/stores/[slug]/storesProductsSection";
 import { StoreDetailResponse } from "@/types/Store";
 
@@ -7,12 +8,33 @@ interface StoreDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
+export async function generateMetadata({ params }: StoreDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const result = await getServerData<StoreDetailResponse>(`/stores/slug/${slug}`, `store-${slug}`, 60);
+  const store = result?.store;
+  if (!store) return { title: "Store not found" };
+
+  const city = store.address?.city ? ` in ${store.address.city}` : "";
+  const description = `Shop products from ${store.name}${city} on Dealora.`;
+
+  return {
+    title: store.name,
+    description,
+    alternates: { canonical: `/stores/${slug}` },
+    openGraph: {
+      title: store.name,
+      description,
+      ...(store.logo ? { images: [{ url: store.logo }] } : {}),
+    },
+  };
+}
+
 export default async function StoreDetailPage({
   params,
 }: StoreDetailPageProps) {
   const { slug } = await params;
 
-  const result = await useServerData<StoreDetailResponse>(
+  const result = await getServerData<StoreDetailResponse>(
     `/stores/slug/${slug}`,
     `store-${slug}`,
     60

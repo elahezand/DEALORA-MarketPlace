@@ -1,10 +1,10 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData } from "@/utils/serverData";
 import { ConversationsResponse } from "@/types/Chat";
-import MessagesPage from "@/app/(dashboard)/components/(user)/messages/messagesPage";
+import MessagesPage from "@/components/dashboard/user/messages/messagesPage";
 
 export const revalidate = 60;
 export default async function MessagesPageWrapper() {
-  const initialMessages = await useAuthServerData<ConversationsResponse>("/chat/conversations"); ;  
+  const initialMessages = await getAuthServerData<ConversationsResponse>("/chat/conversations"); ;  
   return (
         <MessagesPage
         initialData={

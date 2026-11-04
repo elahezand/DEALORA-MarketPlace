@@ -1,4 +1,5 @@
-import { useServerData } from "@/utils/hooks/useServerData";
+import type { Metadata } from "next";
+import { getServerData } from "@/utils/serverData";
 import qs from "qs";
 import { Suspense } from "react";
 import FilterSidebarWrapper from "@/components/posts/clientSection/FilterSidebarWrapper";
@@ -6,6 +7,11 @@ import SmartSearchWrapper from "@/components/posts/smartSearch/smartSearchWrappe
 import { PublicListingsResponse } from "@/types/Listings";
 import InfiniteItemsSection from "@/components/posts/infiniteItemsSection";
 import ListingTypeTabs from "@/components/posts/listingTabs";
+
+export const metadata: Metadata = {
+  title: "Listings",
+  description: "Find new and used items from people and verified stores near you.",
+};
 
 export const revalidate = 60;
 
@@ -27,7 +33,7 @@ export default async function PostsPage({
   const endpoint = queryString ? `/listings?${queryString}` : "/listings";
   const cacheKey = `listings-${queryString}`;
 
-  const response = await useServerData<PublicListingsResponse>(
+  const response = await getServerData<PublicListingsResponse>(
     endpoint,
     cacheKey,
     revalidate

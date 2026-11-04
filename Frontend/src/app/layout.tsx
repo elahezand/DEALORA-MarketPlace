@@ -3,9 +3,13 @@ import { Providers } from "../utils/providers/ProvidersHeroUi";
 import { Toaster } from "sonner";
 import type { Metadata, Viewport } from "next";
 import "./globals.css"
+import { SITE_NAME, SITE_URL } from "@/utils/seo";
 
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
+  openGraph: { siteName: SITE_NAME, type: "website" },
   title: {
     default: "Dealora — Buy and sell anything",
     template: "%s | Dealora",
@@ -24,7 +28,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" dir="ltr">
+    // next-themes sets class="light|dark" on <html> before React loads — expected, not a real mismatch
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <body>
         <Toaster
           position="bottom-right"

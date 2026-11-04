@@ -4,9 +4,9 @@ import { Button } from "@heroui/react";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import AddNewAddress from "@/components/shared/address/AddNewAddress";
 import { AddressCard } from "@/components/shared/address/AddressCard";
-import { PersonalInfoForm } from "@/app/(dashboard)/components/shared/PersonalInfoForm";
+import { PersonalInfoForm } from "@/components/dashboard/shared/PersonalInfoForm";
 import { IAddress } from "@/types/User";
-import { ActiveSessionsCard } from "@/app/(dashboard)/components/shared/settings/ActiveSessionsCard";
+import { ActiveSessionsCard } from "@/components/dashboard/shared/settings/ActiveSessionsCard";
 
 export default function SettingsPage() {
   const { user } = useGetProfile();

@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { MotionDiv, MotionP } from "@/utils/providers/MotionWrapper";
 import { Variants } from "framer-motion";
+
+export const metadata: Metadata = {
+  title: "About Us",
+  description: "What Dealora is and how it keeps buying and selling safe.",
+};
 
 const aboutCards = [
   {

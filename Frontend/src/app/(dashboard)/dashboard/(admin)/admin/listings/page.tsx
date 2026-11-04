@@ -1,11 +1,11 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
-import ListingsModerationClient from "@/app/(dashboard)/components/(admin)/listings/ListingsModerationPage";
+import { getAuthServerData } from "@/utils/serverData";
+import ListingsModerationClient from "@/components/dashboard/admin/listings/ListingsModerationPage";
 import { PublicListingsResponse } from "@/types/Listings";
 
 export const revalidate = 60;
 
 export default async function Page() {
-  const initialListings = await useAuthServerData<PublicListingsResponse>(
+  const initialListings = await getAuthServerData<PublicListingsResponse>(
     "/listings/admin?listingType=user_ad&status=pending",
 
   );

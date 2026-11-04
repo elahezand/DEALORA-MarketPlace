@@ -1,5 +1,5 @@
 import React from "react";
-import SellerDashboardClient from "@/app/(dashboard)/layouts/DashboardSeller";
+import SellerDashboardClient from "@/components/dashboard/layouts/DashboardSeller";
 export default function SellerLayout({
   children,
 }: {

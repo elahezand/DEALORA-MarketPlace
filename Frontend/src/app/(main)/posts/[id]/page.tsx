@@ -1,10 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ListingDetailsClient from "@/components/posts/listingDetail/listingDetailsClient";
 import Comments from "@/components/posts/listingDetail/Comments";
 import SimilarListing from "@/components/posts/listingDetail/SimilarListing";
-import { useAuthServerData, useServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData, getServerData } from "@/utils/serverData";
 import { ListingTypeResponse, PublicListingsResponse } from "@/types/Listings";
-import { CommentsResponse } from "@/types/CommetTypes";
+import { CommentsResponse } from "@/types/CommentTypes";
+import JsonLd from "@/components/shared/JsonLd";
+import { buildListingJsonLd, toMetaDescription } from "@/utils/seo";
+import { getUrl } from "@/utils/helper";
 
 export const revalidate = 60;
 
@@ -18,14 +22,37 @@ const PREVIEW_ENDPOINT: Record<string, (id: string) => string> = {
     admin: (id) => `/listings/admin/${id}/preview`,
 };
 
+// same cache key as the page, so Next fetches the listing only once
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { id } = await params;
+    const res = await getServerData<ListingTypeResponse>(`/listings/${id}`, `listing-${id}`, revalidate);
+    const listing = res?.data;
+    if (!listing) return { title: "Listing not found" };
+
+    const description = toMetaDescription(listing.description);
+    const image = getUrl(listing.images?.[0]);
+
+    return {
+        title: listing.title,
+        description,
+        alternates: { canonical: `/posts/${id}` },
+        openGraph: {
+            title: listing.title,
+            description,
+            type: "website",
+            ...(image ? { images: [{ url: image }] } : {}),
+        },
+    };
+}
+
 export default async function PostsPage({ params, searchParams }: PageProps) {
     const { id } = await params;
     const { preview } = await searchParams;
     const previewEndpoint = preview ? PREVIEW_ENDPOINT[preview] : undefined;
 
     const listingRes = previewEndpoint
-        ? await useAuthServerData<ListingTypeResponse>(previewEndpoint(id)).catch(() => null)
-        : await useServerData<ListingTypeResponse>(`/listings/${id}`, `listing-${id}`, revalidate).catch(() => null);
+        ? await getAuthServerData<ListingTypeResponse>(previewEndpoint(id)).catch(() => null)
+        : await getServerData<ListingTypeResponse>(`/listings/${id}`, `listing-${id}`, revalidate).catch(() => null);
     const listingData = listingRes?.data || null;
 
     if (!listingData) {
@@ -38,10 +65,10 @@ export default async function PostsPage({ params, searchParams }: PageProps) {
 
     const [commentsRes, similarRes] = await Promise.all([
         isStoreProduct
-            ? useServerData<CommentsResponse>(`/comments/listing/${id}?page=1`, `comments-${id}`, revalidate).catch(() => null)
+            ? getServerData<CommentsResponse>(`/comments/listing/${id}?page=1`, `comments-${id}`, revalidate).catch(() => null)
             : Promise.resolve(null),
         tags && !previewEndpoint
-            ? useServerData<PublicListingsResponse>(`/listings?tags=${tags}&limit=5`, `similar-${id}`, revalidate).catch(() => null)
+            ? getServerData<PublicListingsResponse>(`/listings?tags=${tags}&limit=5`, `similar-${id}`, revalidate).catch(() => null)
             : Promise.resolve(null),
     ]);
 
@@ -57,6 +84,7 @@ export default async function PostsPage({ params, searchParams }: PageProps) {
                 </div>
             )}
 
+            {!previewEndpoint && <JsonLd data={buildListingJsonLd(listingData)} />}
             <ListingDetailsClient data={listingData} />
 
             {isStoreProduct && (

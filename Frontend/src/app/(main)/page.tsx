@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { useServerData } from "@/utils/hooks/useServerData";
+import { getServerData } from "@/utils/serverData";
 import Link from "next/link";
 import UnderlineWord from "@/components/index/underlineWord";
 import LocationSearch from "@/components/index/locationSearch";
@@ -28,11 +28,11 @@ export default async function Page() {
    * requested separately (the old "?limit=20" silently got 10 for both together).
    */
   const [storeData, adsData, categories, stats, verifiedStores] = await Promise.all([
-    useServerData<PublicListingsResponse>("/listings?listingType=store_product&limit=12", "home-store-products", 60),
-    useServerData<PublicListingsResponse>("/listings?listingType=user_ad&limit=12", "home-user-ads", 60),
-    useServerData<CategoriesTypeResponse>("/categories", "categories", 60 * 60),
-    useServerData<GetPublicStatsResponse>("/stats", "public-stats", 300),
-    useServerData<GetVerifiedStoresResponse>("/stores/verified", "verified-stores-home", 300),
+    getServerData<PublicListingsResponse>("/listings?listingType=store_product&limit=12", "home-store-products", 60),
+    getServerData<PublicListingsResponse>("/listings?listingType=user_ad&limit=12", "home-user-ads", 60),
+    getServerData<CategoriesTypeResponse>("/categories", "categories", 60 * 60),
+    getServerData<GetPublicStatsResponse>("/stats", "public-stats", 300),
+    getServerData<GetVerifiedStoresResponse>("/stores/verified", "verified-stores-home", 300),
   ]);
 
   const storeProducts = storeData?.data || [];

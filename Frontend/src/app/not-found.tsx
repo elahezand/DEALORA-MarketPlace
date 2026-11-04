@@ -63,7 +63,7 @@ export default function NotFound() {
             transition={{ delay: 0.4, type: "spring" }}
             className="text-slate-600 dark:text-slate-400 mb-8 max-w-sm mx-auto"
           >
-            The page you are looking for has been moved or doesn't exist.
+            The page you are looking for has been moved or doesn&apos;t exist.
           </MotionP>
 
           {/* Action Buttons */}

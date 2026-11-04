@@ -1,8 +1,8 @@
 "use client";
 
 import "../dashboard.css";
-import { AppHeader } from "../components/shared/Header";
-import { SidebarProvider, useSidebar } from "./context/sideBarContext";
+import { AppHeader } from "@/components/dashboard/shared/Header";
+import { SidebarProvider, useSidebar } from "@/components/dashboard/context/sideBarContext";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 
 function DashboardInner({ children }: { children: React.ReactNode }) {

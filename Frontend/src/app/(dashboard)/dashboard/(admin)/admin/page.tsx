@@ -1,10 +1,10 @@
 "use client";
 
-import Stats from "@/app/(dashboard)/components/(admin)/index/Stats";
-import RecentUsers from "@/app/(dashboard)/components/(admin)/index/RecentUsers";
-import RecentStores from "@/app/(dashboard)/components/(admin)/index/RecentStores";
-import RecentOffers from "@/app/(dashboard)/components/(admin)/index/RecentOffers";
-import RecentOrders from "@/app/(dashboard)/components/(admin)/index/RecentOrders";
+import Stats from "@/components/dashboard/admin/index/Stats";
+import RecentUsers from "@/components/dashboard/admin/index/RecentUsers";
+import RecentStores from "@/components/dashboard/admin/index/RecentStores";
+import RecentOffers from "@/components/dashboard/admin/index/RecentOffers";
+import RecentOrders from "@/components/dashboard/admin/index/RecentOrders";
 
 export default function AdminDashboardPage() {
     return (

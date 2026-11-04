@@ -5,7 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetMyCart } from "@/services/Cart/useGetMyCart";
 import { useCheckout } from "@/services/Cart/useCheckout"
-import { checkoutSchema } from '@/validations/cartSchrma';
+import { checkoutSchema } from '@/validations/cartSchema';
 import { Button } from "@heroui/react";
 import { ShieldCheck } from "lucide-react";
 import { useGetProfile } from '@/services/Profile/useGetProfile';

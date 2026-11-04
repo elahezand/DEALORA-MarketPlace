@@ -1,9 +1,9 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData } from "@/utils/serverData";
 import { OffersResponse } from "@/types/Offer";
-import OffersPage from "@/app/(dashboard)/components/(seller)/offers/OffersPage";
+import OffersPage from "@/components/dashboard/seller/offers/OffersPage";
 
 export default async function AdminOffersPage() {
-  const initialOffers = await useAuthServerData<OffersResponse>(
+  const initialOffers = await getAuthServerData<OffersResponse>(
     "/offers/me?status=pending",
   );
 

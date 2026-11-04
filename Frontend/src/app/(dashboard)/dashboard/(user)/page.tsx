@@ -1,20 +1,20 @@
 import Link from "next/link";
-import Orders from "@/app/(dashboard)/components/(user)/index/RecentOrders";
-import Listings from "@/app/(dashboard)/components/(user)/index/RecentListings";
-import ProfileBanner from "@/app/(dashboard)/components/(user)/index/ProfileBanner";
-import WalletCard from "@/app/(dashboard)/components/(user)/index/WalletCard";
-import CartPreview from "@/app/(dashboard)/components/(user)/index/CartPreview";
-import MiniCalendar from "@/app/(dashboard)/components/shared/MiniCalendar";
+import Orders from "@/components/dashboard/user/index/RecentOrders";
+import Listings from "@/components/dashboard/user/index/RecentListings";
+import ProfileBanner from "@/components/dashboard/user/index/ProfileBanner";
+import WalletCard from "@/components/dashboard/user/index/WalletCard";
+import CartPreview from "@/components/dashboard/user/index/CartPreview";
+import MiniCalendar from "@/components/dashboard/shared/MiniCalendar";
 import { OrdersResponse } from "@/types/Order";
 import MyListingsResponse from "@/types/Listings";
-import { useAuthServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData } from "@/utils/serverData";
 
 
 
 export default async function DashboardPage() {
   const [orders, listings] = await Promise.all([
-    useAuthServerData<OrdersResponse>("/orders/my"),
-    useAuthServerData<MyListingsResponse>("/listings/my"),
+    getAuthServerData<OrdersResponse>("/orders/my"),
+    getAuthServerData<MyListingsResponse>("/listings/my"),
   ]);
 
   const orderList = orders?.data ?? [];

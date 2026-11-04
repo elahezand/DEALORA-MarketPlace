@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import StaticPageLayout from "@/components/shared/StaticPageLayout";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "The rules for buying and selling on Dealora.",
+};
 
 export default function TermsPage() {
   return (

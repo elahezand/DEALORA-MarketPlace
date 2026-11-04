@@ -40,7 +40,7 @@ export default function SellerStorePage() {
         </div>
         <div className="card rounded-2xl border border-[var(--border)] bg-[var(--card-solid)] p-6 text-center py-12">
           <HiOutlineBuildingStorefront className="w-10 h-10 text-[var(--foreground-muted)] mx-auto mb-3" />
-          <p className="text-[var(--foreground)] font-bold mb-2">We couldn't find a store for your account</p>
+          <p className="text-[var(--foreground)] font-bold mb-2">We couldn&apos;t find a store for your account</p>
           <Link
             href="/create-shop"
             className="btn-primary !w-auto px-5 h-9 text-sm inline-flex items-center gap-2 mt-2"

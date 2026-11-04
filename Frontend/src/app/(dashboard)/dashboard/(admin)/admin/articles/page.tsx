@@ -1,9 +1,9 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
-import ArticlesClient from "@/app/(dashboard)/components/(admin)/articles/ArticlesPage";
+import { getAuthServerData } from "@/utils/serverData";
+import ArticlesClient from "@/components/dashboard/admin/articles/ArticlesPage";
 import { ArticlesResponse } from "@/types/Article";
 
 export default async function AdminArticlesPage() {
-  const initialArticles = await useAuthServerData<ArticlesResponse>(
+  const initialArticles = await getAuthServerData<ArticlesResponse>(
     "/articles/admin",
   );
 

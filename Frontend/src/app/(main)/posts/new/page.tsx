@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import React from "react";
 import NewPost from "@/components/newPost/newPost";
-import { useServerData } from "@/utils/hooks/useServerData";
+import { getServerData } from "@/utils/serverData";
 import { CategoriesTypeResponse } from "@/types/Category";
+
+export const metadata: Metadata = {
+  title: "Post an Ad",
+  description: "Sell something in a few steps: pick a category, add photos and set your price.",
+};
 export default async function Page() {
-    const categories = await useServerData<CategoriesTypeResponse>(
+    const categories = await getServerData<CategoriesTypeResponse>(
         "/categories",
         "categories",
         60 * 60 * 24

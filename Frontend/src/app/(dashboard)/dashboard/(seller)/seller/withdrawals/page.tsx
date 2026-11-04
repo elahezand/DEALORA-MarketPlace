@@ -1,9 +1,9 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData } from "@/utils/serverData";
 import { WithdrawalsResponse } from "@/types/Withdrawal";
-import WithdrawalsPage from "@/app/(dashboard)/components/(seller)/Withdrawals/withdrawlsPage";
+import WithdrawalsPage from "@/components/dashboard/seller/Withdrawals/withdrawlsPage";
 
 export default async function SellerWithdrawalsRoute() {
-  const initialWithdrawals = await useAuthServerData<WithdrawalsResponse>(
+  const initialWithdrawals = await getAuthServerData<WithdrawalsResponse>(
     "/withdrawals/mine?status=processing",
   );
 

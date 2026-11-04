@@ -93,6 +93,7 @@ export default function SupportSection() {
               <div
                 key={m._id}
                 role="option"
+                aria-selected={false}
                 onClick={() => router.push(`/supports/article/${m._id}`)}
                 className="px-5 py-3 hover:bg-[var(--background-soft)] cursor-pointer transition duration-150 group"
               >
@@ -107,7 +108,7 @@ export default function SupportSection() {
 
             {matches.length === 0 && (
               <div className="px-5 py-4 text-sm text-[var(--foreground-muted)] font-medium text-center">
-                No results found for "{query}"
+                No results found for &quot;{query}&quot;
               </div>
             )}
           </div>

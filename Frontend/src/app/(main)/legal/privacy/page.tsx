@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import StaticPageLayout from "@/components/shared/StaticPageLayout";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "What information Dealora collects and how it is used.",
+};
 
 export default function PrivacyPolicyPage() {
   return (
@@ -7,10 +13,10 @@ export default function PrivacyPolicyPage() {
       subtitle="Last updated: 2026. This page explains what information we collect and how we use it."
     >
       <p>
-        Dealora ("we", "our", "us") respects your privacy. This policy describes what
+        Dealora (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) respects your privacy. This policy describes what
         personal data we collect when you use our marketplace, why we collect it, and
         the choices you have.
-      </p>
+                               </p>
 
       <h2>Information we collect</h2>
       <ul>

@@ -1,10 +1,10 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
+import { getAuthServerData } from "@/utils/serverData";
 import { WalletResponse } from "@/types/Wallet";
-import WalletPage from "@/app/(dashboard)/components/(user)/wallet/walletPage";
+import WalletPage from "@/components/dashboard/user/wallet/walletPage";
 
 export default async function WalletPageWrapper() {
   // per user and changes after every refund → never cached
-  const initialWallet = await useAuthServerData<WalletResponse>("/users/me/wallet");
+  const initialWallet = await getAuthServerData<WalletResponse>("/users/me/wallet");
 
   return (
     <WalletPage

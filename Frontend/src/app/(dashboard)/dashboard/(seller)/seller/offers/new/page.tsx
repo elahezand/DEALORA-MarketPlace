@@ -1,9 +1,9 @@
 import { InfiniteData } from "@tanstack/react-query";
-import { useAuthServerData } from "@/utils/hooks/useServerData";
-import NewOfferPage, { OfferableProductsResponse } from "@/app/(dashboard)/components/(seller)/offers/new/NewOfferPage";
+import { getAuthServerData } from "@/utils/serverData";
+import NewOfferPage, { OfferableProductsResponse } from "@/components/dashboard/seller/offers/new/NewOfferPage";
 
 export default async function SellerNewOfferRoute() {
-  const initialListings = await useAuthServerData<OfferableProductsResponse>("/offers/products?limit=8");
+  const initialListings = await getAuthServerData<OfferableProductsResponse>("/offers/products?limit=8");
 
   return (
     <NewOfferPage

@@ -1,11 +1,11 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
-import InfiniteFavoritesSection from "@/app/(dashboard)/components/(user)/favorites/favoritesPage";
+import { getAuthServerData } from "@/utils/serverData";
+import InfiniteFavoritesSection from "@/components/dashboard/user/favorites/favoritesPage";
 import FavoritesTypeResponse from "@/types/favorites";
 
 export const revalidate = 60;
 
 export default async function FavoritesPageWrapper() {
-  const initialFavorites = await useAuthServerData<FavoritesTypeResponse>("/wishList/my");    
+  const initialFavorites = await getAuthServerData<FavoritesTypeResponse>("/wishList/my");    
 
 
   return (

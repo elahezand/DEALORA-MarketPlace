@@ -43,7 +43,7 @@ export default function ContactUs() {
             </span>
           </h2>
           <p className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide max-w-md mx-auto mt-2">
-            We'd love to hear from you, Send Us Message !
+            We&apos;d love to hear from you, Send Us Message !
           </p>
         </MotionDiv>
 

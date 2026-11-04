@@ -1,10 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HiOutlineArrowLeft, HiOutlineEye, HiOutlineTag } from "react-icons/hi2";
-import { useServerData } from "@/utils/hooks/useServerData";
+import { getServerData } from "@/utils/serverData";
 import { ArticleResponse } from "@/types/Article";
+import { toMetaDescription } from "@/utils/seo";
 
 export const revalidate = 60;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const res = await getServerData<ArticleResponse>(`/articles/${id}`, `article-${id}`, revalidate);
+  const article = res?.data;
+  if (!article) return { title: "Article not found" };
+
+  return {
+    title: article.title,
+    description: toMetaDescription(article.excerpt || article.content),
+    alternates: { canonical: `/supports/article/${id}` },
+  };
+}
 
 export default async function ArticleDetailPage({
   params,
@@ -15,7 +34,7 @@ export default async function ArticleDetailPage({
 
   let article: ArticleResponse["data"] | null = null;
   try {
-    const res = await useServerData<ArticleResponse>(
+    const res = await getServerData<ArticleResponse>(
       `/articles/${id}`,
       `article-${id}`,
       revalidate

@@ -1,9 +1,9 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
-import UsersClient from "@/app/(dashboard)/components/(admin)/users/UsersPage";
+import { getAuthServerData } from "@/utils/serverData";
+import UsersClient from "@/components/dashboard/admin/users/UsersPage";
 import { AdminUsersResponse } from "@/types/User";
 
 export default async function AdminUsersPage() {
-  const initialUsers = await useAuthServerData<AdminUsersResponse>(
+  const initialUsers = await getAuthServerData<AdminUsersResponse>(
     "/users?limit=20",
   );  
 

@@ -1,5 +1,5 @@
 import React from "react";
-import DashboardClient from "@/app/(dashboard)/layouts/DashboardClient"
+import DashboardClient from "@/components/dashboard/layouts/DashboardClient"
 
 export default function DashboardUserLayout({
   children,

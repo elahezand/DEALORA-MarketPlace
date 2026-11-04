@@ -84,7 +84,7 @@ export default function EditStorePage() {
             <div className="flex flex-col gap-8 pb-10 max-w-2xl mx-auto w-full">
                 <div className="card rounded-2xl border border-[var(--border)] bg-[var(--card-solid)] p-6 text-center py-12">
                     <HiOutlineBuildingStorefront className="w-10 h-10 text-[var(--foreground-muted)] mx-auto mb-3" />
-                    <p className="text-[var(--foreground)] font-bold mb-2">You don't have a store yet</p>
+                    <p className="text-[var(--foreground)] font-bold mb-2">You don&apos;t have a store yet</p>
                     <Link
                         href="/create-shop"
                         className="btn-primary !w-auto px-5 h-9 text-sm inline-flex items-center gap-2 mt-2"

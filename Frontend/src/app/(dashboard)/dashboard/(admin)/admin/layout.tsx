@@ -1,5 +1,5 @@
 import React from "react";
-import AdminDashboardClient from "@/app/(dashboard)/layouts/DashboardAdmin";
+import AdminDashboardClient from "@/components/dashboard/layouts/DashboardAdmin";
 export default function AdminLayout({
   children,
 }: {

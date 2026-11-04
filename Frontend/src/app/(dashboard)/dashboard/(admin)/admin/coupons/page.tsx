@@ -1,9 +1,9 @@
-import { useAuthServerData } from "@/utils/hooks/useServerData";
-import CouponsClient from "@/app/(dashboard)/components/(admin)/coupons/CouponsPage";
+import { getAuthServerData } from "@/utils/serverData";
+import CouponsClient from "@/components/dashboard/admin/coupons/CouponsPage";
 import { CouponsResponse } from "@/types/Coupon";
 
 export default async function AdminCouponsPage() {
-  const initialCoupons = await useAuthServerData<CouponsResponse>(
+  const initialCoupons = await getAuthServerData<CouponsResponse>(
     "/coupon/admin",
   );
 

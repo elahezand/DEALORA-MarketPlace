@@ -1,3 +1,4 @@
+import { ApiMessageResponse } from "@/types/common";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDelete } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
@@ -7,7 +8,7 @@ import { toast } from "sonner";
 export const useRemoveFavorite = () => {
   const queryClient = useQueryClient();
 
-  return useDelete<any, { productId: string }>(
+  return useDelete<ApiMessageResponse, { productId: string }>(
     (data) => `/wishList/${data.productId}`,
     {
       onSuccess: () => {

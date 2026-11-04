@@ -2,7 +2,7 @@
 
 import { Star, BadgeCheck } from "lucide-react";
 import { timeAgo } from "@/utils/timeAgo";
-import { CommentItemType } from "@/types/CommetTypes";
+import { CommentItemType } from "@/types/CommentTypes";
 function StarRow({ value, size = 14 }: { value: number; size?: number }) {
   return (
     <div className="flex items-center gap-0.5">

@@ -5,7 +5,6 @@ import { IoSearch, IoLocationOutline, IoChevronDown, IoClose } from "react-icons
 import { useLocation } from "@/services/Location/useGetLocations";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@heroui/react";
-import { log } from "node:console";
 
 export default function LocationSearch() {
   const router = useRouter();

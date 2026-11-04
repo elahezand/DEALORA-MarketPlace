@@ -32,7 +32,7 @@ export default function ImageGallery({
                     title: title,
                     url: window.location.href,
                 });
-            } catch (err) {
+            } catch {
                 // User cancelled share
             }
         } else {

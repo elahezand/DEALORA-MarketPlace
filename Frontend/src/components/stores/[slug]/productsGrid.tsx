@@ -16,7 +16,7 @@ export default function ProductsGrid({ data }: { data: Product[] }) {
   if (!data || data.length === 0) {
     return (
       <p className="text-center text-sm text-[var(--foreground-muted)] py-16">
-        This store hasn't listed any products yet.
+        This store hasn&apos;t listed any products yet.
       </p>
     );
   }

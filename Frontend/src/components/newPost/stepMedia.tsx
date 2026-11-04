@@ -1,47 +1,23 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef } from "react";
 import { GrGallery } from "react-icons/gr";
 import { FaPlus as FaPlusIcon } from "react-icons/fa";
-import { useFormikContext } from "formik";
+import { useFormContext } from "react-hook-form";
 import { FormValues } from "@/types/listingFormValue";
+import FilePreviewImg from "@/components/shared/FilePreviewImg";
 
 const MAX_IMAGES = 4;
 
-function ImagePreview({
-    file,
-    alt,
-    className,
-}: {
-    file: File;
-    alt: string;
-    className?: string;
-}) {
-    const [url, setUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!(file instanceof File)) {
-            setUrl(null);
-            return;
-        }
-        const objectUrl = URL.createObjectURL(file);
-        setUrl(objectUrl);
-        return () => URL.revokeObjectURL(objectUrl);
-    }, [file]);
-
-    if (!url) return null;
-
-    return <img loading="lazy" decoding="async" src={url} alt={alt} className={className} />;
-}
-
 export default function StepMedia() {
-    const { values, setFieldValue, setFieldTouched } = useFormikContext<FormValues>();
+    const { watch, setValue } = useFormContext<FormValues>();
+    const values = watch();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const images: File[] = values?.snapshot?.images || [];
 
     const handleFocus = () => {
-        setFieldTouched("snapshot.images", true);
+        setValue("snapshot.images", images, { shouldTouch: true });
     };
 
     const handleAddImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,15 +26,14 @@ export default function StepMedia() {
 
         const fileArr = Array.from(files);
         const updated = [...images, ...fileArr].slice(0, MAX_IMAGES);
-        setFieldValue("snapshot.images", updated);
-        setFieldTouched("snapshot.images", true);
+        setValue("snapshot.images", updated, { shouldValidate: true, shouldTouch: true });
 
         e.target.value = "";
     };
 
     const handleRemoveImage = (idx: number) => {
         const updated = images.filter((_: File, i: number) => i !== idx);
-        setFieldValue("snapshot.images", updated);
+        setValue("snapshot.images", updated, { shouldValidate: true });
     };
 
     const hasError = values?.snapshot?.images && images.length === 0;
@@ -122,7 +97,7 @@ export default function StepMedia() {
                                 boxShadow: isMain ? "var(--focus-ring-shadow)" : "var(--card-shadow-2)"
                             }}
                         >
-                            <ImagePreview
+                            <FilePreviewImg
                                 file={file}
                                 alt={`product-preview-${idx}`}
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

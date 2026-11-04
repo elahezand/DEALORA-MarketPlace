@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormikContext } from "formik";
+import { useFormContext } from "react-hook-form";
 import React, { useState } from "react";
 import { FaAngleDown } from "react-icons/fa";
 import { Skeleton } from "@heroui/react";
@@ -13,7 +13,8 @@ type Props = {
 };
 
 export default function StepCategories({ data, isLoading }: Props) {
-  const { setFieldValue, values } = useFormikContext<FormValues>();
+  const { setValue, watch } = useFormContext<FormValues>();
+  const values = watch();
   const [openIds, setOpenIds] = useState<string[]>([]);
   const categoryPath = values?.snapshot?.categoryPath || [];
 
@@ -64,7 +65,7 @@ export default function StepCategories({ data, isLoading }: Props) {
                   toggle(id);
                   return;
                 }
-                setFieldValue("snapshot.categoryPath", currentPath);
+                setValue("snapshot.categoryPath", currentPath, { shouldValidate: true });
               }}
               className={`flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl transition-all duration-200 outline-none select-none ${getButtonStyles()}`}
             >

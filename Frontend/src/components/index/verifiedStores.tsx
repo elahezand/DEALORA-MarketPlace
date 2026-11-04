@@ -58,7 +58,7 @@ export default function VerifiedStores({ initialStores }: { initialStores?: GetV
             <span className="text-primary-600 dark:text-primary-400">✅</span>
           </div>
           <p className="text-xs text-[var(--foreground-muted)]">
-            See all businesses we've confirmed are legit.
+            See all businesses we&apos;ve confirmed are legit.
           </p>
         </div>
       </div>

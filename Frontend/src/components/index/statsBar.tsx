@@ -28,7 +28,7 @@ export default function StatsBar({ initialStats }: { initialStats?: GetPublicSta
         shadow-sm
       "
     >
-      {LABELS.map((item, i) => {
+      {LABELS.map((item) => {
         const rawValue = stats?.[item.key];
         const display =
           !isLoading && !isError && typeof rawValue === "number"

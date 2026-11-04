@@ -1,5 +1,8 @@
 "use client";
-import React, { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import AuthRequiredListener from "./AuthRequiredListener";
+import UserMenu from "./UserMenu";
+import AdminNoteModal from "./AdminNoteModal";
 import {
   Navbar,
   NavbarBrand,
@@ -8,30 +11,22 @@ import {
   NavbarMenu,
   NavbarContent,
   NavbarItem,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  Avatar,
-  DropdownItem,
 } from "@heroui/react";
 import dynamic from "next/dynamic";
 import CartIcon from "./CartIcon";
-import NotificationsBell from "@/app/(dashboard)/components/shared/NotificationsBell";
+import NotificationsBell from "@/components/dashboard/shared/NotificationsBell";
 import { HiOutlineUser, HiOutlineBellAlert } from "react-icons/hi2";
 import { usePathname, useRouter } from "next/navigation";
 import { api } from "@/services/interceptor";
 import clsx from "clsx";
 import Link from "next/link";
 import { ThemeSwitcher } from "@/context/ThemeSwitcher";
-import { getUrl } from "@/utils/helper"
 import { toast } from "sonner";
 import { IoLocationSharp } from "react-icons/io5";
 import Logo from "./Logo";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCreateNotification } from "@/services/Notifications/useCreateNotification";
-import { AdminFormModal, FormField, textareaClass } from "@/app/(dashboard)/components/(admin)/shared/AdminFormModal";
 
 const AuthModal = dynamic(() => import("../modals/AuthModal"), { ssr: false });
 const LocationsModal = dynamic(() => import("../modals/locations"), { ssr: false });
@@ -44,9 +39,6 @@ export default function Header() {
   const queryClient = useQueryClient();
   const { user } = useGetProfile();
 
-  const initials = user?.username
-    ? user.username.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-    : "U";
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLocationsModalOpen, setIsLocationsModalOpen] = useState(false);
@@ -56,19 +48,6 @@ export default function Header() {
 
   const isAdmin = !!user?.role?.includes("ADMIN");
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-  const [noteMsg, setNoteMsg] = useState("");
-  const { mutate: createNotification, isPending: isCreatingNote } = useCreateNotification(() => {
-    setIsNoteModalOpen(false);
-    setNoteMsg("");
-  });
-
-  function handleCreateNote(e: React.FormEvent) {
-    e.preventDefault();
-    if (!noteMsg.trim()) return;
-    if (!user?._id) return;
-
-    createNotification({ msg: noteMsg.trim(), user: user._id });
-  }
 
   const navItems: NavItem[] = useMemo(
     () => [
@@ -100,6 +79,8 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const openAuthModal = useCallback(() => setIsAuthOpen(true), []);
 
   const handleLogout = useCallback(() => {
     startTransition(() => {
@@ -219,91 +200,7 @@ export default function Header() {
           )}
           <ThemeSwitcher />
           {user ? (
-            <Dropdown placement="bottom-end">
-              <DropdownTrigger>
-                <button className="user-chip text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
-                  {user.profilePicture ? (
-                    <img
-                      src={getUrl(user.profilePicture) || ""}
-                      alt={user.username}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-[var(--gradient)] flex items-center justify-center text-white text-xs font-black flex-shrink-0">
-                      {initials}
-                    </div>
-                  )}
-
-                  <div className="hidden md:flex flex-col max-w-[120px]">
-                    <span className="text-[13px] font-bold truncate leading-tight text-[var(--foreground)]">
-                      {user.username || "My Account"}
-                    </span>
-                    <span className="text-[11px] text-[var(--foreground-subtle)] truncate">
-                      {user.phone || user.email || "Verified User"}
-                    </span>
-                  </div>
-                </button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label="User Actions"
-                classNames={{
-                  base: "page-card !rounded-2xl min-w-[220px] p-2",
-                }}
-              >
-                <DropdownItem
-                  key="profile"
-                  textValue="Profile"
-                  onPress={() => router.push("/dashboard")}
-                  className="rounded-xl text-sm font-medium px-3 text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-                >
-                  Profile
-                </DropdownItem>
-
-                <DropdownItem
-                  key="Shop"
-                  textValue="Shop"
-                  onPress={() => router.push("/create-shop")}
-                  className="rounded-xl text-sm font-medium px-3 text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-                >
-                  Create Shop
-                </DropdownItem>
-
-                <DropdownItem
-                  key="settings"
-                  textValue="Settings"
-                  onPress={() => router.push("/dashboard/settings")}
-                  className="rounded-xl text-sm font-medium px-3 py-2 text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-                >
-                  Settings
-                </DropdownItem>
-
-                <DropdownItem
-                  key="listings"
-                  textValue="listings"
-                  onPress={() => router.push("/dashboard/listings")}
-                  className="rounded-xl text-sm font-medium px-3 text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-                >
-                  Listings
-                </DropdownItem>
-
-                <DropdownItem
-                  key="orders"
-                  textValue="orders"
-                  onPress={() => router.push("/dashboard/orders")}
-                  className="rounded-xl text-sm font-medium px-3  text-[var(--foreground-muted)] hover:text-[var(--foreground)]"
-                >
-                  Orders
-                </DropdownItem>
-
-                <DropdownItem
-                  key="logout"
-                  className="rounded-xl border-t-2 border-[var(--border)] text-rose-600 dark:text-rose-400 font-semibold"
-                  onPress={handleLogout}
-                >
-                  Logout
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
+            <UserMenu user={user} onLogout={handleLogout} />
           ) : (
             <NavbarItem>
               <button
@@ -369,48 +266,13 @@ export default function Header() {
         </NavbarMenu>
       </Navbar>
       <AuthModal isOpen={isAuthOpen} setIsOpen={setIsAuthOpen} />
+      <Suspense fallback={null}>
+        <AuthRequiredListener onAuthRequired={openAuthModal} />
+      </Suspense>
       <LocationsModal isOpen={isLocationsModalOpen} setIsOpen={setIsLocationsModalOpen} />
 
       {isAdmin && (
-        <AdminFormModal
-          isOpen={isNoteModalOpen}
-          onClose={() => setIsNoteModalOpen(false)}
-          title="New Notification"
-          icon={HiOutlineBellAlert}
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => setIsNoteModalOpen(false)}
-                className="text-xs font-bold px-4 h-9 rounded-lg border border-[var(--border)] text-[var(--foreground-muted)] hover:bg-[var(--background-soft)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="header-note-form"
-                disabled={isCreatingNote || !noteMsg.trim()}
-                className="btn-primary !w-auto px-5 h-9 text-xs disabled:opacity-50"
-              >
-                {isCreatingNote ? "Sending..." : "Send"}
-              </button>
-            </>
-          }
-        >
-          <form id="header-note-form" onSubmit={handleCreateNote} className="flex flex-col gap-4">
-            <FormField label="Message">
-              <textarea
-                className={textareaClass}
-                rows={3}
-                value={noteMsg}
-                onChange={(e) => setNoteMsg(e.target.value)}
-                placeholder="Write a quick notification..."
-                required
-                autoFocus
-              />
-            </FormField>
-          </form>
-        </AdminFormModal>
+        <AdminNoteModal isOpen={isNoteModalOpen} onClose={() => setIsNoteModalOpen(false)} userId={user?._id} />
       )}
     </div>
   );

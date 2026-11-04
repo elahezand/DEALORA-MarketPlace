@@ -3,6 +3,7 @@ import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Skeleton } from "@heroui/react";
+import SafeSvg from "@/components/shared/SafeSvg";
 import { CategoriesTypeResponse } from "@/types/Category";
 
 const ICON_COLOR_CLASSES = [
@@ -69,7 +70,8 @@ export default function CategoriesSection({ initialData }: { initialData?: Categ
                           transition-opacity duration-300" />
 
           <div className="relative z-10 flex flex-col items-center gap-3">
-            <div
+            <SafeSvg
+              svg={cat.icon?.svgCode}
               className={`
                 w-16 h-16 rounded-lg 
                 flex items-center justify-center
@@ -80,7 +82,6 @@ export default function CategoriesSection({ initialData }: { initialData?: Categ
                 overflow-hidden shrink-0
                 ${ICON_COLOR_CLASSES[i % ICON_COLOR_CLASSES.length]}
               `}
-              dangerouslySetInnerHTML={{ __html: cat.icon?.svgCode ?? "" }}
             />
 
             <span className="text-xs font-bold text-foreground-muted

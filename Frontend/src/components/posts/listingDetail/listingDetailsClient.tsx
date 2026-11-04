@@ -12,6 +12,8 @@ import TrustBadge from "./TrustBadge";
 import StatBox from "./StateBox";
 import SectionHeading from "./SectionHeading";
 import MapSection from "./MapSection";
+import { ListingOffers, ListingDescription, ProtectionNotice } from "./ListingSections";
+import { VariantOptions, ListingActions, SellerCard } from "./ListingSidebarParts";
 import BreadCrumbs from "./BreadCrumbs";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
 import { ListingProps, ListingVariant } from "@/types/Listings";
@@ -25,22 +27,12 @@ import { toast } from "sonner";
 import {
     Eye,
     Truck,
-    Clock3,
-    MessageCircle,
     BadgeCheck,
     ShieldCheck,
-    Phone,
     MapPin,
-    Tag,
-    PackageCheck,
     Sparkles,
-    ChevronDown,
-    ChevronUp,
     MapPinned,
-    ShoppingCart,
     Flag,
-    Store as StoreIcon,
-    Loader2
 } from "lucide-react";
 
 const AuthModal = dynamic(() => import("../../modals/AuthModal"), { ssr: false });
@@ -55,7 +47,6 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
 
     const [phoneRevealed, setPhoneRevealed] = useState(false);
     const [saved, setSaved] = useState(false);
-    const [descExpanded, setDescExpanded] = useState(false);
     const [isReportOpen, setIsReportOpen] = useState(false);
     const [isContactOpen, setIsContactOpen] = useState(false);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -77,27 +68,26 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
         }
     }, [favoriteData?.data?.isFavorited]);
 
+    const rawSpecs = data?.specs;
     const specs = useMemo(() => {
-        if (!data?.specs) return {};
-        if (data.specs instanceof Map) {
-            return Object.fromEntries(data.specs);
+        if (!rawSpecs) return {};
+        if (rawSpecs instanceof Map) {
+            return Object.fromEntries(rawSpecs);
         }
-        if (!Array.isArray(data.specs)) {
-            return data.specs as Record<string, string | number | boolean>;
+        if (!Array.isArray(rawSpecs)) {
+            return rawSpecs as Record<string, string | number | boolean>;
         }
         const obj: Record<string, string | number | boolean> = {};
-        data.specs.forEach((item: { key?: string; value?: string }) => {
+        rawSpecs.forEach((item: { key?: string; value?: string }) => {
             if (item && item.key) obj[item.key] = item.value ?? "";
         });
         return obj;
-    }, [data?.specs]);
+    }, [rawSpecs]);
 
     if (!data) return <ListingSkeleton />;
 
-    const hasSpecs = Object.keys(specs).length > 0;
     const isFreeShipping = data.shipping?.type === "free" || (data.shipping?.cost ?? 0) === 0;
     const description = data.description || "";
-    const isLongDescription = description.length > 320;
 
     const displayLocation = !isStoreProduct && data.location
         ? [data.location.city, data.location.state].filter(Boolean).join(", ")
@@ -191,7 +181,7 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
 
         addToCartMutation.mutate(
             { items: [itemPayload] },
-            { onSuccess: (res) => { toast.success("Added to cart") } }
+            { onSuccess: () => { toast.success("Added to cart") } }
         );
     };
     // Toggle Favorite
@@ -308,32 +298,14 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
 
                             {/* VARIANTS PICKER (STORE PRODUCT ONLY) */}
                             {isStoreProduct && data.variants && data.variants.length > 0 && (
-                                <div className="space-y-2.5 pt-4 border-t border-[var(--border)]">
-                                    <span className="text-xs font-bold text-[var(--foreground-muted)]">Select Options:</span>
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {data.variants.map((v: ListingVariant, index: number) => {
-                                            const attrLabel = v.attributes ? Object.values(v.attributes).join(" - ") : `Option ${index + 1}`;
-                                            const isSelected = selectedVariant?._id === v._id;
-                                            return (
-                                                <button
-                                                    key={v._id || index}
-                                                    onClick={() => {
-                                                        setSelectedVariant(v);
-                                                        setCartError(null);
-                                                    }}
-                                                    className={`px-3 py-2 text-xs font-semibold rounded-xl border transition-all duration-200 ${isSelected
-                                                        ? "border-[var(--primary-500)] bg-[var(--primary-50)] text-[var(--primary-700)] dark:bg-[var(--primary-950)] dark:text-[var(--accent-300)] shadow-sm"
-                                                        : "border-[var(--border)] hover:bg-[var(--background-soft)]"
-                                                        }`}
-                                                >
-                                                    {attrLabel}
-                                                    <span className="ml-1 opacity-70 tabular-nums">· ${getVariantFinalPrice(v).toLocaleString()}</span>
-                                                    {v.stock === 0 && <span className="text-red-500"> (Out of stock)</span>}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                                <VariantOptions
+                                    variants={data.variants}
+                                    selectedId={selectedVariant?._id}
+                                    onSelect={(v) => {
+                                        setSelectedVariant(v);
+                                        setCartError(null);
+                                    }}
+                                />
                             )}
 
                             <div className="border-t border-[var(--border)] pt-5 flex items-baseline gap-2 flex-wrap">
@@ -362,72 +334,25 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
                             </div>
                         </div>
 
-                        {/* CTA BUTTONS */}
-                        <div className="space-y-3 border-t border-[var(--border)] pt-5 mt-6">
-                            {isStoreProduct ? (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAddToCart()}
-                                        disabled={isAddToCartDisabled}
-                                        className="btn-primary !w-full h-12 flex items-center justify-center gap-2 text-sm font-semibold rounded-xl"
-                                    >
-                                        {addToCartMutation.isPending ? (
-                                            <Loader2 size={16} className="animate-spin" />
-                                        ) : (
-                                            <ShoppingCart size={16} />
-                                        )}
-                                        {isOutOfStock
-                                            ? "Out of Stock"
-                                            : addToCartMutation.isPending
-                                                ? "Adding..."
-                                                : "Add to Cart"}
-                                    </button>
-                                    {cartError && (
-                                        <p className="text-xs font-medium text-[var(--destructive)]">{cartError}</p>
-                                    )}
-                                </>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={handleContactSeller}
-                                        className="btn-primary !w-full h-12 flex items-center justify-center gap-2 text-sm font-semibold rounded-xl"
-                                    >
-                                        <MessageCircle size={16} />
-                                        Contact seller
-                                    </button>
-                                    <button
-                                        onClick={() => setPhoneRevealed(true)}
-                                        className="btn-secondary !w-full h-12 flex items-center justify-center gap-2 text-sm font-semibold rounded-xl bg-[var(--background-soft)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors duration-200"
-                                    >
-                                        <Phone size={15} className="text-[var(--foreground-muted)]" />
-                                        <span>
-                                            {phoneRevealed ? (data.owner?.phone || "+1...") : "Show Phone Number"}
-                                        </span>
-                                    </button>
-                                </>
-                            )}
-                        </div>
+                        <ListingActions
+                            isStoreProduct={isStoreProduct}
+                            onAddToCart={() => handleAddToCart()}
+                            isAddToCartDisabled={isAddToCartDisabled}
+                            isAddingToCart={addToCartMutation.isPending}
+                            isOutOfStock={isOutOfStock}
+                            cartError={cartError}
+                            onContactSeller={handleContactSeller}
+                            phoneRevealed={phoneRevealed}
+                            onRevealPhone={() => setPhoneRevealed(true)}
+                            ownerPhone={data.owner?.phone}
+                        />
                     </div>
 
-                    {/* SELLER / STORE CARD */}
-                    <div className="card p-5 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center flex-shrink-0 shadow-sm">
-                                {isStoreProduct ? <StoreIcon size={20} className="text-[var(--primary-600)] dark:text-[var(--accent-400)]" /> : <BadgeCheck size={20} className="text-[var(--primary-600)] dark:text-[var(--accent-400)]" />}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="text-sm font-bold text-[var(--foreground)] truncate m-0 p-0 leading-tight">
-                                    {isStoreProduct
-                                        ? `${variantOffers.length} seller${variantOffers.length === 1 ? "" : "s"} available${activeVariant ? ` for ${getVariantLabel(activeVariant)}` : ""}`
-                                        : "Verified seller"}
-                                </p>
-                                <p className="text-[11px] font-medium text-[var(--foreground-subtle)] m-0 p-0 leading-normal">
-                                    {isStoreProduct ? "Compare offers below to find the best price" : "Member since 2021"}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    <SellerCard
+                        isStoreProduct={isStoreProduct}
+                        offersCount={variantOffers.length}
+                        variantLabel={activeVariant ? getVariantLabel(activeVariant) : undefined}
+                    />
                 </div>
             </div>
 
@@ -435,113 +360,20 @@ export default function ListingDetailsClient({ data }: ListingComponentProps) {
             <div className="grid grid-cols-1 gap-6 mt-6">
                 {/* OFFERS (STORE PRODUCT ONLY) */}
                 {isStoreProduct && variantOffers.length > 0 && (
-                    <div className="card p-6 space-y-4 w-full">
-                        <SectionHeading icon={<StoreIcon size={16} className="text-[var(--primary-500)] dark:text-[var(--accent-400)]" />} title={`Other Sellers & Offers${activeVariant ? ` — ${getVariantLabel(activeVariant)}` : ""}`} />
-                        <div className="divide-y divide-[var(--border)]">
-                            {variantOffers.map((offer: Offer) => {
-                                const storeName = typeof offer.store === "object" ? offer.store?.name : undefined;
-                                const storeRating = typeof offer.store === "object" ? offer.store?.meta?.ratings : undefined;
-                                const storeReviewsCount = typeof offer.store === "object" ? offer.store?.meta?.reviewsCount : undefined;
-                                const displayPrice = offer.finalPrice;
-                                return (
-                                    <div key={offer._id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-[var(--foreground)]">{storeName || "Vendor"}</span>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="text-xs text-[var(--foreground-subtle)]">{offer.stock} in stock</span>
-                                                {!!storeRating && (
-                                                    <span className="text-xs text-[var(--foreground-subtle)] flex items-center gap-0.5">
-                                                        <span aria-hidden>·</span>
-                                                        <span className="text-amber-500">★</span>
-                                                        {storeRating.toFixed(1)}
-                                                        {!!storeReviewsCount && ` (${storeReviewsCount})`}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-right">
-                                                {!!offer.discount && offer.discount > 0 && (
-                                                    <span className="block text-xs font-medium text-[var(--foreground-subtle)] line-through">${offer.price.toLocaleString()}</span>
-                                                )}
-                                                <span className="block text-base font-extrabold text-[var(--foreground)]">${displayPrice.toLocaleString()}</span>
-                                                {!!offer.discount && offer.discount > 0 && (
-                                                    <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded">
-                                                        {offer.discount}% OFF
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => handleAddToCart(offer._id)}
-                                                disabled={addToCartMutation.isPending || offer.stock === 0}
-                                                className="h-9 px-4 text-xs font-bold rounded-lg btn-secondary bg-[var(--background-soft)] border-[var(--border)] hover:bg-[var(--border)] flex items-center gap-1.5"
-                                            >
-                                                {addToCartMutation.isPending && <Loader2 size={12} className="animate-spin" />}
-                                                Buy Offer
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        {cartError && (
-                            <p className="text-xs font-medium text-[var(--destructive)]">{cartError}</p>
-                        )}
-                    </div>
+                    <ListingOffers
+                        title={`Other Sellers & Offers${activeVariant ? ` — ${getVariantLabel(activeVariant)}` : ""}`}
+                        offers={variantOffers}
+                        onAddToCart={handleAddToCart}
+                        isAddingToCart={addToCartMutation.isPending}
+                        cartError={cartError}
+                    />
                 )}
 
                 {/* DESCRIPTION & SPECS */}
-                <div className="card p-6 space-y-6 w-full">
-                    <div className="space-y-3">
-                        <SectionHeading icon={<Clock3 size={16} className="text-[var(--primary-500)] dark:text-[var(--accent-400)]" />} title="Description" />
-                        <p className={`text-sm text-[var(--foreground-muted)] leading-[1.85] whitespace-pre-line font-medium ${!descExpanded && isLongDescription ? "line-clamp-5" : ""}`}>
-                            {description}
-                        </p>
-                        {isLongDescription && (
-                            <button
-                                onClick={() => setDescExpanded((v) => !v)}
-                                className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[var(--primary-600)] dark:text-[var(--accent-400)] hover:underline transition-all duration-200"
-                            >
-                                {descExpanded ? <><ChevronUp size={14} /> Show less</> : <><ChevronDown size={14} /> Show more</>}
-                            </button>
-                        )}
-                    </div>
-
-                    {hasSpecs && (
-                        <div className="border-t border-[var(--border)] pt-6 space-y-4">
-                            <SectionHeading icon={<Tag size={16} className="text-[var(--primary-500)] dark:text-[var(--accent-400)]" />} title="Specifications" />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                                {Object.entries(specs).map(([key, value]) => (
-                                    <div key={key} className="flex rounded-xl border border-[var(--border)] overflow-hidden shadow-sm">
-                                        <div className="bg-[var(--background-soft)] w-1/3 px-3 py-2.5 text-xs font-bold text-[var(--foreground-muted)] capitalize flex items-center border-r border-[var(--border)]">
-                                            {key.replace(/_/g, " ")}
-                                        </div>
-                                        <div className="px-3 py-2.5 text-xs font-semibold text-[var(--foreground)] truncate flex items-center flex-1 bg-[var(--card-solid)]">
-                                            {String(value)}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <ListingDescription description={description} specs={specs} />
 
                 {/* PROTECTION NOTICE */}
-                <div className="card p-4 flex flex-col sm:flex-row items-center gap-4 justify-between w-full">
-                    <div className="flex items-center gap-3 text-center sm:text-left flex-col sm:flex-row">
-                        <div className="h-10 w-10 rounded-full bg-[var(--background-soft)] border border-[var(--border)] flex items-center justify-center flex-shrink-0">
-                            <PackageCheck size={18} className="text-[var(--primary-600)] dark:text-[var(--accent-400)]" />
-                        </div>
-                        <p className="text-xs font-medium text-[var(--foreground-muted)] leading-relaxed max-w-md m-0 p-0">
-                            {isStoreProduct
-                                ? "This order qualifies for official vendor fulfillment check and secure checkout guarantee."
-                                : "Your payment is held securely until you confirm delivery. Learn more about our protection policy."}
-                        </p>
-                    </div>
-                    <button className="btn-secondary h-9 px-4 rounded-lg text-xs font-bold whitespace-nowrap flex-shrink-0 bg-[var(--background-soft)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--border)]">
-                        Details
-                    </button>
-                </div>
+                <ProtectionNotice isStoreProduct={isStoreProduct} />
 
                 {/* MAP LOCATION (NON-STORE ONLY) */}
                 {!isStoreProduct && data.location && (

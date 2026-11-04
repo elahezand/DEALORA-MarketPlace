@@ -1,3 +1,4 @@
+import { ApiMessageResponse } from "@/types/common";
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
 
@@ -9,7 +10,7 @@ export interface CreateReportPayload {
 }
 
 export const useCreateReport = () => {
-  return usePost<any, CreateReportPayload>("/reports", {
+  return usePost<ApiMessageResponse, CreateReportPayload>("/reports", {
     onSuccess: () => {
       toast.success("Report submitted. Our team will review it shortly.");
     },

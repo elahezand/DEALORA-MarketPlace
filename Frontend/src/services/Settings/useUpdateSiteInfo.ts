@@ -1,3 +1,4 @@
+import { ApiMessageResponse } from "@/types/common";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePatch } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ export interface SiteInfo {
 export const useUpdateSiteInfo = () => {
   const queryClient = useQueryClient();
 
-  return usePatch<any, SiteInfo>(ENDPOINT, {
+  return usePatch<ApiMessageResponse, SiteInfo>(ENDPOINT, {
     onSuccess: () => {
       toast.success("Site info updated");
       queryClient.invalidateQueries({ queryKey: [ENDPOINT] });

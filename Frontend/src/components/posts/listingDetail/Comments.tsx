@@ -11,7 +11,7 @@ import { usePostComment } from "@/services/Comments/usePostComment";
 import { useInfiniteGet } from "@/utils/hooks/useReactQueryHooks";
 import { InfiniteData } from "@tanstack/react-query";
 import { useGetProfile } from "@/services/Profile/useGetProfile";
-import { CommentItemType, CommentsResponse } from "@/types/CommetTypes";
+import { CommentItemType, CommentsResponse } from "@/types/CommentTypes";
 const AuthModal = dynamic(() => import("../../modals/AuthModal"), { ssr: false });
 
 type Recommendation = "recommended" | "not_recommended" | "no_idea";

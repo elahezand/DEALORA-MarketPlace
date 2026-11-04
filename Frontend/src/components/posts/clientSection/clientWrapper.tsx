@@ -53,7 +53,7 @@ export default function ClientWrapper() {
 
         const cleanParams = Object.fromEntries(
             Object.entries(updatedFilters).filter(
-                ([_, v]) => v !== "" && v !== null && v !== undefined && v !== "-1"
+                ([, v]) => v !== "" && v !== null && v !== undefined && v !== "-1"
             )
         );
 

@@ -1,7 +1,7 @@
 import { usePost } from "@/utils/hooks/useReactQueryHooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CommentItemType } from "@/types/CommetTypes";
+import { CommentItemType } from "@/types/CommentTypes";
 
 export type AnswerCommentPayload = Pick<
   CommentItemType, "body"|"parentId"

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FaAngleDown } from "react-icons/fa";
 import Link from "next/link";
+import SafeSvg from "@/components/shared/SafeSvg";
 
 interface SubCategory {
     _id: string;
@@ -40,8 +41,9 @@ export default function Dropdown({
         <div className="flex flex-col gap-1 mb-3 p-2 rounded-xl transition-all duration-200 hover:bg-[var(--background-soft)]/50">
             <div className="flex items-center justify-between">
                 <div className="flex gap-3 items-center flex-1">
-                    <span
-                        dangerouslySetInnerHTML={{ __html: icon?.svgCode || "" }}
+                    <SafeSvg
+                        as="span"
+                        svg={icon?.svgCode}
                         className="w-8 h-8 flex items-center justify-center text-[var(--primary-500)] dark:text-[var(--accent-400)] transition-colors"
                     />
                     <Link

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { useFormikContext, FormikHelpers } from "formik";
+import { useFormContext, UseFormSetValue } from "react-hook-form";
 import {
   MapContainer,
   TileLayer,
@@ -29,7 +29,8 @@ const icon = new L.DivIcon({
 });
 
 function MapSync() {
-  const { values } = useFormikContext<FormValues>();
+  const { watch } = useFormContext<FormValues>();
+  const values = watch();
   const map = useMap();
 
   const lat = values?.location?.lat;
@@ -49,10 +50,10 @@ function MapSync() {
 interface MarkerLayerProps {
   lat?: number | null;
   lng?: number | null;
-  setFieldValue: FormikHelpers<FormValues>["setFieldValue"];
+  setValue: UseFormSetValue<FormValues>;
 }
 
-function MarkerLayer({ lat, lng, setFieldValue }: MarkerLayerProps) {
+function MarkerLayer({ lat, lng, setValue }: MarkerLayerProps) {
   const position = lat && lng ? ([lat, lng] as [number, number]) : null;
   if (!position) return null;
 
@@ -64,8 +65,8 @@ function MarkerLayer({ lat, lng, setFieldValue }: MarkerLayerProps) {
       eventHandlers={{
         dragend: (e) => {
           const pos = e.target.getLatLng();
-          setFieldValue("location.lat", pos.lat);
-          setFieldValue("location.lng", pos.lng);
+          setValue("location.lat", pos.lat);
+          setValue("location.lng", pos.lng);
         },
       }}
     />
@@ -73,14 +74,18 @@ function MarkerLayer({ lat, lng, setFieldValue }: MarkerLayerProps) {
 }
 
 export default function Location() {
-  const { values, setFieldValue } = useFormikContext<FormValues>();
+  const { watch, setValue } = useFormContext<FormValues>();
+  const values = watch();
+
+  const lat = values?.location?.lat;
+  const lng = values?.location?.lng;
 
   const center = useMemo(() => {
-    if (values?.location?.lat && values?.location?.lng) {
-      return [values.location.lat, values.location.lng] as [number, number];
+    if (lat && lng) {
+      return [lat, lng] as [number, number];
     }
     return defaultPosition;
-  }, [values?.location?.lat, values?.location?.lng]);
+  }, [lat, lng]);
 
   return (
     <div className="card overflow-hidden w-full transition-all duration-300">
@@ -99,9 +104,9 @@ export default function Location() {
           <MapSync />
 
           <MarkerLayer
-            lat={values?.location?.lat}
-            lng={values?.location?.lng}
-            setFieldValue={setFieldValue}
+            lat={lat}
+            lng={lng}
+            setValue={setValue}
           />
         </MapContainer>
       </div>

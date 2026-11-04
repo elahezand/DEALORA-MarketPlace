@@ -1,10 +1,11 @@
+import { ApiMessageResponse } from "@/types/common";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDelete } from "@/utils/hooks/useReactQueryHooks";
 import { toast } from "sonner";
 
 export const useDeleteListing = () => {
   const queryClient = useQueryClient();
-  return useDelete<any, { id: string }>(
+  return useDelete<ApiMessageResponse, { id: string }>(
     (data) => `/listings/${data.id}`,
     {
       onSuccess: () => {

@@ -14,7 +14,7 @@ export const getCoords = async (city: string, state: string) => {
         }
 
         return null;
-    } catch (err) {
+    } catch {
         return null;
     }
 }

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useFormikContext } from "formik";
+import { useFormContext } from "react-hook-form";
 import { Skeleton } from "@heroui/react";
 import { useGet } from "@/utils/hooks/useReactQueryHooks";
 import { ICategoryResponse, ICategoryFilter, ICategoryFilterOption } from "@/types/Category";
@@ -11,7 +11,8 @@ export default function StepProductSpecAndVariants({
 }: {
   categoryId: string;
 }) {
-  const { values, setFieldValue } = useFormikContext<FormValues>();
+  const { watch, setValue } = useFormContext<FormValues>();
+  const values = watch();
   const { data: res, isLoading } = useGet<ICategoryResponse>(
     `/categories/${categoryId}`,
     undefined,
@@ -23,10 +24,10 @@ export default function StepProductSpecAndVariants({
   const specs = values?.snapshot?.specs ?? {};
 
   const updateSpec = (key: string, value: string | boolean) => {
-    setFieldValue("snapshot.specs", {
+    setValue("snapshot.specs", {
       ...specs,
       [key]: value,
-    });
+    }, { shouldValidate: true });
   };
 
   const isSpecEmpty = filters.length > 0 && filters.every((f) => !specs?.[f.slug]);

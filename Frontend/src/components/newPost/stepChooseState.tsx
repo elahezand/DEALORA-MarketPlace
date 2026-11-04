@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useEffect } from "react";
-import { Field, useFormikContext } from "formik";
+import React, { useMemo, useEffect, useRef } from "react";
+import { useFormContext } from "react-hook-form";
 import { useLocation } from "@/services/Location/useGetLocations";
 import { getCoords } from "@/utils/getCoords";
 import { FormValues } from "@/types/listingFormValue";
@@ -18,11 +18,13 @@ const Location = dynamic(() => import("./Location"), {
 });
 
 export default function StepChooseState() {
-  const { setFieldValue, values } = useFormikContext<FormValues>();
+  const { setValue, watch } = useFormContext<FormValues>();
+  const values = watch();
   const { data } = useLocation();
-  let active = true;
+  // a plain `let` was re-created on every render, so the unmount flag never reached the async handler
+  const isMounted = useRef(true);
 
-  const states = data?.data ?? [];
+  const states = useMemo(() => data?.data ?? [], [data]);
   const selectedState = values?.location?.state;
 
   const citiesForState = useMemo(() => {
@@ -37,10 +39,10 @@ export default function StepChooseState() {
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newState = e.target.value;
 
-    setFieldValue("location.state", newState);
-    setFieldValue("location.city", "");
-    setFieldValue("location.lat", null);
-    setFieldValue("location.lng", null);
+    setValue("location.state", newState, { shouldValidate: true });
+    setValue("location.city", "");
+    setValue("location.lat", null);
+    setValue("location.lng", null);
   };
 
   const hasErrorState = !selectedState;
@@ -48,20 +50,21 @@ export default function StepChooseState() {
 
   const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const cityName = e.target.value;
-    setFieldValue("location.city", cityName);
+    setValue("location.city", cityName, { shouldValidate: true });
 
     const coords = await getCoords(cityName, selectedState);
-    if (!active) return;
+    if (!isMounted.current) return;
 
     if (coords) {
-      setFieldValue("location.lat", coords.lat);
-      setFieldValue("location.lng", coords.lng);
+      setValue("location.lat", coords.lat);
+      setValue("location.lng", coords.lng);
     }
   };
 
   useEffect(() => {
+    isMounted.current = true;
     return () => {
-      active = false;
+      isMounted.current = false;
     };
   }, []);
 
@@ -83,8 +86,7 @@ export default function StepChooseState() {
           </label>
 
           <div className="relative">
-            <Field
-              as="select"
+            <select
               name="location.state"
               value={values.location?.state || ""}
               onChange={handleStateChange}
@@ -96,7 +98,7 @@ export default function StepChooseState() {
                   {s.state}
                 </option>
               ))}
-            </Field>
+            </select>
             {/* Custom Chevron Arrow */}
             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--foreground-subtle)]">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,8 +121,7 @@ export default function StepChooseState() {
           </label>
 
           <div className="relative">
-            <Field
-              as="select"
+            <select
               name="location.city"
               value={values.location?.city || ""}
               disabled={!selectedState}
@@ -135,7 +136,7 @@ export default function StepChooseState() {
                   {c}
                 </option>
               ))}
-            </Field>
+            </select>
             {/* Custom Chevron Arrow */}
             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--foreground-subtle)]">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
